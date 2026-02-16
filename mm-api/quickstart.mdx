@@ -1,0 +1,200 @@
+---
+title: "MM Quickstart - First API Calls"
+sidebarTitle: "Quickstart"
+description: "Step-by-step guide to using the MM Trading API. Verify identity, view exchange orders, check positions, monitor hedge bets, and track PnL."
+---
+
+<Note>
+The MM engine places orders automatically based on bookmaker odds. The client API provides **read access** to all trading activity. You do not place orders through this API — the engine does it for you.
+</Note>
+
+## Step 1: Check connectivity
+
+Verify the API is reachable:
+
+```bash
+curl https://mmapi.55-tech.com/health
+```
+
+Expected response:
+
+```json
+{"status": "ok"}
+```
+
+## Step 2: Verify your identity
+
+Confirm your API key works and see your client info:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+Response:
+
+```json
+{
+  "client": "your-client",
+  "clientName": "Your Client Name",
+  "active": true
+}
+```
+
+## Step 3: View exchange orders
+
+See orders the engine has placed on exchanges:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders
+```
+
+Filter by exchange, fixture, or status:
+
+```bash
+# Filled Polymarket orders
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/orders?exchange=polymarket&status=FILLED"
+
+# Open orders for a specific fixture
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/orders/open?fixture_id=id1000000861624412"
+```
+
+Each order includes exchange-specific identifiers, matched amounts, and odds snapshots:
+
+```json
+{
+  "orderId": 123,
+  "fixtureId": "id1000000861624412",
+  "outcomeId": 161,
+  "exchange": "polymarket",
+  "exchangeOrderId": "0x1a2b3c...",
+  "exchangeOutcomeId": "12345678",
+  "orderStatus": "FILLED",
+  "matchedStatus": "FULLY_MATCHED",
+  "orderCents": 0.45,
+  "orderStake": 100.0,
+  "matchedStake": 100.0,
+  "settlementStatus": "UNDECIDED",
+  "bookmakerOutcomePrice": 1.808,
+  "bookmakerOutcomeLimit": 5000.0,
+  "createdAt": "2026-02-15T10:30:00Z",
+  "matchedAt": "2026-02-15T10:30:05Z"
+}
+```
+
+## Step 4: View hedge bets
+
+See bets placed on bookmakers to hedge exchange fills:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/bets
+```
+
+Each bet is linked to an exchange order via `orderId`:
+
+```json
+{
+  "betId": 456,
+  "orderId": 123,
+  "client": "your-client",
+  "bookmaker": "vertex",
+  "bookmakerBetId": "789",
+  "placedPrice": 1.808,
+  "placedStake": 100.0,
+  "betStatus": "matched",
+  "settlementStatus": null,
+  "placedAt": "2026-02-15T10:30:08Z"
+}
+```
+
+## Step 5: Check positions
+
+View aggregated positions across all fixtures and exchanges:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions
+```
+
+Get a position summary:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions/summary
+```
+
+## Step 6: View profit & loss
+
+Get your PnL breakdown:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/pnl
+```
+
+Filter by date range:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/pnl?from_date=2026-01-01&to_date=2026-01-31"
+```
+
+## Step 7: View fixtures
+
+See which events the engine is trading on:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/fixtures
+```
+
+Filter by sport, tournament, or live status:
+
+```bash
+# Live fixtures only
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/fixtures?live=true"
+
+# Filter by tournament
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/fixtures?tournament_id=17"
+```
+
+## Step 8: List accounts
+
+View your exchange accounts (credentials are never exposed):
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/accounts
+```
+
+```json
+[
+  {
+    "exchange": "polymarket",
+    "username": "0x1234...abcd",
+    "client": "your-client",
+    "bookmaker": "vertex",
+    "balance": 50000.0,
+    "maxOutcomeStake": 1000.0,
+    "active": true
+  }
+]
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket updates" icon="bolt" href="/mm-api/websocket">
+    Get real-time order fills, hedge bets, and score updates.
+  </Card>
+
+  <Card title="API reference" icon="terminal" href="/mm-api/overview">
+    Explore all available endpoints.
+  </Card>
+</Columns>

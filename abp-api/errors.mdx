@@ -1,0 +1,161 @@
+---
+title: "ABP Error Handling"
+sidebarTitle: "Errors"
+description: "ABP API error codes, validation errors, order decline reasons, and resilience patterns. Learn how to handle errors in your integration."
+---
+
+## Error response format
+
+All API errors return a JSON body:
+
+```json
+{
+  "detail": "Unauthorized - missing or invalid API key"
+}
+```
+
+Validation errors include field-level detail:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "orders", 0, "orderStake"],
+      "msg": "Input should be greater than 0",
+      "type": "greater_than"
+    }
+  ]
+}
+```
+
+## HTTP status codes
+
+| Status | Description |
+|--------|-------------|
+| `200` | Success |
+| `201` | Resource created |
+| `204` | Resource deleted (no content) |
+| `400` | Bad request — invalid parameters |
+| `401` | Unauthorized — missing or invalid API key |
+| `403` | Forbidden — resource belongs to a different client |
+| `404` | Not found — resource does not exist |
+| `409` | Conflict — duplicate `requestUuid` already in-flight |
+| `422` | Validation error — request body failed validation |
+| `429` | Rate limited — exceeded requests per minute |
+| `500` | Internal server error |
+| `503` | Service unavailable — database or dependency down |
+
+## Order decline reasons
+
+When placing orders via `POST /place-orders`, orders that fail business validation are returned in the `declinedOrders` array (not as HTTP errors). Each declined order includes a `declineReason`:
+
+| Decline reason | Description |
+|----------------|-------------|
+| Stake exceeds limit | `orderStake` is higher than the available bookmaker limit |
+| Stake below minimum | `orderStake` is below the bookmaker's or account's minimum |
+| Invalid odds | `orderPrice` is not available or market is suspended |
+| No active accounts | No active bookmaker accounts available for this market |
+| Currency conversion failed | Could not convert between order currency and bookmaker currency |
+| Bookmaker not available | Specified bookmaker doesn't have odds for this fixture/outcome |
+| Duplicate requestUuid | This `requestUuid` is already in-flight (5-minute dedup window) |
+
+**Example declined order response:**
+
+```json
+{
+  "orders": [],
+  "declinedOrders": [
+    {
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "playerId": 0,
+      "orderStake": 15000,
+      "orderPrice": 1.80,
+      "declineReason": "Order stake 15000.00 USD exceeds available limit 5000.00 USD"
+    }
+  ]
+}
+```
+
+## Common errors
+
+### Authentication (401)
+
+Missing or invalid API key.
+
+```bash
+# Missing header
+curl https://v2.55-tech.com/accounts
+# Returns: 401 {"detail": "Unauthorized - missing or invalid API key"}
+
+# Include the header
+curl -H "X-ABP-API-KEY: your-key" https://v2.55-tech.com/accounts
+# Returns: 200
+```
+
+### Access denied (403)
+
+Attempting to access a resource that belongs to a different client.
+
+```json
+{"detail": "Access denied - account does not belong to your client"}
+```
+
+### Duplicate request (409)
+
+The `requestUuid` was already used within the last 5 minutes.
+
+```json
+{"detail": "Duplicate request - requestUuid already in-flight"}
+```
+
+### Validation error (422)
+
+Request body contains invalid data. Check the `loc` field for the problematic path:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "orders", 0, "fixtureId"],
+      "msg": "Field required",
+      "type": "missing"
+    }
+  ]
+}
+```
+
+### Rate limiting (429)
+
+Exceeded requests per minute for your API key. Default limit: 60/min.
+
+```json
+{"detail": "Rate limit exceeded"}
+```
+
+Implement exponential backoff: wait 1s, 2s, 4s, etc. before retrying.
+
+## Resilience patterns
+
+ABP implements several resilience mechanisms that may affect your integration:
+
+### Circuit breakers
+
+Per-bookmaker circuit breakers prevent cascading failures. If a bookmaker is experiencing issues, orders targeting that bookmaker may be declined until the circuit recovers.
+
+- Opens after 5 consecutive failures
+- Half-open state allows 3 test requests
+- Auto-recovers after 30 seconds
+
+### Emergency mode
+
+In rare cases, the system may enter emergency mode (triggered by data staleness or upstream failures). During emergency mode:
+
+- New orders are rejected
+- Existing pending orders may be expired
+- The `emergency` WebSocket channel broadcasts status changes
+- Recovery is automatic (soft pause) or manual (full emergency)
+
+### Order expiry
+
+Orders have a default `expiresAt` of 5 seconds from creation. If a bet hasn't been placed within this window, the order status changes to `EXPIRED`. Set a custom `expiresAt` for longer-lived orders.

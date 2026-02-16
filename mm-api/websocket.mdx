@@ -1,0 +1,315 @@
+---
+title: "MM WebSocket - Real-Time Updates"
+sidebarTitle: "WebSocket"
+description: "Connect to the MM WebSocket for real-time order fills, hedge bet updates, account balance changes, live scores, and emergency status. PostgreSQL NOTIFY-backed broadcasting."
+---
+
+## Endpoint
+
+```
+wss://mmapi.55-tech.com/ws/subscribe
+```
+
+## Connection flow
+
+### 1. Connect
+
+Open a WebSocket connection. No authentication is needed at connection time.
+
+### 2. Subscribe
+
+Send a subscribe message within **30 seconds** of connecting:
+
+```json
+{
+  "type": "subscribe",
+  "api_key": "your-uuid-api-key",
+  "channels": ["orders", "bets", "accounts", "scores", "emergency"]
+}
+```
+
+### 3. Confirmation
+
+On success, the server responds with:
+
+```json
+{
+  "type": "subscribed",
+  "subscription_id": 1,
+  "channels": ["orders", "bets", "accounts", "scores", "emergency"]
+}
+```
+
+### 4. Receive broadcasts
+
+Data updates arrive as broadcast messages with both current and previous state:
+
+```json
+{
+  "type": "broadcast",
+  "channel": "orders",
+  "event": "UPDATE",
+  "payload": {
+    "orderId": 123,
+    "orderStatus": "FILLED",
+    "matchedStake": 100.0,
+    "matchedAt": "2026-02-15T10:30:05Z"
+  },
+  "old": {
+    "orderStatus": "PLACED",
+    "matchedStake": 0
+  }
+}
+```
+
+The `old` field contains the previous state, making it easy to detect what changed.
+
+### 5. Keep alive
+
+Send a ping to keep the connection alive:
+
+```json
+{"type": "ping"}
+```
+
+Server responds with:
+
+```json
+{"type": "pong"}
+```
+
+The server also sends heartbeats every **60 seconds**:
+
+```json
+{"type": "heartbeat"}
+```
+
+### 6. Unsubscribe
+
+To stop receiving updates and clean up your subscription:
+
+```json
+{"type": "unsubscribe"}
+```
+
+## Channels
+
+### Client-filtered channels
+
+These channels only deliver data belonging to your client:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `orders` | INSERT, UPDATE | Exchange order placement, status changes, fills |
+| `bets` | INSERT, UPDATE | Hedge bet placement, confirmation, settlement |
+| `accounts` | UPDATE | Account balance and status changes |
+
+### Global channels
+
+All subscribers receive these:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `scores` | UPDATE | Live score updates (goals, sets, periods) |
+| `emergency` | UPDATE | Emergency mode activation/deactivation |
+
+## Payload examples
+
+### Order fill
+
+When an exchange order gets matched:
+
+```json
+{
+  "type": "broadcast",
+  "channel": "orders",
+  "event": "UPDATE",
+  "payload": {
+    "orderId": 123,
+    "fixtureId": "id1000000861624412",
+    "outcomeId": 161,
+    "exchange": "polymarket",
+    "exchangeOrderId": "0x1a2b3c...",
+    "orderStatus": "FILLED",
+    "matchedStatus": "FULLY_MATCHED",
+    "orderCents": 0.45,
+    "orderStake": 100.0,
+    "matchedStake": 100.0,
+    "matchedAt": "2026-02-15T10:30:05Z"
+  },
+  "old": {
+    "orderStatus": "PLACED",
+    "matchedStatus": "NOT_MATCHED",
+    "matchedStake": 0
+  }
+}
+```
+
+### Hedge bet placed
+
+After an order fills, the system automatically places a hedge bet:
+
+```json
+{
+  "type": "broadcast",
+  "channel": "bets",
+  "event": "INSERT",
+  "payload": {
+    "betId": 456,
+    "orderId": 123,
+    "client": "your-client",
+    "bookmaker": "vertex",
+    "placedPrice": 1.808,
+    "placedStake": 100.0,
+    "betStatus": "matched",
+    "sentData": {
+      "requestId": "a1b2c3d4",
+      "eventId": 98765,
+      "price": 1.808,
+      "amount": 100.0,
+      "side": "1"
+    },
+    "receivedData": {
+      "betId": "789",
+      "status": "U"
+    },
+    "placedAt": "2026-02-15T10:30:08Z"
+  }
+}
+```
+
+### Live score update
+
+```json
+{
+  "type": "broadcast",
+  "channel": "scores",
+  "event": "UPDATE",
+  "payload": {
+    "fixtureId": "id1000000861624412",
+    "live": true,
+    "statusId": 1,
+    "currentPeriod": "2nd Half",
+    "currentMinute": 67,
+    "scores": {
+      "home": 2,
+      "away": 1,
+      "period1Home": 1,
+      "period1Away": 0
+    }
+  }
+}
+```
+
+### Emergency status
+
+```json
+{
+  "type": "broadcast",
+  "channel": "emergency",
+  "event": "UPDATE",
+  "payload": {
+    "emergency": true,
+    "reason": "Manual trigger",
+    "triggeredAt": "2026-02-15T10:30:00Z"
+  }
+}
+```
+
+## Connection limits
+
+| Setting | Value |
+|---------|-------|
+| Max connections per API key | 5 |
+| Auth timeout | 30 seconds |
+| Server heartbeat interval | 60 seconds |
+| Client ping interval | 30 seconds (recommended) |
+
+## Error messages
+
+| Error | Description |
+|-------|-------------|
+| `api_key required` | Missing `api_key` field in subscribe message |
+| `Invalid api_key format` | API key must be a valid UUID |
+| `Invalid API key` | API key not found or client is inactive |
+| `Connection limit exceeded` | Already have 5 active connections for this API key |
+
+## Example: Python client
+
+```python
+import asyncio
+import json
+import websockets
+
+async def connect():
+    uri = "wss://mmapi.55-tech.com/ws/subscribe"
+    async with websockets.connect(uri) as ws:
+        # Subscribe
+        await ws.send(json.dumps({
+            "type": "subscribe",
+            "api_key": "YOUR_API_KEY",
+            "channels": ["orders", "bets", "scores"]
+        }))
+
+        # Wait for confirmation
+        sub_resp = json.loads(await ws.recv())
+        print(f"Subscribed (id={sub_resp.get('subscription_id')})")
+
+        # Keep-alive task
+        async def keep_alive():
+            while True:
+                await asyncio.sleep(30)
+                await ws.send(json.dumps({"type": "ping"}))
+
+        asyncio.create_task(keep_alive())
+
+        # Listen for updates
+        async for message in ws:
+            data = json.loads(message)
+            if data["type"] == "broadcast":
+                channel = data["channel"]
+                event = data["event"]
+                print(f"[{channel}:{event}] {data['payload']}")
+                if "old" in data:
+                    print(f"  Changed from: {data['old']}")
+
+asyncio.run(connect())
+```
+
+## Example: JavaScript client
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://mmapi.55-tech.com/ws/subscribe');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    type: 'subscribe',
+    api_key: 'YOUR_API_KEY',
+    channels: ['orders', 'bets', 'scores']
+  }));
+});
+
+ws.on('message', (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === 'subscribed') {
+    console.log(`Subscribed (id=${msg.subscription_id})`);
+  }
+
+  if (msg.type === 'broadcast') {
+    console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
+    if (msg.old) {
+      console.log('  Changed from:', msg.old);
+    }
+  }
+});
+
+// Keep alive
+setInterval(() => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'ping' }));
+  }
+}, 30000);
+```

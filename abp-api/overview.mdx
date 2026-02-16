@@ -1,0 +1,130 @@
+---
+title: "ABP API Overview - Automated Bet Placing"
+sidebarTitle: "Overview"
+description: "ABP v2 API overview. Place bets across 30+ bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
+---
+
+## What is ABP?
+
+The **Automated Bet Placing (ABP)** API lets you place bets across 30+ bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
+
+**Core capabilities:**
+
+- **Account management** — Configure multiple bookmaker accounts per bookmaker with priority-based selection, per-account stake limits, and multi-currency support
+- **Betslip retrieval** — Get real-time odds and limits for any fixture/outcome across all configured bookmakers before placing
+- **Smart order routing** — Place single or bulk orders with four placement modes: single strict, single fill, multi parallel, and multi sequential
+- **Bet tracking** — Monitor every bet from placement through confirmation and settlement with full audit trail
+- **Position & PnL analytics** — Aggregated views of exposure and profit/loss across all bookmakers and fixtures
+
+## Base URL
+
+```
+https://v2.55-tech.com
+```
+
+## Key concepts
+
+### Orders vs bets
+
+An **order** is your instruction to place a bet. A **bet** is the actual wager placed on a bookmaker. One order can result in multiple bets when using partial fills or multi-bookmaker routing.
+
+### Order placement modes
+
+| Mode | Bookmakers | Partial Stake | Behavior |
+|------|------------|---|---|
+| **Single strict** | 1 | No | All-or-nothing at `orderPrice` or better |
+| **Single fill** | 1 | Yes | Fill via multiple bets, weighted average >= `orderPrice` |
+| **Multi parallel** | Many | No | One bet per bookmaker, placed in parallel |
+| **Multi sequential** | Many | Yes | Best price first, exhaust each bookmaker before next |
+
+### Order lifecycle
+
+```
+PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANCELLED / FAILED
+```
+
+- **PENDING** — Order received and queued
+- **PROCESSING** — Routing to bookmakers
+- **FILLED** — All stake placed successfully
+- **PARTIALLY_FILLED** — Some stake placed, remaining expired or no capacity
+- **REJECTED** — Failed validation (bad odds, invalid fixture, etc.)
+- **EXPIRED** — Order `expiresAt` time reached (default: 5 seconds)
+- **CANCELLED** — Explicitly cancelled by client
+
+### Bet lifecycle
+
+```
+PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
+```
+
+### Settlement lifecycle
+
+```
+UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
+```
+
+- **Half won / Half lost** — Asian handicap partial results
+- **Push** — Stake returned (tie on the line)
+- **Cashout** — Early withdrawal at negotiated price
+
+### Account priority
+
+Each bookmaker account has a `priority` field (higher = preferred). When placing an order, ABP selects the highest-priority active account first for each bookmaker.
+
+### Bookmaker slugs
+
+Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair_ex`, `sbobet`, `polymarket`). Use `GET /bookmakers` to list all 30+ supported bookmakers.
+
+### Request deduplication
+
+Each order requires a unique `requestUuid`. ABP uses Valkey-backed deduplication (5-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
+
+## Endpoints at a glance
+
+| Category | Endpoints | Description |
+|----------|-----------|-------------|
+| **Accounts** | `GET/POST/PATCH/DELETE /accounts` | Manage bookmaker accounts (credentials, balances, priority, limits) |
+| **Betslip** | `GET /betslip` | Get live odds & limits before placing |
+| **Orders** | `POST /place-orders`, `GET /orders` | Place and track orders |
+| **Bets** | `GET /bets` | View individual bet results |
+| **Settlements** | `GET /settlements` | View settlement history |
+| **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
+| **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
+| **Currencies** | `GET /currencies` | Available currencies and exchange rates |
+| **Health** | `GET /health`, `GET /ready`, `GET /status` | System health and readiness |
+| **WebSocket** | `WS /ws` | Real-time updates |
+
+## Supported bookmakers
+
+**Traditional sportsbooks:** pinnacle, pinnacleb2b, bet365, betcris, bookmaker_eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline_vip, novig_us, one98bet, paradisewager, sharpbet, singbet, sports411_ag, threeet, threeetpp
+
+**Betting exchanges:** betfair_ex, smarkets
+
+**Prediction markets:** polymarket, polymarket_us, kalshi, predict_fun, prophetx, sx_bet, vertex, fourcasters
+
+**Punter platforms:** punter_io, punter_iopp
+
+## Resilience
+
+ABP includes production-grade reliability features:
+
+- **Circuit breakers** — Per-bookmaker circuit breakers prevent cascading failures (opens after 5 consecutive failures, half-open after 30s)
+- **Retry with exponential backoff** — 3 attempts with 100ms → 5s delays
+- **Emergency controls** — Two-tier system: soft pause (auto-recovery) and full emergency (manual resume)
+- **Rate limiting** — Per-API-key rate limits (configurable per client)
+
+## Data source
+
+ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). Fixture IDs and outcome IDs in ABP correspond directly to OddsPapi identifiers.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/abp-api/authentication">
+    Set up your API key.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/abp-api/quickstart">
+    Place your first bet in 5 steps.
+  </Card>
+</Columns>

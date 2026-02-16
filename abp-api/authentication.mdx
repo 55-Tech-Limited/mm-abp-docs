@@ -1,0 +1,77 @@
+---
+title: "ABP Authentication - API Key Setup"
+sidebarTitle: "Authentication"
+description: "Learn how to authenticate ABP API requests using the X-ABP-API-KEY header. API key resolution, rate limiting, and WebSocket authentication."
+---
+
+All ABP endpoints require authentication via the `X-ABP-API-KEY` header, except for health and monitoring endpoints.
+
+## How to authenticate
+
+Pass your API key in the `X-ABP-API-KEY` request header:
+
+```bash
+curl -H "X-ABP-API-KEY: your-api-key" \
+  https://v2.55-tech.com/accounts
+```
+
+## API key metadata
+
+Each API key is associated with:
+
+| Field | Description |
+|-------|-------------|
+| `clientName` | Your client identifier (used for filtering data) |
+| `bookmakers` | Allowed bookmaker slugs (empty = all) |
+| `rateLimit` | Requests per minute (default: 60) |
+| `isAdmin` | Whether this key has admin access |
+| `enabled` | Whether this key is active |
+
+Your API key determines which accounts, orders, and bets you can access. All data is filtered by your `clientName`.
+
+## Public endpoints (no auth required)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /health` | Basic health check (Kubernetes liveness) |
+| `GET /ready` | Readiness check (Kubernetes readiness) |
+| `GET /status` | Full system status |
+| `GET /metrics` | Prometheus metrics |
+
+## WebSocket authentication
+
+For WebSocket connections, authenticate via the login message after connecting:
+
+```json
+{
+  "type": "login",
+  "apiKey": "your-api-key",
+  "channels": []
+}
+```
+
+You must send the login message within **30 seconds** of connecting, or the connection is closed. See [WebSocket](/abp-api/websocket) for details.
+
+## Rate limiting
+
+Rate limits are enforced per API key using a Valkey-backed sliding window.
+
+- **Default:** 60 requests per minute
+- **Exceeded:** Returns `429 Too Many Requests`
+- **WebSocket:** Maximum 5 concurrent connections per API key
+
+Implement exponential backoff when receiving `429` responses.
+
+## Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing or invalid API key |
+| `403` | Access denied — resource belongs to a different client |
+| `429` | Rate limit exceeded |
+
+```json
+{
+  "detail": "Unauthorized - missing or invalid API key"
+}
+```

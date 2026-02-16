@@ -1,0 +1,135 @@
+---
+title: "MM Error Handling"
+sidebarTitle: "Errors"
+description: "MM API error codes, HTTP status codes, error response format, and emergency mode behavior."
+---
+
+## Error response format
+
+All API errors return a JSON body:
+
+```json
+{
+  "detail": "Invalid or missing API key"
+}
+```
+
+Validation errors include location details:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["query", "fixture_id"],
+      "msg": "Field required",
+      "type": "missing"
+    }
+  ]
+}
+```
+
+## HTTP status codes
+
+| Status | Description |
+|--------|-------------|
+| `200` | Success |
+| `401` | Unauthorized — invalid or missing API key (must be valid UUID) |
+| `404` | Not found — resource does not exist |
+| `422` | Validation error — request parameters failed validation |
+| `426` | Upgrade required — WebSocket endpoint called via HTTP |
+| `429` | Rate limited — exceeded 100 requests/minute |
+| `500` | Internal server error |
+
+## Rate limiting
+
+The MM API enforces **100 requests/minute** per client API key.
+
+When rate limited, the API returns `429 Too Many Requests`. Implement exponential backoff in your retry logic (wait 1s, 2s, 4s, etc.).
+
+## Common errors
+
+### Authentication (401)
+
+Your API key is missing, invalid, or not in UUID format.
+
+```bash
+# Correct
+curl -H "X-API-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# Wrong header name — returns 401
+curl -H "Authorization: Bearer your-key" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# Missing header — returns 401
+curl https://mmapi.55-tech.com/api/v1/me
+```
+
+### Not found (404)
+
+The requested resource doesn't exist:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/999999
+# Returns: 404
+```
+
+### Validation errors (422)
+
+Required query parameters are missing or have invalid values. Check the `loc` field to identify the problematic parameter.
+
+### WebSocket upgrade (426)
+
+If you call the WebSocket endpoint via HTTP instead of upgrading to a WebSocket connection, you receive a `426 Upgrade Required`.
+
+## WebSocket errors
+
+When subscribing to the WebSocket, these error messages may be returned:
+
+| Error | Description |
+|-------|-------------|
+| `api_key required` | No `api_key` field in subscribe message |
+| `Invalid api_key format` | Not a valid UUID |
+| `Invalid API key` | Key not found or client inactive |
+| `Connection limit exceeded` | Already at 5 active connections for this key |
+
+## Emergency mode
+
+The MM engine has a two-tier emergency system that can affect API behavior:
+
+### Full emergency
+
+Triggered manually via `POST /emergency/trigger` or automatically when critical thresholds are exceeded (e.g., OddsPapi disconnection for >30 seconds).
+
+**Impact:**
+- All open exchange orders are cancelled immediately
+- No new orders are placed
+- Existing data remains accessible via the API
+- Requires manual `POST /emergency/resume` to restart
+
+### Soft pause
+
+Triggered automatically by data staleness (>5 seconds) or message processing lag (>30 seconds).
+
+**Impact:**
+- No new orders are placed
+- Existing orders remain active
+- Auto-recovers when conditions clear
+- Does not require manual intervention
+
+### Checking emergency status
+
+```bash
+curl https://mmapi.55-tech.com/emergency/status
+```
+
+```json
+{
+  "emergency": false,
+  "paused": false,
+  "reason": null
+}
+```
+
+Subscribe to the `emergency` WebSocket channel for real-time status updates.

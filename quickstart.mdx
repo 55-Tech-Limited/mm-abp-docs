@@ -1,80 +1,108 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quickstart - Connect to 55-Tech APIs"
+sidebarTitle: "Quickstart"
+description: "Get started with the 55-Tech ABP and MM APIs. Check connectivity, authenticate, and make your first API calls."
 ---
 
-## Get started in three steps
+## Prerequisites
 
-Get your documentation site running locally and make your first customization.
+You need an API key for the platform you want to use. Contact [support@55-tech.com](mailto:support@55-tech.com) to get your key.
 
-### Step 1: Set up your local environment
+| Platform | Auth Header | Base URL |
+|----------|------------|----------|
+| ABP (Automated Bet Placing) | `X-ABP-API-KEY` | `https://v2.55-tech.com` |
+| MM (Market Making) | `X-API-Key` | `https://mmapi.55-tech.com` |
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+---
 
-### Step 2: Deploy your changes
+## ABP — Automated Bet Placing
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+### 1. Check connectivity
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```bash
+curl https://v2.55-tech.com/health
+```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+### 2. List your accounts
 
-### Step 3: Go live
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/accounts
+```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+### 3. Get a betslip (live odds)
 
-## Next steps
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=ID&outcomeId=161&playerId=0"
+```
 
-Now that you have your docs running, explore these key features:
+### 4. Place an order
 
-<CardGroup cols={2}>
+```bash
+curl -X POST -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"orders": [{"fixtureId": "...", "outcomeId": 161, "playerId": 0, "stake": 10, "minPrice": 1.5}]}' \
+  https://v2.55-tech.com/place-orders
+```
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+### 5. Track results
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/orders
+```
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+---
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+## MM — Market Making
 
-</CardGroup>
+### 1. Check connectivity
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+```bash
+curl https://mmapi.55-tech.com/health
+```
+
+### 2. Verify your identity
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+### 3. List your orders
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders
+```
+
+### 4. Check positions
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions
+```
+
+### 5. View profit & loss
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/pnl
+```
+
+---
+
+## Real-time updates
+
+Both APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
+
+<Columns cols={2}>
+  <Card title="ABP WebSocket" icon="bolt" href="/abp-api/websocket">
+    Real-time order, bet, and settlement updates.
+  </Card>
+
+  <Card title="MM WebSocket" icon="bolt" href="/mm-api/websocket">
+    Live order fills, bets, and score updates.
+  </Card>
+</Columns>

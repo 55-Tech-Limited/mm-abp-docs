@@ -1,0 +1,296 @@
+---
+title: "ABP WebSocket - Real-Time Updates"
+sidebarTitle: "WebSocket"
+description: "Connect to the ABP WebSocket for real-time order, bet, settlement, account, and system updates. PostgreSQL NOTIFY-backed with message ordering and reliable delivery."
+---
+
+## Endpoint
+
+```
+wss://v2.55-tech.com/ws
+```
+
+## Connection flow
+
+### 1. Connect
+
+Open a WebSocket connection. No authentication is needed at connection time.
+
+### 2. Login
+
+Send a login message within **30 seconds** of connecting:
+
+```json
+{
+  "type": "login",
+  "apiKey": "your-api-key",
+  "channels": []
+}
+```
+
+An empty `channels` array subscribes to all available channels. To subscribe to specific channels:
+
+```json
+{
+  "type": "login",
+  "apiKey": "your-api-key",
+  "channels": ["orders", "bets", "settlements"]
+}
+```
+
+### 3. Login confirmation
+
+On success, the server responds with:
+
+```json
+{
+  "type": "login_ok",
+  "clientName": "your-client",
+  "channels": ["orders", "bets", "settlements"],
+  "subscriptionId": 1,
+  "access": {
+    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance"],
+    "global": ["fixtures", "currencies", "status", "emergency"]
+  },
+  "features": {
+    "messageOrdering": true,
+    "acknowledgments": false,
+    "batchAck": false
+  }
+}
+```
+
+### 4. Receive updates
+
+Data messages follow this format:
+
+```json
+{
+  "type": "data",
+  "channel": "orders",
+  "event": "INSERT",
+  "payload": { ... },
+  "ts": 1771183909789,
+  "seq": 1
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Always `"data"` for data messages |
+| `channel` | Which channel this message belongs to |
+| `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `STATUS_CHANGE`, `SETTLED` |
+| `payload` | The full updated object |
+| `ts` | Server timestamp (milliseconds since epoch) |
+| `seq` | Sequence number for message ordering |
+
+### 5. Keep alive
+
+Send a ping every **30 seconds**:
+
+```json
+{"type": "ping"}
+```
+
+The server responds with:
+
+```json
+{"type": "pong"}
+```
+
+The server also sends heartbeats every **60 seconds**:
+
+```json
+{"type": "heartbeat", "ts": 1771183909789}
+```
+
+## Channels
+
+### Client-filtered channels
+
+These channels only deliver data belonging to your `clientName`:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `orders` | INSERT, UPDATE, STATUS_CHANGE | Order placement, fills, status changes |
+| `bets` | INSERT, UPDATE, SETTLED | Bet placement, confirmation, settlement |
+| `settlements` | UPDATE | Settlement status updates |
+| `accounts` | UPDATE | Account balance and status changes |
+| `balance` | UPDATE | Balance change notifications |
+
+### Global channels
+
+All subscribers receive these:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `fixtures` | UPDATE | Fixture metadata and score changes |
+| `currencies` | UPDATE | Currency exchange rate updates |
+| `status` | UPDATE | System status changes |
+| `emergency` | UPDATE | Emergency mode activation/deactivation |
+
+## Payload examples
+
+### Order update
+
+```json
+{
+  "type": "data",
+  "channel": "orders",
+  "event": "STATUS_CHANGE",
+  "payload": {
+    "orderId": 12345,
+    "requestUuid": "eb45b192-358b-32d5-9f65-af497b9fa8c1",
+    "clientName": "your-client",
+    "fixtureId": "id1000000861624412",
+    "outcomeId": 161,
+    "playerId": 0,
+    "orderPrice": 1.80,
+    "orderStake": 50,
+    "filledStake": 50,
+    "remainingStake": 0,
+    "orderStatus": "FILLED",
+    "userRef": "my-strategy-1",
+    "testOrder": false,
+    "acceptBetterOdds": true,
+    "acceptPartialStake": true,
+    "orderCurrency": "USD",
+    "back": true,
+    "createdAt": "2026-02-15T19:31:49.778Z",
+    "expiresAt": "2026-02-15T19:31:54.759Z"
+  },
+  "ts": 1771183909789,
+  "seq": 42
+}
+```
+
+### Bet confirmation
+
+```json
+{
+  "type": "data",
+  "channel": "bets",
+  "event": "UPDATE",
+  "payload": {
+    "betId": 1,
+    "orderId": 12345,
+    "bookmaker": "pinnacle",
+    "bookmakerBetId": "3587791057",
+    "placedStake": 50,
+    "placedPrice": 1.85,
+    "placedCurrency": "USD",
+    "betStatus": "CONFIRMED",
+    "settlementStatus": "UNSETTLED",
+    "account": "your-username",
+    "userRef": "my-strategy-1",
+    "testBet": false,
+    "placedAt": "2026-02-15T19:31:50+00:00"
+  },
+  "ts": 1771183910123,
+  "seq": 43
+}
+```
+
+### Bet settlement
+
+```json
+{
+  "type": "data",
+  "channel": "bets",
+  "event": "SETTLED",
+  "payload": {
+    "betId": 1,
+    "orderId": 12345,
+    "bookmaker": "pinnacle",
+    "betStatus": "CONFIRMED",
+    "settlementStatus": "WON",
+    "settlementAmount": 92.50,
+    "settledAt": "2026-02-15T21:45:00+00:00"
+  },
+  "ts": 1771191900456,
+  "seq": 89
+}
+```
+
+## Connection limits
+
+| Setting | Value |
+|---------|-------|
+| Max connections per API key | 5 |
+| Auth timeout | 30 seconds |
+| Server heartbeat interval | 60 seconds |
+| Client ping interval | 30 seconds (recommended) |
+| Message buffer size | 100 per subscription |
+
+## Example: Python client
+
+```python
+import asyncio
+import json
+import websockets
+
+async def connect():
+    uri = "wss://v2.55-tech.com/ws"
+    async with websockets.connect(uri) as ws:
+        # Login
+        await ws.send(json.dumps({
+            "type": "login",
+            "apiKey": "YOUR_API_KEY",
+            "channels": ["orders", "bets", "settlements"]
+        }))
+
+        # Wait for login confirmation
+        login_resp = json.loads(await ws.recv())
+        print(f"Logged in as {login_resp.get('clientName')}")
+
+        # Keep-alive task
+        async def keep_alive():
+            while True:
+                await asyncio.sleep(30)
+                await ws.send(json.dumps({"type": "ping"}))
+
+        asyncio.create_task(keep_alive())
+
+        # Listen for updates
+        async for message in ws:
+            data = json.loads(message)
+            if data["type"] == "data":
+                print(f"[{data['channel']}:{data['event']}] {data['payload']}")
+
+asyncio.run(connect())
+```
+
+## Example: JavaScript client
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://v2.55-tech.com/ws');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    type: 'login',
+    apiKey: 'YOUR_API_KEY',
+    channels: ['orders', 'bets', 'settlements']
+  }));
+});
+
+ws.on('message', (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === 'login_ok') {
+    console.log(`Logged in as ${msg.clientName}`);
+  }
+
+  if (msg.type === 'data') {
+    console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
+  }
+});
+
+// Keep alive
+setInterval(() => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'ping' }));
+  }
+}, 30000);
+```

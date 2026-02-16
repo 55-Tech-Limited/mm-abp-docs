@@ -1,0 +1,83 @@
+---
+title: "MM Authentication - API Key Setup"
+sidebarTitle: "Authentication"
+description: "Learn how to authenticate MM API requests using the X-API-Key header (UUID). Client API, admin API, and WebSocket authentication."
+---
+
+The MM API has three authentication tiers:
+
+1. **Client API** — `X-API-Key` header (UUID) for trading data access
+2. **Admin API** — `X-Admin-Key` header for emergency controls
+3. **Public** — No auth for health/monitoring endpoints
+
+## Client API authentication
+
+Pass your API key (UUID format) in the `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+Your API key is bound to a specific `client` entity. All data returned is filtered to your client — you only see your own orders, bets, and positions.
+
+## Admin API authentication
+
+Emergency control endpoints require the `X-Admin-Key` header:
+
+```bash
+curl -X POST -H "X-Admin-Key: your-admin-key" \
+  https://mmapi.55-tech.com/emergency/pause
+```
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /emergency/trigger` | Full emergency — cancel all orders |
+| `POST /emergency/pause` | Soft pause — stop new orders |
+| `POST /emergency/resume` | Resume trading |
+
+## Public endpoints (no auth required)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /health` | Basic health check (Kubernetes liveness) |
+| `GET /ready` | Readiness check (Kubernetes readiness) |
+| `GET /status` | Full system status |
+| `GET /status/subscriptions` | Active WebSocket subscriptions |
+| `GET /status/latency` | Latency metrics |
+| `GET /metrics` | Prometheus metrics (text/plain) |
+| `GET /config` | Current configuration |
+| `GET /emergency/status` | Emergency mode status |
+
+## WebSocket authentication
+
+For WebSocket connections, send your API key in the subscribe message:
+
+```json
+{
+  "type": "subscribe",
+  "api_key": "550e8400-e29b-41d4-a716-446655440000",
+  "channels": ["orders", "bets", "accounts", "scores"]
+}
+```
+
+You must send the subscribe message within **30 seconds** of connecting, or the connection is closed. See [WebSocket](/mm-api/websocket) for details.
+
+## Rate limiting
+
+Rate limits are enforced per client:
+
+- **REST API:** 100 requests per minute
+- **WebSocket:** Maximum 5 concurrent connections per API key
+- **Exceeded:** Returns `429 Too Many Requests`
+
+## Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Invalid or missing API key (must be valid UUID) |
+| `429` | Rate limit exceeded |
+
+```json
+{"detail": "Invalid or missing API key"}
+```

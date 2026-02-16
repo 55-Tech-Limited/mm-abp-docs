@@ -1,0 +1,225 @@
+---
+title: "ABP Quickstart - Place Your First Bet"
+sidebarTitle: "Quickstart"
+description: "Step-by-step guide to placing your first bet through the ABP API. From health check to order placement, tracking, and settlement."
+---
+
+## Step 1: Check connectivity
+
+Verify the API is reachable:
+
+```bash
+curl https://v2.55-tech.com/health
+```
+
+Expected response:
+
+```json
+{"status": "ok"}
+```
+
+## Step 2: List your accounts
+
+Check which bookmaker accounts are configured for your API key:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/accounts
+```
+
+Response includes each account's bookmaker, balance, priority, stake limits, and currency:
+
+```json
+[
+  {
+    "client": "your-client",
+    "bookmaker": "pinnacle",
+    "username": "your-username",
+    "balance": 5000.00,
+    "active": true,
+    "priority": 10,
+    "maxStake": 1000.00,
+    "minStake": 5.00,
+    "currencyId": "USD"
+  }
+]
+```
+
+## Step 3: Get a betslip
+
+Before placing a bet, retrieve current odds and limits:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=YOUR_FIXTURE_ID&outcomeId=161&playerId=0"
+```
+
+The betslip returns live odds from every bookmaker that has this market:
+
+```json
+{
+  "pinnacle": {
+    "price": 1.85,
+    "limit": 5000.00,
+    "limitMin": 5.00,
+    "limitCurrency": "USD",
+    "active": true,
+    "bookmakerFixtureId": "123456",
+    "bookmakerMarketId": "789",
+    "bookmakerOutcomeId": "1"
+  },
+  "betfair_ex": {
+    "price": 1.88,
+    "limit": 2000.00,
+    "limitMin": 2.00,
+    "limitCurrency": "GBP",
+    "active": true
+  }
+}
+```
+
+<Note>
+Use the [OddsPapi API](https://docs.oddspapi.io/) to discover fixture IDs and outcome IDs. ABP uses OddsPapi identifiers directly.
+</Note>
+
+## Step 4: Place an order
+
+Place a bet order with minimum price protection:
+
+```bash
+curl -X POST \
+  -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orders": [
+      {
+        "fixtureId": "id1000000861624412",
+        "outcomeId": 161,
+        "playerId": 0,
+        "orderStake": 50,
+        "orderPrice": 1.80,
+        "orderCurrency": "USD",
+        "userRef": "my-strategy-1",
+        "acceptBetterOdds": true,
+        "acceptPartialStake": true,
+        "back": true,
+        "testOrder": false
+      }
+    ]
+  }' \
+  https://v2.55-tech.com/place-orders
+```
+
+**Key fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `fixtureId` | Yes | OddsPapi fixture ID |
+| `outcomeId` | Yes | Market outcome (e.g., 161 = home win) |
+| `playerId` | Yes | Set to `0` for non-player-prop markets |
+| `orderStake` | Yes | Total amount to wager |
+| `orderPrice` | Yes | Minimum acceptable decimal odds |
+| `orderCurrency` | Yes | Currency code (e.g., `USD`) |
+| `userRef` | No | Your reference for grouping related orders |
+| `acceptBetterOdds` | No | Accept odds better than `orderPrice` (default: true) |
+| `acceptPartialStake` | No | Allow partial fills across multiple bets (default: true) |
+| `back` | No | Back bet (true) or lay bet (false) (default: true) |
+| `testOrder` | No | Validate only, don't actually place (default: false) |
+| `expiresAt` | No | ISO 8601 expiry time (default: 5 seconds from now) |
+
+**Response:**
+
+```json
+{
+  "orders": [
+    {
+      "orderId": 12345,
+      "requestUuid": "eb45b192-358b-32d5-9f65-af497b9fa8c1",
+      "orderStatus": "PENDING",
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "orderStake": 50,
+      "orderPrice": 1.80,
+      "filledStake": 0,
+      "bets": []
+    }
+  ],
+  "declinedOrders": []
+}
+```
+
+Orders that fail validation appear in `declinedOrders` with a `declineReason`:
+
+```json
+{
+  "declinedOrders": [
+    {
+      "fixtureId": "...",
+      "outcomeId": 161,
+      "declineReason": "Order stake 150.00 USD exceeds available limit 100.00 USD"
+    }
+  ]
+}
+```
+
+## Step 5: Track your order
+
+Check order status:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/orders
+```
+
+View individual bets placed for your orders:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/bets
+```
+
+Each bet includes the bookmaker, placed price, placed stake, bet status, and settlement status:
+
+```json
+{
+  "betId": 1,
+  "orderId": 12345,
+  "bookmaker": "pinnacle",
+  "bookmakerBetId": "3587791057",
+  "placedStake": 50.00,
+  "placedPrice": 1.85,
+  "placedCurrency": "USD",
+  "betStatus": "CONFIRMED",
+  "settlementStatus": "UNSETTLED",
+  "account": "your-username",
+  "userRef": "my-strategy-1"
+}
+```
+
+## Step 6: Check positions & PnL
+
+View your aggregated exposure:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/positions
+```
+
+View profit and loss:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/pnl
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket updates" icon="bolt" href="/abp-api/websocket">
+    Get real-time order, bet, and settlement updates.
+  </Card>
+
+  <Card title="API reference" icon="terminal" href="/abp-api/overview">
+    Explore all available endpoints.
+  </Card>
+</Columns>
