@@ -34,23 +34,11 @@ Position & PnL tracking
 
 ### Order pricing
 
-The engine converts bookmaker decimal odds to exchange probability prices:
-
-- Bookmaker price of **1.808** = 55.3% probability
-- Exchange order posted at the **opposite side** (e.g., 44.7 cents = NO position)
-- Price ticks adjust per-tournament configuration (±0.01 per tick)
-- Order size = bookmaker limit × `limitRatio` (default 0.8)
+The engine converts bookmaker odds to exchange probability prices and posts orders accordingly. Price ticks and order sizing are configured per-tournament.
 
 ### Hedging
 
-When an exchange order fills:
-1. Acquire per-outcome lock (prevent race conditions)
-2. Calculate hedge stake (1:1 with fill amount)
-3. Place hedge bet on the assigned bookmaker (Vertex, Pinnacle, or demo)
-4. Wait 3 seconds for odds propagation
-5. Repost the filled amount back on the exchange
-
-Minimum hedge threshold: $10 (configurable per bookmaker).
+When an exchange order fills, the engine automatically hedges by placing a corresponding bet on the assigned bookmaker. The process handles concurrent fills safely and reposts filled amounts back on the exchange to maintain market presence.
 
 ## Base URL
 
@@ -131,39 +119,11 @@ These cover 1x2 markets, over/under, handicap, correct score, and both sides.
 | **Positions** | `GET /api/v1/positions/summary` | Position summary |
 | **Accounts** | `GET /api/v1/accounts` | List exchange accounts (no credentials) |
 
-### Admin API (`X-Admin-Key` auth)
-
-| Category | Endpoints | Description |
-|----------|-----------|-------------|
-| **Emergency** | `POST /emergency/trigger` | Cancel ALL orders immediately |
-| **Emergency** | `POST /emergency/pause` | Pause trading (no cancellation) |
-| **Emergency** | `POST /emergency/resume` | Resume after pause/emergency |
-| **Emergency** | `GET /emergency/status` | Check emergency state |
-
-### Monitoring (no auth)
-
-| Category | Endpoints | Description |
-|----------|-----------|-------------|
-| **Health** | `GET /health` | Kubernetes liveness |
-| **Health** | `GET /ready` | Kubernetes readiness |
-| **Status** | `GET /status` | Full system status |
-| **Status** | `GET /status/subscriptions` | Active WebSocket subscriptions |
-| **Status** | `GET /status/latency` | Latency metrics |
-| **Metrics** | `GET /metrics` | Prometheus metrics |
-| **Config** | `GET /config` | Current configuration |
-
 ### WebSocket
 
 | Endpoint | Description |
 |----------|-------------|
 | `WS /ws/subscribe` | Real-time order, bet, account, score, and emergency updates |
-
-## Emergency controls
-
-The system has a two-tier emergency mechanism:
-
-- **Full emergency** — Manually triggered, cancels ALL open orders, requires manual `/emergency/resume` to restart
-- **Soft pause** — Auto-triggered by data staleness (>5s) or message lag (>30s), stops new orders but keeps existing ones, auto-recovers when conditions clear
 
 ## Rate limits
 

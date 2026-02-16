@@ -1,19 +1,19 @@
 ---
-title: "ABP Quickstart - Place Your First Bet"
-sidebarTitle: "Quickstart"
-description: "Step-by-step guide to placing your first bet through the ABP API. From account setup to order placement, tracking, and settlement."
+title: "ABP 快速入门 - 下您的第一注"
+sidebarTitle: "快速入门"
+description: "通过 ABP API 下您第一注的分步指南。从账户设置到下单、跟踪和结算。"
 ---
 
-## Step 1: List your accounts
+## 步骤1：列出您的账户
 
-Check which bookmaker accounts are configured for your API key:
+检查为您的API密钥配置了哪些博彩公司账户：
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
-Response includes each account's bookmaker, balance, priority, stake limits, and currency:
+响应包括每个账户的博彩公司、余额、优先级、投注限额和货币：
 
 ```json
 [
@@ -31,16 +31,16 @@ Response includes each account's bookmaker, balance, priority, stake limits, and
 ]
 ```
 
-## Step 2: Get a betslip
+## 步骤2：获取投注单
 
-Before placing a bet, retrieve current odds and limits:
+下注前，获取当前赔率和限额：
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   "https://v2.55-tech.com/betslip?fixtureId=YOUR_FIXTURE_ID&outcomeId=161&playerId=0"
 ```
 
-The betslip returns live odds from every bookmaker that has this market:
+投注单返回每个有此市场的博彩公司的实时赔率：
 
 ```json
 {
@@ -65,12 +65,12 @@ The betslip returns live odds from every bookmaker that has this market:
 ```
 
 <Note>
-Use the [OddsPapi API](https://docs.oddspapi.io/) to discover fixture IDs and outcome IDs. ABP uses OddsPapi identifiers directly.
+使用 [OddsPapi API](https://docs.oddspapi.io/) 查找赛事ID和结果ID。ABP 直接使用 OddsPapi 标识符。
 </Note>
 
-## Step 3: Place an order
+## 步骤3：下单
 
-Place a bet order with minimum price protection:
+下一个带最低价格保护的投注订单：
 
 ```bash
 curl -X POST \
@@ -96,24 +96,24 @@ curl -X POST \
   https://v2.55-tech.com/place-orders
 ```
 
-**Key fields:**
+**关键字段：**
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `fixtureId` | Yes | OddsPapi fixture ID |
-| `outcomeId` | Yes | Market outcome (e.g., 161 = home win) |
-| `playerId` | Yes | Set to `0` for non-player-prop markets |
-| `orderStake` | Yes | Total amount to wager |
-| `orderPrice` | Yes | Minimum acceptable decimal odds |
-| `orderCurrency` | Yes | Currency code (e.g., `USD`) |
-| `userRef` | No | Your reference for grouping related orders |
-| `acceptBetterOdds` | No | Accept odds better than `orderPrice` (default: true) |
-| `acceptPartialStake` | No | Allow partial fills across multiple bets (default: true) |
-| `back` | No | Back bet (true) or lay bet (false) (default: true) |
-| `testOrder` | No | Validate only, don't actually place (default: false) |
-| `expiresAt` | No | ISO 8601 expiry time (default: 5 seconds from now) |
+| 字段 | 必填 | 描述 |
+|------|------|------|
+| `fixtureId` | 是 | OddsPapi 赛事ID |
+| `outcomeId` | 是 | 市场结果（例如 161 = 主胜） |
+| `playerId` | 是 | 非球员盘设为 `0` |
+| `orderStake` | 是 | 总投注金额 |
+| `orderPrice` | 是 | 最低可接受十进制赔率 |
+| `orderCurrency` | 是 | 货币代码（例如 `USD`） |
+| `userRef` | 否 | 用于分组相关订单的引用 |
+| `acceptBetterOdds` | 否 | 接受优于 `orderPrice` 的赔率（默认：true） |
+| `acceptPartialStake` | 否 | 允许跨多个投注的部分成交（默认：true） |
+| `back` | 否 | 买入注（true）或卖出注（false）（默认：true） |
+| `testOrder` | 否 | 仅验证，不实际下注（默认：false） |
+| `expiresAt` | 否 | ISO 8601 过期时间（默认：从现在起5秒） |
 
-**Response:**
+**响应：**
 
 ```json
 {
@@ -134,7 +134,7 @@ curl -X POST \
 }
 ```
 
-Orders that fail validation appear in `declinedOrders` with a `declineReason`:
+验证失败的订单会出现在 `declinedOrders` 中，并包含 `declineReason`：
 
 ```json
 {
@@ -148,23 +148,23 @@ Orders that fail validation appear in `declinedOrders` with a `declineReason`:
 }
 ```
 
-## Step 4: Track your order
+## 步骤4：跟踪您的订单
 
-Check order status:
+检查订单状态：
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   https://v2.55-tech.com/orders
 ```
 
-View individual bets placed for your orders:
+查看为您的订单下的单个投注：
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   https://v2.55-tech.com/bets
 ```
 
-Each bet includes the bookmaker, placed price, placed stake, bet status, and settlement status:
+每个投注包括博彩公司、下注价格、下注金额、投注状态和结算状态：
 
 ```json
 {
@@ -182,30 +182,30 @@ Each bet includes the bookmaker, placed price, placed stake, bet status, and set
 }
 ```
 
-## Step 5: Check positions & PnL
+## 步骤5：查看持仓和盈亏
 
-View your aggregated exposure:
+查看您的汇总敞口：
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   https://v2.55-tech.com/positions
 ```
 
-View profit and loss:
+查看盈亏：
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   https://v2.55-tech.com/pnl
 ```
 
-## Next steps
+## 下一步
 
 <Columns cols={2}>
-  <Card title="WebSocket updates" icon="bolt" href="/abp-api/websocket">
-    Get real-time order, bet, and settlement updates.
+  <Card title="WebSocket 更新" icon="bolt" href="/zh/abp-api/websocket">
+    获取实时订单、投注和结算更新。
   </Card>
 
-  <Card title="API reference" icon="terminal" href="/abp-api/overview">
-    Explore all available endpoints.
+  <Card title="API 参考" icon="terminal" href="/zh/abp-api/overview">
+    浏览所有可用端点。
   </Card>
 </Columns>

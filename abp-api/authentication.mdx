@@ -4,7 +4,7 @@ sidebarTitle: "Authentication"
 description: "Learn how to authenticate ABP API requests using the X-ABP-API-KEY header. API key resolution, rate limiting, and WebSocket authentication."
 ---
 
-All ABP endpoints require authentication via the `X-ABP-API-KEY` header, except for health and monitoring endpoints.
+All ABP endpoints require authentication via the `X-ABP-API-KEY` header.
 
 ## How to authenticate
 
@@ -24,19 +24,9 @@ Each API key is associated with:
 | `clientName` | Your client identifier (used for filtering data) |
 | `bookmakers` | Allowed bookmaker slugs (empty = all) |
 | `rateLimit` | Requests per minute (default: 60) |
-| `isAdmin` | Whether this key has admin access |
 | `enabled` | Whether this key is active |
 
 Your API key determines which accounts, orders, and bets you can access. All data is filtered by your `clientName`.
-
-## Public endpoints (no auth required)
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /health` | Basic health check (Kubernetes liveness) |
-| `GET /ready` | Readiness check (Kubernetes readiness) |
-| `GET /status` | Full system status |
-| `GET /metrics` | Prometheus metrics |
 
 ## WebSocket authentication
 
@@ -54,7 +44,7 @@ You must send the login message within **30 seconds** of connecting, or the conn
 
 ## Rate limiting
 
-Rate limits are enforced per API key using a Valkey-backed sliding window.
+Rate limits are enforced per API key using a sliding window.
 
 - **Default:** 60 requests per minute
 - **Exceeded:** Returns `429 Too Many Requests`

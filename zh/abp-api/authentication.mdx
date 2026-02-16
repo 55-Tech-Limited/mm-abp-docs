@@ -1,0 +1,67 @@
+---
+title: "ABP 身份验证 - API密钥设置"
+sidebarTitle: "身份验证"
+description: "了解如何使用 X-ABP-API-KEY 头进行 ABP API 请求身份验证。API密钥解析、速率限制和WebSocket身份验证。"
+---
+
+所有 ABP 端点都需要通过 `X-ABP-API-KEY` 头进行身份验证。
+
+## 如何验证
+
+在 `X-ABP-API-KEY` 请求头中传入您的API密钥：
+
+```bash
+curl -H "X-ABP-API-KEY: your-api-key" \
+  https://v2.55-tech.com/accounts
+```
+
+## API密钥元数据
+
+每个API密钥关联以下信息：
+
+| 字段 | 描述 |
+|------|------|
+| `clientName` | 您的客户标识符（用于数据过滤） |
+| `bookmakers` | 允许的博彩公司标识（空=全部） |
+| `rateLimit` | 每分钟请求数（默认：60） |
+| `enabled` | 此密钥是否激活 |
+
+您的API密钥决定您可以访问哪些账户、订单和投注。所有数据按您的 `clientName` 过滤。
+
+## WebSocket 身份验证
+
+对于WebSocket连接，在连接后通过登录消息进行身份验证：
+
+```json
+{
+  "type": "login",
+  "apiKey": "your-api-key",
+  "channels": []
+}
+```
+
+您必须在连接后 **30秒** 内发送登录消息，否则连接将被关闭。详见 [WebSocket](/zh/abp-api/websocket)。
+
+## 速率限制
+
+速率限制使用滑动窗口按API密钥执行。
+
+- **默认：** 每分钟60个请求
+- **超限：** 返回 `429 Too Many Requests`
+- **WebSocket：** 每API密钥最多5个并发连接
+
+收到 `429` 响应时请实施指数退避。
+
+## 错误响应
+
+| 状态码 | 含义 |
+|--------|------|
+| `401` | 缺少或无效的API密钥 |
+| `403` | 拒绝访问 — 资源属于其他客户 |
+| `429` | 超出速率限制 |
+
+```json
+{
+  "detail": "Unauthorized - missing or invalid API key"
+}
+```

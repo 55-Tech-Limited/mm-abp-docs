@@ -77,7 +77,7 @@ Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair_ex`, `sbob
 
 ### Request deduplication
 
-Each order requires a unique `requestUuid`. ABP uses Valkey-backed deduplication (5-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
+Each order requires a unique `requestUuid`. ABP uses server-side deduplication (5-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
 
 ## Endpoints at a glance
 
@@ -91,7 +91,6 @@ Each order requires a unique `requestUuid`. ABP uses Valkey-backed deduplication
 | **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
 | **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
 | **Currencies** | `GET /currencies` | Available currencies and exchange rates |
-| **Health** | `GET /health`, `GET /ready`, `GET /status` | System health and readiness |
 | **WebSocket** | `WS /ws` | Real-time updates |
 
 ## Supported bookmakers
@@ -108,9 +107,9 @@ Each order requires a unique `requestUuid`. ABP uses Valkey-backed deduplication
 
 ABP includes production-grade reliability features:
 
-- **Circuit breakers** — Per-bookmaker circuit breakers prevent cascading failures (opens after 5 consecutive failures, half-open after 30s)
-- **Retry with exponential backoff** — 3 attempts with 100ms → 5s delays
-- **Emergency controls** — Two-tier system: soft pause (auto-recovery) and full emergency (manual resume)
+- **Circuit breakers** — Per-bookmaker circuit breakers prevent cascading failures and auto-recover
+- **Retry with exponential backoff** — for transient failures
+- **Emergency controls** — Orders may be temporarily paused during system maintenance
 - **Rate limiting** — Per-API-key rate limits (configurable per client)
 
 ## Data source

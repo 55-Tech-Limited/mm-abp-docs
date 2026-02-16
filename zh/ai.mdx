@@ -1,0 +1,40 @@
+---
+title: "AI与LLM集成 - 文档导出"
+sidebarTitle: "AI / 离线导出"
+description: "为AI工具、LLM和离线使用下载55-Tech API文档。提供TXT和OpenAPI JSON格式的机器可读导出，适用于ChatGPT、Claude和其他AI助手。"
+---
+
+## 下载
+
+- **文档索引:** [`/llms.txt`](/llms.txt)
+- **完整文档包:** [`/llms-full.txt`](/llms-full.txt)
+- **ABP OpenAPI (REST参考):** [`/abp-api/openapi.json`](/abp-api/openapi.json)
+- **MM OpenAPI (REST参考):** [`/mm-api/openapi.json`](/mm-api/openapi.json)
+
+## 推荐用法
+
+如果您的AI工具支持获取URL，请提供：
+
+- `/llms-full.txt`（最适合"一次性阅读全部内容"）
+- `/abp-api/openapi.json` 或 `/mm-api/openapi.json`（最适合端点和模式准确性）
+
+如果您的工具仅支持复制/粘贴，请在浏览器中打开 `/llms-full.txt` 并粘贴内容。
+
+## 说明
+
+- `llms-full.txt` 遵循与网站导航相同的顺序。
+- WebSocket协议在指南页面中记录；REST端点在OpenAPI规范中。
+- ABP 和 MM 文档包含在同一个文件包中。
+
+---
+
+## 询问AI助手
+
+想使用您喜欢的AI探索或提问关于此API的问题？
+
+点击下面的链接——每个链接都会在选定的工具中打开完整文档包并预填提示：
+
+- [询问ChatGPT](https://chatgpt.com/?prompt=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+with+this+API.)
+- [询问Claude](https://claude.ai/?prompt=Please+read+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+- [询问Perplexity](https://www.perplexity.ai/search?q=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt)
+- [询问Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)

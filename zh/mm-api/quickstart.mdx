@@ -1,23 +1,23 @@
 ---
-title: "MM Quickstart - First API Calls"
-sidebarTitle: "Quickstart"
-description: "Step-by-step guide to using the MM Trading API. Verify identity, view exchange orders, check positions, monitor hedge bets, and track PnL."
+title: "MM 快速入门 - 首次API调用"
+sidebarTitle: "快速入门"
+description: "使用 MM 交易API的分步指南。验证身份、查看交易所订单、检查持仓、监控对冲投注和跟踪盈亏。"
 ---
 
 <Note>
-The MM engine places orders automatically based on bookmaker odds. The client API provides **read access** to all trading activity. You do not place orders through this API — the engine does it for you.
+MM 引擎根据博彩公司赔率自动下单。客户端API提供所有交易活动的 **只读访问**。您不通过此API下单 — 引擎会自动完成。
 </Note>
 
-## Step 1: Verify your identity
+## 步骤1：验证身份
 
-Confirm your API key works and see your client info:
+确认您的API密钥有效并查看客户端信息：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/me
 ```
 
-Response:
+响应：
 
 ```json
 {
@@ -27,28 +27,28 @@ Response:
 }
 ```
 
-## Step 2: View exchange orders
+## 步骤2：查看交易所订单
 
-See orders the engine has placed on exchanges:
+查看引擎在交易所下的订单：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/orders
 ```
 
-Filter by exchange, fixture, or status:
+按交易所、赛事或状态过滤：
 
 ```bash
-# Filled Polymarket orders
+# 已成交的 Polymarket 订单
 curl -H "X-API-Key: YOUR_API_KEY" \
   "https://mmapi.55-tech.com/api/v1/orders?exchange=polymarket&status=FILLED"
 
-# Open orders for a specific fixture
+# 特定赛事的未结订单
 curl -H "X-API-Key: YOUR_API_KEY" \
   "https://mmapi.55-tech.com/api/v1/orders/open?fixture_id=id1000000861624412"
 ```
 
-Each order includes exchange-specific identifiers, matched amounts, and odds snapshots:
+每个订单包含交易所特定标识符、成交金额和赔率快照：
 
 ```json
 {
@@ -71,16 +71,16 @@ Each order includes exchange-specific identifiers, matched amounts, and odds sna
 }
 ```
 
-## Step 3: View hedge bets
+## 步骤3：查看对冲投注
 
-See bets placed on bookmakers to hedge exchange fills:
+查看在博彩公司下的对冲投注：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/bets
 ```
 
-Each bet is linked to an exchange order via `orderId`:
+每个投注通过 `orderId` 与交易所订单关联：
 
 ```json
 {
@@ -97,62 +97,62 @@ Each bet is linked to an exchange order via `orderId`:
 }
 ```
 
-## Step 4: Check positions
+## 步骤4：查看持仓
 
-View aggregated positions across all fixtures and exchanges:
+查看所有赛事和交易所的汇总持仓：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/positions
 ```
 
-Get a position summary:
+获取持仓摘要：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/positions/summary
 ```
 
-## Step 5: View profit & loss
+## 步骤5：查看盈亏
 
-Get your PnL breakdown:
+获取盈亏明细：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/pnl
 ```
 
-Filter by date range:
+按日期范围过滤：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   "https://mmapi.55-tech.com/api/v1/pnl?from_date=2026-01-01&to_date=2026-01-31"
 ```
 
-## Step 6: View fixtures
+## 步骤6：查看赛事
 
-See which events the engine is trading on:
+查看引擎正在交易的赛事：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/fixtures
 ```
 
-Filter by sport, tournament, or live status:
+按运动、锦标赛或直播状态过滤：
 
 ```bash
-# Live fixtures only
+# 仅直播赛事
 curl -H "X-API-Key: YOUR_API_KEY" \
   "https://mmapi.55-tech.com/api/v1/fixtures?live=true"
 
-# Filter by tournament
+# 按锦标赛过滤
 curl -H "X-API-Key: YOUR_API_KEY" \
   "https://mmapi.55-tech.com/api/v1/fixtures?tournament_id=17"
 ```
 
-## Step 7: List accounts
+## 步骤7：列出账户
 
-View your exchange accounts (credentials are never exposed):
+查看您的交易所账户（凭证永远不会暴露）：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
@@ -173,14 +173,14 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ]
 ```
 
-## Next steps
+## 下一步
 
 <Columns cols={2}>
-  <Card title="WebSocket updates" icon="bolt" href="/mm-api/websocket">
-    Get real-time order fills, hedge bets, and score updates.
+  <Card title="WebSocket 更新" icon="bolt" href="/zh/mm-api/websocket">
+    获取实时订单成交、对冲投注和比分更新。
   </Card>
 
-  <Card title="API reference" icon="terminal" href="/mm-api/overview">
-    Explore all available endpoints.
+  <Card title="API 参考" icon="terminal" href="/zh/mm-api/overview">
+    浏览所有可用端点。
   </Card>
 </Columns>

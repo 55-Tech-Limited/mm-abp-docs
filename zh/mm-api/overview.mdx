@@ -1,0 +1,143 @@
+---
+title: "MM API 概述 - 做市引擎"
+sidebarTitle: "概述"
+description: "MM-V2 交易API概述。高频做市引擎在预测市场交易所（Polymarket、Kalshi）上下单，并在博彩公司（Pinnacle、Vertex）上自动对冲。"
+---
+
+## 什么是 MM？
+
+**做市（MM）** 引擎是一个高频交易系统：
+
+1. **接收实时赔率** — 通过 [OddsPapi v5](https://docs.oddspapi.io/) WebSocket 从博彩公司获取
+2. **在交易所下单** — 以计算的价格在预测市场交易所发布订单
+3. **实时检测成交** — 通过交易所 WebSocket 检测订单成交
+4. **自动对冲** — 对已成交的头寸在博彩公司进行对冲
+5. **跟踪持仓、敞口和盈亏** — 贯穿完整结算生命周期
+
+客户端API为您提供所有交易活动、持仓和分析的只读访问权限。
+
+## 做市运作方式
+
+```
+博彩公司赔率（OddsPapi）
+       ↓
+策略引擎（计算交易所价格）
+       ↓
+在交易所下单/替换订单
+       ↓
+检测到交易所成交（WebSocket）
+       ↓
+在博彩公司自动对冲投注
+       ↓
+持仓与盈亏跟踪
+```
+
+### 订单定价
+
+引擎将博彩公司赔率转换为交易所概率价格并相应下单。价格档位和订单大小按每锦标赛配置。
+
+### 对冲
+
+当交易所订单成交时，引擎会自动在指定博彩公司下对应的对冲投注。该过程安全处理并发成交，并将成交金额重新发布到交易所以维持市场存在。
+
+## 基础URL
+
+```
+https://mmapi.55-tech.com
+```
+
+所有客户端端点以 `/api/v1/` 为前缀。
+
+## 关键概念
+
+### 客户端
+
+客户端是配置了特定交易所账户和博彩公司对冲目标的交易实体。
+
+- **简单格式：** `"vertex"` — 客户名即博彩公司
+- **复合格式：** `"demo:vertex"` — 客户=demo，在 vertex 对冲
+
+### 交易所
+
+下单的目标平台：
+
+| 交易所 | 认证方式 | 订单类型 |
+|--------|---------|---------|
+| Polymarket | 以太坊钱包签名 | CLOB 限价单 |
+| Polymarket US | JWT + gRPC | gRPC 订单提交 |
+| Kalshi | RSA-PSS 签名 | REST 限价单 |
+| Novig.us | OAuth 2.0 | REST 订单 |
+| SX.bet | API密钥 + EIP712 | 签名订单 |
+| Betfair | SSL 证书 | 交易所API |
+| ProphetX | JWT | REST 订单 |
+| Matchbook | 会话令牌 | REST 订单 |
+| Smarkets | 会话令牌 | REST 订单 |
+| 4casters | 令牌认证 | Socket.IO |
+| Predict.fun | JWT + EIP712 | 签名订单 |
+
+### 订单生命周期
+
+```
+PENDING_PLACEMENT → PLACED → PARTIAL / FILLED / FAILED / CANCELLED / EXPIRED
+```
+
+### 匹配状态
+
+```
+NOT_MATCHED → PARTIALLY_MATCHED → FULLY_MATCHED
+```
+
+### 结算状态
+
+```
+UNDECIDED → WON / LOST / VOID / HALF_WON / HALF_LOST
+```
+
+### 可交易结果
+
+默认结果ID：111, 112, 121, 122, 131, 132, 141, 142, 151, 152, 161, 162, 171, 172
+
+涵盖1x2市场、大小盘、让球盘、比分盘及双方。
+
+## 端点一览
+
+### 客户端API（`X-API-Key` 认证）
+
+| 类别 | 端点 | 描述 |
+|------|------|------|
+| **身份** | `GET /api/v1/me` | 获取您的客户信息 |
+| **订单** | `GET /api/v1/orders` | 查看交易所订单（分页、可过滤） |
+| **订单** | `GET /api/v1/orders/{id}` | 获取特定订单 |
+| **订单** | `GET /api/v1/orders/open` | 列出赛事的未结订单 |
+| **订单** | `GET /api/v1/orders/summary` | 订单统计 |
+| **投注** | `GET /api/v1/bets` | 查看对冲投注（分页） |
+| **投注** | `GET /api/v1/bets/{id}` | 获取特定投注 |
+| **投注** | `GET /api/v1/bets/summary` | 投注统计 |
+| **赛事** | `GET /api/v1/fixtures` | 列出赛事及比分 |
+| **赛事** | `GET /api/v1/fixtures/{id}` | 获取特定赛事 |
+| **持仓** | `GET /api/v1/positions` | 汇总持仓 |
+| **持仓** | `GET /api/v1/positions/summary` | 持仓摘要 |
+| **账户** | `GET /api/v1/accounts` | 列出交易所账户（无凭证） |
+
+### WebSocket
+
+| 端点 | 描述 |
+|------|------|
+| `WS /ws/subscribe` | 实时订单、投注、账户、比分和紧急更新 |
+
+## 速率限制
+
+- REST API：每客户端 **每分钟100个请求**
+- WebSocket：每API密钥 **5个并发连接**
+
+## 下一步
+
+<Columns cols={2}>
+  <Card title="身份验证" icon="key" href="/zh/mm-api/authentication">
+    设置您的API密钥。
+  </Card>
+
+  <Card title="快速入门" icon="rocket" href="/zh/mm-api/quickstart">
+    发起您的首次API调用。
+  </Card>
+</Columns>

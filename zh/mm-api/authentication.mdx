@@ -1,0 +1,51 @@
+---
+title: "MM 身份验证 - API密钥设置"
+sidebarTitle: "身份验证"
+description: "了解如何使用 X-API-Key 头（UUID）进行 MM API 请求身份验证。客户端API和WebSocket身份验证。"
+---
+
+所有客户端端点需要通过 `X-API-Key` 头进行身份验证。
+
+## 客户端API身份验证
+
+在 `X-API-Key` 头中传入您的API密钥（UUID格式）：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+您的API密钥绑定到特定的 `client` 实体。返回的所有数据按您的客户端过滤 — 您只能看到自己的订单、投注和持仓。
+
+## WebSocket 身份验证
+
+对于WebSocket连接，在订阅消息中发送您的API密钥：
+
+```json
+{
+  "type": "subscribe",
+  "api_key": "YOUR_API_KEY",
+  "channels": ["orders", "bets", "accounts", "scores"]
+}
+```
+
+您必须在连接后 **30秒** 内发送订阅消息，否则连接将被关闭。详见 [WebSocket](/zh/mm-api/websocket)。
+
+## 速率限制
+
+速率限制按客户端执行：
+
+- **REST API：** 每分钟100个请求
+- **WebSocket：** 每API密钥最多5个并发连接
+- **超限：** 返回 `429 Too Many Requests`
+
+## 错误响应
+
+| 状态码 | 含义 |
+|--------|------|
+| `401` | 无效或缺少API密钥（必须是有效UUID） |
+| `429` | 超出速率限制 |
+
+```json
+{"detail": "Invalid or missing API key"}
+```

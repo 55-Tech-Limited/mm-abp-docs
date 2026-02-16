@@ -1,0 +1,40 @@
+---
+title: "AI & LLM Integration - Documentation Export"
+sidebarTitle: "AI / Offline Export"
+description: "Download 55-Tech API documentation for AI tools, LLMs, and offline use. Machine-readable exports in TXT and OpenAPI JSON formats for ChatGPT, Claude, and other AI assistants."
+---
+
+## Download
+
+- **Docs index:** [`/llms.txt`](/llms.txt)
+- **Full docs bundle:** [`/llms-full.txt`](/llms-full.txt)
+- **ABP OpenAPI (REST reference):** [`/abp-api/openapi.json`](/abp-api/openapi.json)
+- **MM OpenAPI (REST reference):** [`/mm-api/openapi.json`](/mm-api/openapi.json)
+
+## Recommended usage
+
+If your AI tool supports fetching URLs, give it:
+
+- `/llms-full.txt` (best for "read everything once")
+- `/abp-api/openapi.json` or `/mm-api/openapi.json` (best for endpoint + schema accuracy)
+
+If your tool only supports copy/paste, open `/llms-full.txt` in the browser and paste the contents.
+
+## Notes
+
+- `llms-full.txt` follows the same ordering as the site navigation.
+- WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs.
+- Both ABP and MM documentation are included in a single bundle.
+
+---
+
+## Ask an AI Assistant
+
+Want to explore or ask questions about this API using your favorite AI?
+
+Click one of the links below — each one opens the full docs bundle in the selected tool with a pre-filled prompt:
+
+- [Ask ChatGPT](https://chatgpt.com/?prompt=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+with+this+API.)
+- [Ask Claude](https://claude.ai/?prompt=Please+read+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+- [Ask Perplexity](https://www.perplexity.ai/search?q=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt)
+- [Ask Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)

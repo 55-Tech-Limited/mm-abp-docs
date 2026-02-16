@@ -1,24 +1,24 @@
 ---
-title: "ABP WebSocket - Real-Time Updates"
+title: "ABP WebSocket - 实时更新"
 sidebarTitle: "WebSocket"
-description: "Connect to the ABP WebSocket for real-time order, bet, settlement, account, and system updates. Server-backed with message ordering and reliable delivery."
+description: "连接 ABP WebSocket 获取实时订单、投注、结算、账户和系统更新。基于服务端的消息排序和可靠传递。"
 ---
 
-## Endpoint
+## 端点
 
 ```
 wss://v2.55-tech.com/ws
 ```
 
-## Connection flow
+## 连接流程
 
-### 1. Connect
+### 1. 连接
 
-Open a WebSocket connection. No authentication is needed at connection time.
+打开WebSocket连接。连接时无需身份验证。
 
-### 2. Login
+### 2. 登录
 
-Send a login message within **30 seconds** of connecting:
+在连接后 **30秒** 内发送登录消息：
 
 ```json
 {
@@ -28,7 +28,7 @@ Send a login message within **30 seconds** of connecting:
 }
 ```
 
-An empty `channels` array subscribes to all available channels. To subscribe to specific channels:
+空的 `channels` 数组订阅所有可用频道。要订阅特定频道：
 
 ```json
 {
@@ -38,9 +38,9 @@ An empty `channels` array subscribes to all available channels. To subscribe to 
 }
 ```
 
-### 3. Login confirmation
+### 3. 登录确认
 
-On success, the server responds with:
+成功后，服务器响应：
 
 ```json
 {
@@ -60,9 +60,9 @@ On success, the server responds with:
 }
 ```
 
-### 4. Receive updates
+### 4. 接收更新
 
-Data messages follow this format:
+数据消息格式如下：
 
 ```json
 {
@@ -75,63 +75,63 @@ Data messages follow this format:
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `type` | Always `"data"` for data messages |
-| `channel` | Which channel this message belongs to |
-| `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `STATUS_CHANGE`, `SETTLED` |
-| `payload` | The full updated object |
-| `ts` | Server timestamp (milliseconds since epoch) |
-| `seq` | Sequence number for message ordering |
+| 字段 | 描述 |
+|------|------|
+| `type` | 数据消息始终为 `"data"` |
+| `channel` | 此消息所属频道 |
+| `event` | 事件类型：`INSERT`、`UPDATE`、`DELETE`、`STATUS_CHANGE`、`SETTLED` |
+| `payload` | 完整的更新对象 |
+| `ts` | 服务器时间戳（自纪元以来的毫秒数） |
+| `seq` | 用于消息排序的序列号 |
 
-### 5. Keep alive
+### 5. 保持活跃
 
-Send a ping every **30 seconds**:
+每 **30秒** 发送一次心跳：
 
 ```json
 {"type": "ping"}
 ```
 
-The server responds with:
+服务器响应：
 
 ```json
 {"type": "pong"}
 ```
 
-The server also sends heartbeats every **60 seconds**:
+服务器也会每 **60秒** 发送心跳：
 
 ```json
 {"type": "heartbeat", "ts": 1771183909789}
 ```
 
-## Channels
+## 频道
 
-### Client-filtered channels
+### 客户端过滤频道
 
-These channels only deliver data belonging to your `clientName`:
+这些频道仅传递属于您 `clientName` 的数据：
 
-| Channel | Events | Description |
-|---------|--------|-------------|
-| `orders` | INSERT, UPDATE, STATUS_CHANGE | Order placement, fills, status changes |
-| `bets` | INSERT, UPDATE, SETTLED | Bet placement, confirmation, settlement |
-| `settlements` | UPDATE | Settlement status updates |
-| `accounts` | UPDATE | Account balance and status changes |
-| `balance` | UPDATE | Balance change notifications |
+| 频道 | 事件 | 描述 |
+|------|------|------|
+| `orders` | INSERT, UPDATE, STATUS_CHANGE | 订单下达、成交、状态变更 |
+| `bets` | INSERT, UPDATE, SETTLED | 投注下达、确认、结算 |
+| `settlements` | UPDATE | 结算状态更新 |
+| `accounts` | UPDATE | 账户余额和状态变更 |
+| `balance` | UPDATE | 余额变动通知 |
 
-### Global channels
+### 全局频道
 
-All subscribers receive these:
+所有订阅者都会收到：
 
-| Channel | Events | Description |
-|---------|--------|-------------|
-| `fixtures` | UPDATE | Fixture metadata and score changes |
-| `currencies` | UPDATE | Currency exchange rate updates |
-| `status` | UPDATE | System status changes |
-| `emergency` | UPDATE | Emergency mode activation/deactivation |
+| 频道 | 事件 | 描述 |
+|------|------|------|
+| `fixtures` | UPDATE | 赛事元数据和比分变更 |
+| `currencies` | UPDATE | 货币汇率更新 |
+| `status` | UPDATE | 系统状态变更 |
+| `emergency` | UPDATE | 紧急模式激活/停用 |
 
-## Payload examples
+## 消息示例
 
-### Order update
+### 订单更新
 
 ```json
 {
@@ -164,7 +164,7 @@ All subscribers receive these:
 }
 ```
 
-### Bet confirmation
+### 投注确认
 
 ```json
 {
@@ -191,7 +191,7 @@ All subscribers receive these:
 }
 ```
 
-### Bet settlement
+### 投注结算
 
 ```json
 {
@@ -212,17 +212,17 @@ All subscribers receive these:
 }
 ```
 
-## Connection limits
+## 连接限制
 
-| Setting | Value |
-|---------|-------|
-| Max connections per API key | 5 |
-| Auth timeout | 30 seconds |
-| Server heartbeat interval | 60 seconds |
-| Client ping interval | 30 seconds (recommended) |
-| Message buffer size | 100 per subscription |
+| 设置 | 值 |
+|------|-----|
+| 每API密钥最大连接数 | 5 |
+| 认证超时 | 30秒 |
+| 服务器心跳间隔 | 60秒 |
+| 客户端心跳间隔 | 30秒（推荐） |
+| 消息缓冲区大小 | 每订阅100条 |
 
-## Example: Python client
+## 示例：Python 客户端
 
 ```python
 import asyncio
@@ -232,18 +232,18 @@ import websockets
 async def connect():
     uri = "wss://v2.55-tech.com/ws"
     async with websockets.connect(uri) as ws:
-        # Login
+        # 登录
         await ws.send(json.dumps({
             "type": "login",
             "apiKey": "YOUR_API_KEY",
             "channels": ["orders", "bets", "settlements"]
         }))
 
-        # Wait for login confirmation
+        # 等待登录确认
         login_resp = json.loads(await ws.recv())
-        print(f"Logged in as {login_resp.get('clientName')}")
+        print(f"已登录为 {login_resp.get('clientName')}")
 
-        # Keep-alive task
+        # 保活任务
         async def keep_alive():
             while True:
                 await asyncio.sleep(30)
@@ -251,7 +251,7 @@ async def connect():
 
         asyncio.create_task(keep_alive())
 
-        # Listen for updates
+        # 监听更新
         async for message in ws:
             data = json.loads(message)
             if data["type"] == "data":
@@ -260,7 +260,7 @@ async def connect():
 asyncio.run(connect())
 ```
 
-## Example: JavaScript client
+## 示例：JavaScript 客户端
 
 ```javascript
 const WebSocket = require('ws');
@@ -279,7 +279,7 @@ ws.on('message', (raw) => {
   const msg = JSON.parse(raw);
 
   if (msg.type === 'login_ok') {
-    console.log(`Logged in as ${msg.clientName}`);
+    console.log(`已登录为 ${msg.clientName}`);
   }
 
   if (msg.type === 'data') {
@@ -287,7 +287,7 @@ ws.on('message', (raw) => {
   }
 });
 
-// Keep alive
+// 保持活跃
 setInterval(() => {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'ping' }));

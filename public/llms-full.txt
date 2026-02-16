@@ -1,0 +1,3834 @@
+# 55-Tech API Docs — Full Bundle
+# Generated from docs.json navigation
+# Source: MDX files
+# APIs: ABP (Automated Bet Placing) and MM (Market Making)
+
+
+
+---
+## 55-Tech API Documentation
+Source: /index
+---
+
+<Note>
+**B2B Platform** — 55-Tech provides enterprise trading infrastructure for licensed operators, trading firms, and sports betting platforms. Contact [support@55-tech.com](mailto:support@55-tech.com) for API access.
+</Note>
+
+## What is 55-Tech?
+
+55-Tech operates two core trading platforms:
+
+- **Market Making (MM)** — High-frequency market making engine that places orders on prediction market exchanges (Polymarket, Kalshi) and hedges on bookmakers
+- **Automated Bet Placing (ABP)** — Place bets across 30+ bookmakers through a single API with real-time tracking and settlement
+
+Both platforms consume real-time odds data from [OddsPapi](https://docs.oddspapi.io/) and expose REST + WebSocket APIs for client integration.
+
+---
+
+## Get started
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get connected to both APIs in minutes.
+  </Card>
+
+  <Card title="ABP API" icon="bolt" href="/abp-api/overview">
+    Place bets across 30+ bookmakers through a single API.
+  </Card>
+
+  <Card title="MM API" icon="chart-line" href="/mm-api/overview">
+    High-frequency market making on prediction exchanges.
+  </Card>
+
+  <Card title="OddsPapi Data" icon="database" href="https://docs.oddspapi.io/">
+    Real-time odds data powering both platforms.
+  </Card>
+</Columns>
+
+
+---
+## Quickstart - Connect to 55-Tech APIs
+Source: /quickstart
+---
+
+## Prerequisites
+
+You need an API key for the platform you want to use. Contact [support@55-tech.com](mailto:support@55-tech.com) to get your key.
+
+| Platform | Auth Header | Base URL |
+|----------|------------|----------|
+| ABP (Automated Bet Placing) | `X-ABP-API-KEY` | `https://v2.55-tech.com` |
+| MM (Market Making) | `X-API-Key` | `https://mmapi.55-tech.com` |
+
+---
+
+## ABP — Automated Bet Placing
+
+### 1. List your accounts
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/accounts
+```
+
+### 2. Get a betslip (live odds)
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=ID&outcomeId=161&playerId=0"
+```
+
+### 3. Place an order
+
+```bash
+curl -X POST -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"orders": [{"fixtureId": "...", "outcomeId": 161, "playerId": 0, "stake": 10, "minPrice": 1.5}]}' \
+  https://v2.55-tech.com/place-orders
+```
+
+### 4. Track results
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/orders
+```
+
+---
+
+## MM — Market Making
+
+### 1. Verify your identity
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+### 2. List your orders
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders
+```
+
+### 3. Check positions
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions
+```
+
+### 4. View profit & loss
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/pnl
+```
+
+---
+
+## Real-time updates
+
+Both APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
+
+<Columns cols={2}>
+  <Card title="ABP WebSocket" icon="bolt" href="/abp-api/websocket">
+    Real-time order, bet, and settlement updates.
+  </Card>
+
+  <Card title="MM WebSocket" icon="bolt" href="/mm-api/websocket">
+    Live order fills, bets, and score updates.
+  </Card>
+</Columns>
+
+
+---
+## AI & LLM Integration - Documentation Export
+Source: /ai
+---
+
+## Download
+
+- **Docs index:** [`/llms.txt`](/llms.txt)
+- **Full docs bundle:** [`/llms-full.txt`](/llms-full.txt)
+- **ABP OpenAPI (REST reference):** [`/abp-api/openapi.json`](/abp-api/openapi.json)
+- **MM OpenAPI (REST reference):** [`/mm-api/openapi.json`](/mm-api/openapi.json)
+
+## Recommended usage
+
+If your AI tool supports fetching URLs, give it:
+
+- `/llms-full.txt` (best for "read everything once")
+- `/abp-api/openapi.json` or `/mm-api/openapi.json` (best for endpoint + schema accuracy)
+
+If your tool only supports copy/paste, open `/llms-full.txt` in the browser and paste the contents.
+
+## Notes
+
+- `llms-full.txt` follows the same ordering as the site navigation.
+- WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs.
+- Both ABP and MM documentation are included in a single bundle.
+
+---
+
+## Ask an AI Assistant
+
+Want to explore or ask questions about this API using your favorite AI?
+
+Click one of the links below — each one opens the full docs bundle in the selected tool with a pre-filled prompt:
+
+- [Ask ChatGPT](https://chatgpt.com/?prompt=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+with+this+API.)
+- [Ask Claude](https://claude.ai/?prompt=Please+read+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+- [Ask Perplexity](https://www.perplexity.ai/search?q=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt)
+- [Ask Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+
+
+---
+## ABP API Overview - Automated Bet Placing
+Source: /abp-api/overview
+---
+
+## What is ABP?
+
+The **Automated Bet Placing (ABP)** API lets you place bets across 30+ bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
+
+**Core capabilities:**
+
+- **Account management** — Configure multiple bookmaker accounts per bookmaker with priority-based selection, per-account stake limits, and multi-currency support
+- **Betslip retrieval** — Get real-time odds and limits for any fixture/outcome across all configured bookmakers before placing
+- **Smart order routing** — Place single or bulk orders with four placement modes: single strict, single fill, multi parallel, and multi sequential
+- **Bet tracking** — Monitor every bet from placement through confirmation and settlement with full audit trail
+- **Position & PnL analytics** — Aggregated views of exposure and profit/loss across all bookmakers and fixtures
+
+## Base URL
+
+```
+https://v2.55-tech.com
+```
+
+## Key concepts
+
+### Orders vs bets
+
+An **order** is your instruction to place a bet. A **bet** is the actual wager placed on a bookmaker. One order can result in multiple bets when using partial fills or multi-bookmaker routing.
+
+### Order placement modes
+
+| Mode | Bookmakers | Partial Stake | Behavior |
+|------|------------|---|---|
+| **Single strict** | 1 | No | All-or-nothing at `orderPrice` or better |
+| **Single fill** | 1 | Yes | Fill via multiple bets, weighted average >= `orderPrice` |
+| **Multi parallel** | Many | No | One bet per bookmaker, placed in parallel |
+| **Multi sequential** | Many | Yes | Best price first, exhaust each bookmaker before next |
+
+### Order lifecycle
+
+```
+PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANCELLED / FAILED
+```
+
+- **PENDING** — Order received and queued
+- **PROCESSING** — Routing to bookmakers
+- **FILLED** — All stake placed successfully
+- **PARTIALLY_FILLED** — Some stake placed, remaining expired or no capacity
+- **REJECTED** — Failed validation (bad odds, invalid fixture, etc.)
+- **EXPIRED** — Order `expiresAt` time reached (default: 5 seconds)
+- **CANCELLED** — Explicitly cancelled by client
+
+### Bet lifecycle
+
+```
+PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
+```
+
+### Settlement lifecycle
+
+```
+UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
+```
+
+- **Half won / Half lost** — Asian handicap partial results
+- **Push** — Stake returned (tie on the line)
+- **Cashout** — Early withdrawal at negotiated price
+
+### Account priority
+
+Each bookmaker account has a `priority` field (higher = preferred). When placing an order, ABP selects the highest-priority active account first for each bookmaker.
+
+### Bookmaker slugs
+
+Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair_ex`, `sbobet`, `polymarket`). Use `GET /bookmakers` to list all 30+ supported bookmakers.
+
+### Request deduplication
+
+Each order requires a unique `requestUuid`. ABP uses server-side deduplication (5-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
+
+## Endpoints at a glance
+
+| Category | Endpoints | Description |
+|----------|-----------|-------------|
+| **Accounts** | `GET/POST/PATCH/DELETE /accounts` | Manage bookmaker accounts (credentials, balances, priority, limits) |
+| **Betslip** | `GET /betslip` | Get live odds & limits before placing |
+| **Orders** | `POST /place-orders`, `GET /orders` | Place and track orders |
+| **Bets** | `GET /bets` | View individual bet results |
+| **Settlements** | `GET /settlements` | View settlement history |
+| **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
+| **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
+| **Currencies** | `GET /currencies` | Available currencies and exchange rates |
+| **WebSocket** | `WS /ws` | Real-time updates |
+
+## Supported bookmakers
+
+**Traditional sportsbooks:** pinnacle, pinnacleb2b, bet365, betcris, bookmaker_eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline_vip, novig_us, one98bet, paradisewager, sharpbet, singbet, sports411_ag, threeet, threeetpp
+
+**Betting exchanges:** betfair_ex, smarkets
+
+**Prediction markets:** polymarket, polymarket_us, kalshi, predict_fun, prophetx, sx_bet, vertex, fourcasters
+
+**Punter platforms:** punter_io, punter_iopp
+
+## Resilience
+
+ABP includes production-grade reliability features:
+
+- **Circuit breakers** — Per-bookmaker circuit breakers prevent cascading failures and auto-recover
+- **Retry with exponential backoff** — for transient failures
+- **Emergency controls** — Orders may be temporarily paused during system maintenance
+- **Rate limiting** — Per-API-key rate limits (configurable per client)
+
+## Data source
+
+ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). Fixture IDs and outcome IDs in ABP correspond directly to OddsPapi identifiers.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/abp-api/authentication">
+    Set up your API key.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/abp-api/quickstart">
+    Place your first bet in 5 steps.
+  </Card>
+</Columns>
+
+
+---
+## ABP Authentication - API Key Setup
+Source: /abp-api/authentication
+---
+
+All ABP endpoints require authentication via the `X-ABP-API-KEY` header.
+
+## How to authenticate
+
+Pass your API key in the `X-ABP-API-KEY` request header:
+
+```bash
+curl -H "X-ABP-API-KEY: your-api-key" \
+  https://v2.55-tech.com/accounts
+```
+
+## API key metadata
+
+Each API key is associated with:
+
+| Field | Description |
+|-------|-------------|
+| `clientName` | Your client identifier (used for filtering data) |
+| `bookmakers` | Allowed bookmaker slugs (empty = all) |
+| `rateLimit` | Requests per minute (default: 60) |
+| `enabled` | Whether this key is active |
+
+Your API key determines which accounts, orders, and bets you can access. All data is filtered by your `clientName`.
+
+## WebSocket authentication
+
+For WebSocket connections, authenticate via the login message after connecting:
+
+```json
+{
+  "type": "login",
+  "apiKey": "your-api-key",
+  "channels": []
+}
+```
+
+You must send the login message within **30 seconds** of connecting, or the connection is closed. See [WebSocket](/abp-api/websocket) for details.
+
+## Rate limiting
+
+Rate limits are enforced per API key using a sliding window.
+
+- **Default:** 60 requests per minute
+- **Exceeded:** Returns `429 Too Many Requests`
+- **WebSocket:** Maximum 5 concurrent connections per API key
+
+Implement exponential backoff when receiving `429` responses.
+
+## Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing or invalid API key |
+| `403` | Access denied — resource belongs to a different client |
+| `429` | Rate limit exceeded |
+
+```json
+{
+  "detail": "Unauthorized - missing or invalid API key"
+}
+```
+
+
+---
+## ABP Quickstart - Place Your First Bet
+Source: /abp-api/quickstart
+---
+
+## Step 1: List your accounts
+
+Check which bookmaker accounts are configured for your API key:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/accounts
+```
+
+Response includes each account's bookmaker, balance, priority, stake limits, and currency:
+
+```json
+[
+  {
+    "client": "your-client",
+    "bookmaker": "pinnacle",
+    "username": "your-username",
+    "balance": 5000.00,
+    "active": true,
+    "priority": 10,
+    "maxStake": 1000.00,
+    "minStake": 5.00,
+    "currencyId": "USD"
+  }
+]
+```
+
+## Step 2: Get a betslip
+
+Before placing a bet, retrieve current odds and limits:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=YOUR_FIXTURE_ID&outcomeId=161&playerId=0"
+```
+
+The betslip returns live odds from every bookmaker that has this market:
+
+```json
+{
+  "pinnacle": {
+    "price": 1.85,
+    "limit": 5000.00,
+    "limitMin": 5.00,
+    "limitCurrency": "USD",
+    "active": true,
+    "bookmakerFixtureId": "123456",
+    "bookmakerMarketId": "789",
+    "bookmakerOutcomeId": "1"
+  },
+  "betfair_ex": {
+    "price": 1.88,
+    "limit": 2000.00,
+    "limitMin": 2.00,
+    "limitCurrency": "GBP",
+    "active": true
+  }
+}
+```
+
+<Note>
+Use the [OddsPapi API](https://docs.oddspapi.io/) to discover fixture IDs and outcome IDs. ABP uses OddsPapi identifiers directly.
+</Note>
+
+## Step 3: Place an order
+
+Place a bet order with minimum price protection:
+
+```bash
+curl -X POST \
+  -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orders": [
+      {
+        "fixtureId": "id1000000861624412",
+        "outcomeId": 161,
+        "playerId": 0,
+        "orderStake": 50,
+        "orderPrice": 1.80,
+        "orderCurrency": "USD",
+        "userRef": "my-strategy-1",
+        "acceptBetterOdds": true,
+        "acceptPartialStake": true,
+        "back": true,
+        "testOrder": false
+      }
+    ]
+  }' \
+  https://v2.55-tech.com/place-orders
+```
+
+**Key fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `fixtureId` | Yes | OddsPapi fixture ID |
+| `outcomeId` | Yes | Market outcome (e.g., 161 = home win) |
+| `playerId` | Yes | Set to `0` for non-player-prop markets |
+| `orderStake` | Yes | Total amount to wager |
+| `orderPrice` | Yes | Minimum acceptable decimal odds |
+| `orderCurrency` | Yes | Currency code (e.g., `USD`) |
+| `userRef` | No | Your reference for grouping related orders |
+| `acceptBetterOdds` | No | Accept odds better than `orderPrice` (default: true) |
+| `acceptPartialStake` | No | Allow partial fills across multiple bets (default: true) |
+| `back` | No | Back bet (true) or lay bet (false) (default: true) |
+| `testOrder` | No | Validate only, don't actually place (default: false) |
+| `expiresAt` | No | ISO 8601 expiry time (default: 5 seconds from now) |
+
+**Response:**
+
+```json
+{
+  "orders": [
+    {
+      "orderId": 12345,
+      "requestUuid": "eb45b192-358b-32d5-9f65-af497b9fa8c1",
+      "orderStatus": "PENDING",
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "orderStake": 50,
+      "orderPrice": 1.80,
+      "filledStake": 0,
+      "bets": []
+    }
+  ],
+  "declinedOrders": []
+}
+```
+
+Orders that fail validation appear in `declinedOrders` with a `declineReason`:
+
+```json
+{
+  "declinedOrders": [
+    {
+      "fixtureId": "...",
+      "outcomeId": 161,
+      "declineReason": "Order stake 150.00 USD exceeds available limit 100.00 USD"
+    }
+  ]
+}
+```
+
+## Step 4: Track your order
+
+Check order status:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/orders
+```
+
+View individual bets placed for your orders:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/bets
+```
+
+Each bet includes the bookmaker, placed price, placed stake, bet status, and settlement status:
+
+```json
+{
+  "betId": 1,
+  "orderId": 12345,
+  "bookmaker": "pinnacle",
+  "bookmakerBetId": "3587791057",
+  "placedStake": 50.00,
+  "placedPrice": 1.85,
+  "placedCurrency": "USD",
+  "betStatus": "CONFIRMED",
+  "settlementStatus": "UNSETTLED",
+  "account": "your-username",
+  "userRef": "my-strategy-1"
+}
+```
+
+## Step 5: Check positions & PnL
+
+View your aggregated exposure:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/positions
+```
+
+View profit and loss:
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/pnl
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket updates" icon="bolt" href="/abp-api/websocket">
+    Get real-time order, bet, and settlement updates.
+  </Card>
+
+  <Card title="API reference" icon="terminal" href="/abp-api/overview">
+    Explore all available endpoints.
+  </Card>
+</Columns>
+
+
+---
+## ABP WebSocket - Real-Time Updates
+Source: /abp-api/websocket
+---
+
+## Endpoint
+
+```
+wss://v2.55-tech.com/ws
+```
+
+## Connection flow
+
+### 1. Connect
+
+Open a WebSocket connection. No authentication is needed at connection time.
+
+### 2. Login
+
+Send a login message within **30 seconds** of connecting:
+
+```json
+{
+  "type": "login",
+  "apiKey": "your-api-key",
+  "channels": []
+}
+```
+
+An empty `channels` array subscribes to all available channels. To subscribe to specific channels:
+
+```json
+{
+  "type": "login",
+  "apiKey": "your-api-key",
+  "channels": ["orders", "bets", "settlements"]
+}
+```
+
+### 3. Login confirmation
+
+On success, the server responds with:
+
+```json
+{
+  "type": "login_ok",
+  "clientName": "your-client",
+  "channels": ["orders", "bets", "settlements"],
+  "subscriptionId": 1,
+  "access": {
+    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance"],
+    "global": ["fixtures", "currencies", "status", "emergency"]
+  },
+  "features": {
+    "messageOrdering": true,
+    "acknowledgments": false,
+    "batchAck": false
+  }
+}
+```
+
+### 4. Receive updates
+
+Data messages follow this format:
+
+```json
+{
+  "type": "data",
+  "channel": "orders",
+  "event": "INSERT",
+  "payload": { ... },
+  "ts": 1771183909789,
+  "seq": 1
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Always `"data"` for data messages |
+| `channel` | Which channel this message belongs to |
+| `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `STATUS_CHANGE`, `SETTLED` |
+| `payload` | The full updated object |
+| `ts` | Server timestamp (milliseconds since epoch) |
+| `seq` | Sequence number for message ordering |
+
+### 5. Keep alive
+
+Send a ping every **30 seconds**:
+
+```json
+{"type": "ping"}
+```
+
+The server responds with:
+
+```json
+{"type": "pong"}
+```
+
+The server also sends heartbeats every **60 seconds**:
+
+```json
+{"type": "heartbeat", "ts": 1771183909789}
+```
+
+## Channels
+
+### Client-filtered channels
+
+These channels only deliver data belonging to your `clientName`:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `orders` | INSERT, UPDATE, STATUS_CHANGE | Order placement, fills, status changes |
+| `bets` | INSERT, UPDATE, SETTLED | Bet placement, confirmation, settlement |
+| `settlements` | UPDATE | Settlement status updates |
+| `accounts` | UPDATE | Account balance and status changes |
+| `balance` | UPDATE | Balance change notifications |
+
+### Global channels
+
+All subscribers receive these:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `fixtures` | UPDATE | Fixture metadata and score changes |
+| `currencies` | UPDATE | Currency exchange rate updates |
+| `status` | UPDATE | System status changes |
+| `emergency` | UPDATE | Emergency mode activation/deactivation |
+
+## Payload examples
+
+### Order update
+
+```json
+{
+  "type": "data",
+  "channel": "orders",
+  "event": "STATUS_CHANGE",
+  "payload": {
+    "orderId": 12345,
+    "requestUuid": "eb45b192-358b-32d5-9f65-af497b9fa8c1",
+    "clientName": "your-client",
+    "fixtureId": "id1000000861624412",
+    "outcomeId": 161,
+    "playerId": 0,
+    "orderPrice": 1.80,
+    "orderStake": 50,
+    "filledStake": 50,
+    "remainingStake": 0,
+    "orderStatus": "FILLED",
+    "userRef": "my-strategy-1",
+    "testOrder": false,
+    "acceptBetterOdds": true,
+    "acceptPartialStake": true,
+    "orderCurrency": "USD",
+    "back": true,
+    "createdAt": "2026-02-15T19:31:49.778Z",
+    "expiresAt": "2026-02-15T19:31:54.759Z"
+  },
+  "ts": 1771183909789,
+  "seq": 42
+}
+```
+
+### Bet confirmation
+
+```json
+{
+  "type": "data",
+  "channel": "bets",
+  "event": "UPDATE",
+  "payload": {
+    "betId": 1,
+    "orderId": 12345,
+    "bookmaker": "pinnacle",
+    "bookmakerBetId": "3587791057",
+    "placedStake": 50,
+    "placedPrice": 1.85,
+    "placedCurrency": "USD",
+    "betStatus": "CONFIRMED",
+    "settlementStatus": "UNSETTLED",
+    "account": "your-username",
+    "userRef": "my-strategy-1",
+    "testBet": false,
+    "placedAt": "2026-02-15T19:31:50+00:00"
+  },
+  "ts": 1771183910123,
+  "seq": 43
+}
+```
+
+### Bet settlement
+
+```json
+{
+  "type": "data",
+  "channel": "bets",
+  "event": "SETTLED",
+  "payload": {
+    "betId": 1,
+    "orderId": 12345,
+    "bookmaker": "pinnacle",
+    "betStatus": "CONFIRMED",
+    "settlementStatus": "WON",
+    "settlementAmount": 92.50,
+    "settledAt": "2026-02-15T21:45:00+00:00"
+  },
+  "ts": 1771191900456,
+  "seq": 89
+}
+```
+
+## Connection limits
+
+| Setting | Value |
+|---------|-------|
+| Max connections per API key | 5 |
+| Auth timeout | 30 seconds |
+| Server heartbeat interval | 60 seconds |
+| Client ping interval | 30 seconds (recommended) |
+| Message buffer size | 100 per subscription |
+
+## Example: Python client
+
+```python
+import asyncio
+import json
+import websockets
+
+async def connect():
+    uri = "wss://v2.55-tech.com/ws"
+    async with websockets.connect(uri) as ws:
+        # Login
+        await ws.send(json.dumps({
+            "type": "login",
+            "apiKey": "YOUR_API_KEY",
+            "channels": ["orders", "bets", "settlements"]
+        }))
+
+        # Wait for login confirmation
+        login_resp = json.loads(await ws.recv())
+        print(f"Logged in as {login_resp.get('clientName')}")
+
+        # Keep-alive task
+        async def keep_alive():
+            while True:
+                await asyncio.sleep(30)
+                await ws.send(json.dumps({"type": "ping"}))
+
+        asyncio.create_task(keep_alive())
+
+        # Listen for updates
+        async for message in ws:
+            data = json.loads(message)
+            if data["type"] == "data":
+                print(f"[{data['channel']}:{data['event']}] {data['payload']}")
+
+asyncio.run(connect())
+```
+
+## Example: JavaScript client
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://v2.55-tech.com/ws');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    type: 'login',
+    apiKey: 'YOUR_API_KEY',
+    channels: ['orders', 'bets', 'settlements']
+  }));
+});
+
+ws.on('message', (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === 'login_ok') {
+    console.log(`Logged in as ${msg.clientName}`);
+  }
+
+  if (msg.type === 'data') {
+    console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
+  }
+});
+
+// Keep alive
+setInterval(() => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'ping' }));
+  }
+}, 30000);
+```
+
+
+---
+## ABP Error Handling
+Source: /abp-api/errors
+---
+
+## Error response format
+
+All API errors return a JSON body:
+
+```json
+{
+  "detail": "Unauthorized - missing or invalid API key"
+}
+```
+
+Validation errors include field-level detail:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "orders", 0, "orderStake"],
+      "msg": "Input should be greater than 0",
+      "type": "greater_than"
+    }
+  ]
+}
+```
+
+## HTTP status codes
+
+| Status | Description |
+|--------|-------------|
+| `200` | Success |
+| `201` | Resource created |
+| `204` | Resource deleted (no content) |
+| `400` | Bad request — invalid parameters |
+| `401` | Unauthorized — missing or invalid API key |
+| `403` | Forbidden — resource belongs to a different client |
+| `404` | Not found — resource does not exist |
+| `409` | Conflict — duplicate `requestUuid` already in-flight |
+| `422` | Validation error — request body failed validation |
+| `429` | Rate limited — exceeded requests per minute |
+| `500` | Internal server error |
+| `503` | Service unavailable — database or dependency down |
+
+## Order decline reasons
+
+When placing orders via `POST /place-orders`, orders that fail business validation are returned in the `declinedOrders` array (not as HTTP errors). Each declined order includes a `declineReason`:
+
+| Decline reason | Description |
+|----------------|-------------|
+| Stake exceeds limit | `orderStake` is higher than the available bookmaker limit |
+| Stake below minimum | `orderStake` is below the bookmaker's or account's minimum |
+| Invalid odds | `orderPrice` is not available or market is suspended |
+| No active accounts | No active bookmaker accounts available for this market |
+| Currency conversion failed | Could not convert between order currency and bookmaker currency |
+| Bookmaker not available | Specified bookmaker doesn't have odds for this fixture/outcome |
+| Duplicate requestUuid | This `requestUuid` is already in-flight (5-minute dedup window) |
+
+**Example declined order response:**
+
+```json
+{
+  "orders": [],
+  "declinedOrders": [
+    {
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "playerId": 0,
+      "orderStake": 15000,
+      "orderPrice": 1.80,
+      "declineReason": "Order stake 15000.00 USD exceeds available limit 5000.00 USD"
+    }
+  ]
+}
+```
+
+## Common errors
+
+### Authentication (401)
+
+Missing or invalid API key.
+
+```bash
+# Missing header
+curl https://v2.55-tech.com/accounts
+# Returns: 401 {"detail": "Unauthorized - missing or invalid API key"}
+
+# Include the header
+curl -H "X-ABP-API-KEY: your-key" https://v2.55-tech.com/accounts
+# Returns: 200
+```
+
+### Access denied (403)
+
+Attempting to access a resource that belongs to a different client.
+
+```json
+{"detail": "Access denied - account does not belong to your client"}
+```
+
+### Duplicate request (409)
+
+The `requestUuid` was already used within the last 5 minutes.
+
+```json
+{"detail": "Duplicate request - requestUuid already in-flight"}
+```
+
+### Validation error (422)
+
+Request body contains invalid data. Check the `loc` field for the problematic path:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "orders", 0, "fixtureId"],
+      "msg": "Field required",
+      "type": "missing"
+    }
+  ]
+}
+```
+
+### Rate limiting (429)
+
+Exceeded requests per minute for your API key. Default limit: 60/min.
+
+```json
+{"detail": "Rate limit exceeded"}
+```
+
+Implement exponential backoff: wait 1s, 2s, 4s, etc. before retrying.
+
+## Resilience patterns
+
+ABP implements several resilience mechanisms that may affect your integration:
+
+### Circuit breakers
+
+Per-bookmaker circuit breakers prevent cascading failures. If a bookmaker is experiencing issues, orders targeting that bookmaker may be declined until the circuit recovers.
+
+Opens after consecutive failures, automatically tests recovery, and resumes normal operation once the bookmaker responds successfully.
+
+### Emergency mode
+
+In rare cases, the system may temporarily pause order processing during maintenance or upstream issues. The `emergency` WebSocket channel broadcasts status changes.
+
+### Order expiry
+
+Orders have a default `expiresAt` of 5 seconds from creation. If a bet hasn't been placed within this window, the order status changes to `EXPIRED`. Set a custom `expiresAt` for longer-lived orders.
+
+
+---
+## MM API Overview - Market Making Engine
+Source: /mm-api/overview
+---
+
+## What is MM?
+
+The **Market Making (MM)** engine is a high-frequency trading system that:
+
+1. **Receives live odds** from bookmakers via [OddsPapi v5](https://docs.oddspapi.io/) WebSocket
+2. **Posts orders** on prediction market exchanges at calculated prices
+3. **Detects fills** in real-time via exchange WebSockets
+4. **Automatically hedges** filled positions on bookmakers
+5. **Tracks positions, exposure, and PnL** through the full settlement lifecycle
+
+The client API gives you read access to all trading activity, positions, and analytics for your client.
+
+## How market making works
+
+```
+Bookmaker odds (OddsPapi)
+       ↓
+Strategy engine (calculate exchange price)
+       ↓
+Place/replace orders on exchanges
+       ↓
+Exchange fill detected (WebSocket)
+       ↓
+Automatic hedge bet on bookmaker
+       ↓
+Position & PnL tracking
+```
+
+### Order pricing
+
+The engine converts bookmaker odds to exchange probability prices and posts orders accordingly. Price ticks and order sizing are configured per-tournament.
+
+### Hedging
+
+When an exchange order fills, the engine automatically hedges by placing a corresponding bet on the assigned bookmaker. The process handles concurrent fills safely and reposts filled amounts back on the exchange to maintain market presence.
+
+## Base URL
+
+```
+https://mmapi.55-tech.com
+```
+
+All client endpoints are prefixed with `/api/v1/`.
+
+## Key concepts
+
+### Clients
+
+Clients are trading entities configured with specific exchange accounts and bookmaker hedging targets.
+
+- **Simple format:** `"vertex"` — client name IS the bookmaker
+- **Compound format:** `"demo:vertex"` — client=demo, hedges on vertex
+
+### Exchanges
+
+Target platforms where orders are placed:
+
+| Exchange | Auth method | Order type |
+|----------|------------|------------|
+| Polymarket | Ethereum wallet signing | CLOB limit orders |
+| Polymarket US | JWT + gRPC | gRPC order submission |
+| Kalshi | RSA-PSS signing | REST limit orders |
+| Novig.us | OAuth 2.0 | REST orders |
+| SX.bet | API key + EIP712 | Signed orders |
+| Betfair | SSL certificate | Exchange API |
+| ProphetX | JWT | REST orders |
+| Matchbook | Session token | REST orders |
+| Smarkets | Session token | REST orders |
+| 4casters | Token auth | Socket.IO |
+| Predict.fun | JWT + EIP712 | Signed orders |
+
+### Order lifecycle
+
+```
+PENDING_PLACEMENT → PLACED → PARTIAL / FILLED / FAILED / CANCELLED / EXPIRED
+```
+
+### Match status
+
+```
+NOT_MATCHED → PARTIALLY_MATCHED → FULLY_MATCHED
+```
+
+### Settlement status
+
+```
+UNDECIDED → WON / LOST / VOID / HALF_WON / HALF_LOST
+```
+
+### Tradeable outcomes
+
+Default outcome IDs: 111, 112, 121, 122, 131, 132, 141, 142, 151, 152, 161, 162, 171, 172
+
+These cover 1x2 markets, over/under, handicap, correct score, and both sides.
+
+## Endpoints at a glance
+
+### Client API (`X-API-Key` auth)
+
+| Category | Endpoints | Description |
+|----------|-----------|-------------|
+| **Identity** | `GET /api/v1/me` | Get your client info |
+| **Orders** | `GET /api/v1/orders` | View exchange orders (paginated, filterable) |
+| **Orders** | `GET /api/v1/orders/{id}` | Get specific order |
+| **Orders** | `GET /api/v1/orders/open` | List open orders for a fixture |
+| **Orders** | `GET /api/v1/orders/summary` | Order statistics |
+| **Bets** | `GET /api/v1/bets` | View hedge bets (paginated) |
+| **Bets** | `GET /api/v1/bets/{id}` | Get specific bet |
+| **Bets** | `GET /api/v1/bets/summary` | Bet statistics |
+| **Fixtures** | `GET /api/v1/fixtures` | List fixtures with scores |
+| **Fixtures** | `GET /api/v1/fixtures/{id}` | Get specific fixture |
+| **Positions** | `GET /api/v1/positions` | Aggregated positions |
+| **Positions** | `GET /api/v1/positions/summary` | Position summary |
+| **Accounts** | `GET /api/v1/accounts` | List exchange accounts (no credentials) |
+
+### WebSocket
+
+| Endpoint | Description |
+|----------|-------------|
+| `WS /ws/subscribe` | Real-time order, bet, account, score, and emergency updates |
+
+## Rate limits
+
+- REST API: **100 requests/minute** per client
+- WebSocket: **5 concurrent connections** per API key
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/mm-api/authentication">
+    Set up your API key.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/mm-api/quickstart">
+    Make your first API calls.
+  </Card>
+</Columns>
+
+
+---
+## MM Authentication - API Key Setup
+Source: /mm-api/authentication
+---
+
+All MM client endpoints require authentication via the `X-API-Key` header (UUID format).
+
+## Client API authentication
+
+Pass your API key (UUID format) in the `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+Your API key is bound to a specific `client` entity. All data returned is filtered to your client — you only see your own orders, bets, and positions.
+
+## WebSocket authentication
+
+For WebSocket connections, send your API key in the subscribe message:
+
+```json
+{
+  "type": "subscribe",
+  "api_key": "YOUR_API_KEY",
+  "channels": ["orders", "bets", "accounts", "scores"]
+}
+```
+
+You must send the subscribe message within **30 seconds** of connecting, or the connection is closed. See [WebSocket](/mm-api/websocket) for details.
+
+## Rate limiting
+
+Rate limits are enforced per client:
+
+- **REST API:** 100 requests per minute
+- **WebSocket:** Maximum 5 concurrent connections per API key
+- **Exceeded:** Returns `429 Too Many Requests`
+
+## Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Invalid or missing API key (must be valid UUID) |
+| `429` | Rate limit exceeded |
+
+```json
+{"detail": "Invalid or missing API key"}
+```
+
+
+---
+## MM Quickstart - First API Calls
+Source: /mm-api/quickstart
+---
+
+<Note>
+The MM engine places orders automatically based on bookmaker odds. The client API provides **read access** to all trading activity. You do not place orders through this API — the engine does it for you.
+</Note>
+
+## Step 1: Verify your identity
+
+Confirm your API key works and see your client info:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+Response:
+
+```json
+{
+  "client": "your-client",
+  "clientName": "Your Client Name",
+  "active": true
+}
+```
+
+## Step 2: View exchange orders
+
+See orders the engine has placed on exchanges:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders
+```
+
+Filter by exchange, fixture, or status:
+
+```bash
+# Filled Polymarket orders
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/orders?exchange=polymarket&status=FILLED"
+
+# Open orders for a specific fixture
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/orders/open?fixture_id=id1000000861624412"
+```
+
+Each order includes exchange-specific identifiers, matched amounts, and odds snapshots:
+
+```json
+{
+  "orderId": 123,
+  "fixtureId": "id1000000861624412",
+  "outcomeId": 161,
+  "exchange": "polymarket",
+  "exchangeOrderId": "0x1a2b3c...",
+  "exchangeOutcomeId": "12345678",
+  "orderStatus": "FILLED",
+  "matchedStatus": "FULLY_MATCHED",
+  "orderCents": 0.45,
+  "orderStake": 100.0,
+  "matchedStake": 100.0,
+  "settlementStatus": "UNDECIDED",
+  "bookmakerOutcomePrice": 1.808,
+  "bookmakerOutcomeLimit": 5000.0,
+  "createdAt": "2026-02-15T10:30:00Z",
+  "matchedAt": "2026-02-15T10:30:05Z"
+}
+```
+
+## Step 3: View hedge bets
+
+See bets placed on bookmakers to hedge exchange fills:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/bets
+```
+
+Each bet is linked to an exchange order via `orderId`:
+
+```json
+{
+  "betId": 456,
+  "orderId": 123,
+  "client": "your-client",
+  "bookmaker": "vertex",
+  "bookmakerBetId": "789",
+  "placedPrice": 1.808,
+  "placedStake": 100.0,
+  "betStatus": "matched",
+  "settlementStatus": null,
+  "placedAt": "2026-02-15T10:30:08Z"
+}
+```
+
+## Step 4: Check positions
+
+View aggregated positions across all fixtures and exchanges:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions
+```
+
+Get a position summary:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions/summary
+```
+
+## Step 5: View profit & loss
+
+Get your PnL breakdown:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/pnl
+```
+
+Filter by date range:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/pnl?from_date=2026-01-01&to_date=2026-01-31"
+```
+
+## Step 6: View fixtures
+
+See which events the engine is trading on:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/fixtures
+```
+
+Filter by sport, tournament, or live status:
+
+```bash
+# Live fixtures only
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/fixtures?live=true"
+
+# Filter by tournament
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/fixtures?tournament_id=17"
+```
+
+## Step 7: List accounts
+
+View your exchange accounts (credentials are never exposed):
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/accounts
+```
+
+```json
+[
+  {
+    "exchange": "polymarket",
+    "username": "0x1234...abcd",
+    "client": "your-client",
+    "bookmaker": "vertex",
+    "balance": 50000.0,
+    "maxOutcomeStake": 1000.0,
+    "active": true
+  }
+]
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket updates" icon="bolt" href="/mm-api/websocket">
+    Get real-time order fills, hedge bets, and score updates.
+  </Card>
+
+  <Card title="API reference" icon="terminal" href="/mm-api/overview">
+    Explore all available endpoints.
+  </Card>
+</Columns>
+
+
+---
+## MM WebSocket - Real-Time Updates
+Source: /mm-api/websocket
+---
+
+## Endpoint
+
+```
+wss://mmapi.55-tech.com/ws/subscribe
+```
+
+## Connection flow
+
+### 1. Connect
+
+Open a WebSocket connection. No authentication is needed at connection time.
+
+### 2. Subscribe
+
+Send a subscribe message within **30 seconds** of connecting:
+
+```json
+{
+  "type": "subscribe",
+  "api_key": "your-uuid-api-key",
+  "channels": ["orders", "bets", "accounts", "scores", "emergency"]
+}
+```
+
+### 3. Confirmation
+
+On success, the server responds with:
+
+```json
+{
+  "type": "subscribed",
+  "subscription_id": 1,
+  "channels": ["orders", "bets", "accounts", "scores", "emergency"]
+}
+```
+
+### 4. Receive broadcasts
+
+Data updates arrive as broadcast messages with both current and previous state:
+
+```json
+{
+  "type": "broadcast",
+  "channel": "orders",
+  "event": "UPDATE",
+  "payload": {
+    "orderId": 123,
+    "orderStatus": "FILLED",
+    "matchedStake": 100.0,
+    "matchedAt": "2026-02-15T10:30:05Z"
+  },
+  "old": {
+    "orderStatus": "PLACED",
+    "matchedStake": 0
+  }
+}
+```
+
+The `old` field contains the previous state, making it easy to detect what changed.
+
+### 5. Keep alive
+
+Send a ping to keep the connection alive:
+
+```json
+{"type": "ping"}
+```
+
+Server responds with:
+
+```json
+{"type": "pong"}
+```
+
+The server also sends heartbeats every **60 seconds**:
+
+```json
+{"type": "heartbeat"}
+```
+
+### 6. Unsubscribe
+
+To stop receiving updates and clean up your subscription:
+
+```json
+{"type": "unsubscribe"}
+```
+
+## Channels
+
+### Client-filtered channels
+
+These channels only deliver data belonging to your client:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `orders` | INSERT, UPDATE | Exchange order placement, status changes, fills |
+| `bets` | INSERT, UPDATE | Hedge bet placement, confirmation, settlement |
+| `accounts` | UPDATE | Account balance and status changes |
+
+### Global channels
+
+All subscribers receive these:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `scores` | UPDATE | Live score updates (goals, sets, periods) |
+| `emergency` | UPDATE | Emergency mode activation/deactivation |
+
+## Payload examples
+
+### Order fill
+
+When an exchange order gets matched:
+
+```json
+{
+  "type": "broadcast",
+  "channel": "orders",
+  "event": "UPDATE",
+  "payload": {
+    "orderId": 123,
+    "fixtureId": "id1000000861624412",
+    "outcomeId": 161,
+    "exchange": "polymarket",
+    "exchangeOrderId": "0x1a2b3c...",
+    "orderStatus": "FILLED",
+    "matchedStatus": "FULLY_MATCHED",
+    "orderCents": 0.45,
+    "orderStake": 100.0,
+    "matchedStake": 100.0,
+    "matchedAt": "2026-02-15T10:30:05Z"
+  },
+  "old": {
+    "orderStatus": "PLACED",
+    "matchedStatus": "NOT_MATCHED",
+    "matchedStake": 0
+  }
+}
+```
+
+### Hedge bet placed
+
+After an order fills, the system automatically places a hedge bet:
+
+```json
+{
+  "type": "broadcast",
+  "channel": "bets",
+  "event": "INSERT",
+  "payload": {
+    "betId": 456,
+    "orderId": 123,
+    "client": "your-client",
+    "bookmaker": "vertex",
+    "placedPrice": 1.808,
+    "placedStake": 100.0,
+    "betStatus": "matched",
+    "sentData": {
+      "requestId": "a1b2c3d4",
+      "eventId": 98765,
+      "price": 1.808,
+      "amount": 100.0,
+      "side": "1"
+    },
+    "receivedData": {
+      "betId": "789",
+      "status": "U"
+    },
+    "placedAt": "2026-02-15T10:30:08Z"
+  }
+}
+```
+
+### Live score update
+
+```json
+{
+  "type": "broadcast",
+  "channel": "scores",
+  "event": "UPDATE",
+  "payload": {
+    "fixtureId": "id1000000861624412",
+    "live": true,
+    "statusId": 1,
+    "currentPeriod": "2nd Half",
+    "currentMinute": 67,
+    "scores": {
+      "home": 2,
+      "away": 1,
+      "period1Home": 1,
+      "period1Away": 0
+    }
+  }
+}
+```
+
+### Emergency status
+
+```json
+{
+  "type": "broadcast",
+  "channel": "emergency",
+  "event": "UPDATE",
+  "payload": {
+    "emergency": true,
+    "reason": "Manual trigger",
+    "triggeredAt": "2026-02-15T10:30:00Z"
+  }
+}
+```
+
+## Connection limits
+
+| Setting | Value |
+|---------|-------|
+| Max connections per API key | 5 |
+| Auth timeout | 30 seconds |
+| Server heartbeat interval | 60 seconds |
+| Client ping interval | 30 seconds (recommended) |
+
+## Error messages
+
+| Error | Description |
+|-------|-------------|
+| `api_key required` | Missing `api_key` field in subscribe message |
+| `Invalid api_key format` | API key must be a valid UUID |
+| `Invalid API key` | API key not found or client is inactive |
+| `Connection limit exceeded` | Already have 5 active connections for this API key |
+
+## Example: Python client
+
+```python
+import asyncio
+import json
+import websockets
+
+async def connect():
+    uri = "wss://mmapi.55-tech.com/ws/subscribe"
+    async with websockets.connect(uri) as ws:
+        # Subscribe
+        await ws.send(json.dumps({
+            "type": "subscribe",
+            "api_key": "YOUR_API_KEY",
+            "channels": ["orders", "bets", "scores"]
+        }))
+
+        # Wait for confirmation
+        sub_resp = json.loads(await ws.recv())
+        print(f"Subscribed (id={sub_resp.get('subscription_id')})")
+
+        # Keep-alive task
+        async def keep_alive():
+            while True:
+                await asyncio.sleep(30)
+                await ws.send(json.dumps({"type": "ping"}))
+
+        asyncio.create_task(keep_alive())
+
+        # Listen for updates
+        async for message in ws:
+            data = json.loads(message)
+            if data["type"] == "broadcast":
+                channel = data["channel"]
+                event = data["event"]
+                print(f"[{channel}:{event}] {data['payload']}")
+                if "old" in data:
+                    print(f"  Changed from: {data['old']}")
+
+asyncio.run(connect())
+```
+
+## Example: JavaScript client
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://mmapi.55-tech.com/ws/subscribe');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    type: 'subscribe',
+    api_key: 'YOUR_API_KEY',
+    channels: ['orders', 'bets', 'scores']
+  }));
+});
+
+ws.on('message', (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === 'subscribed') {
+    console.log(`Subscribed (id=${msg.subscription_id})`);
+  }
+
+  if (msg.type === 'broadcast') {
+    console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
+    if (msg.old) {
+      console.log('  Changed from:', msg.old);
+    }
+  }
+});
+
+// Keep alive
+setInterval(() => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'ping' }));
+  }
+}, 30000);
+```
+
+
+---
+## MM Error Handling
+Source: /mm-api/errors
+---
+
+## Error response format
+
+All API errors return a JSON body:
+
+```json
+{
+  "detail": "Invalid or missing API key"
+}
+```
+
+Validation errors include location details:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["query", "fixture_id"],
+      "msg": "Field required",
+      "type": "missing"
+    }
+  ]
+}
+```
+
+## HTTP status codes
+
+| Status | Description |
+|--------|-------------|
+| `200` | Success |
+| `401` | Unauthorized — invalid or missing API key (must be valid UUID) |
+| `404` | Not found — resource does not exist |
+| `422` | Validation error — request parameters failed validation |
+| `426` | Upgrade required — WebSocket endpoint called via HTTP |
+| `429` | Rate limited — exceeded 100 requests/minute |
+| `500` | Internal server error |
+
+## Rate limiting
+
+The MM API enforces **100 requests/minute** per client API key.
+
+When rate limited, the API returns `429 Too Many Requests`. Implement exponential backoff in your retry logic (wait 1s, 2s, 4s, etc.).
+
+## Common errors
+
+### Authentication (401)
+
+Your API key is missing, invalid, or not in UUID format.
+
+```bash
+# Correct
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# Wrong header name — returns 401
+curl -H "Authorization: Bearer your-key" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# Missing header — returns 401
+curl https://mmapi.55-tech.com/api/v1/me
+```
+
+### Not found (404)
+
+The requested resource doesn't exist:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/999999
+# Returns: 404
+```
+
+### Validation errors (422)
+
+Required query parameters are missing or have invalid values. Check the `loc` field to identify the problematic parameter.
+
+### WebSocket upgrade (426)
+
+If you call the WebSocket endpoint via HTTP instead of upgrading to a WebSocket connection, you receive a `426 Upgrade Required`.
+
+## WebSocket errors
+
+When subscribing to the WebSocket, these error messages may be returned:
+
+| Error | Description |
+|-------|-------------|
+| `api_key required` | No `api_key` field in subscribe message |
+| `Invalid api_key format` | Not a valid UUID |
+| `Invalid API key` | Key not found or client inactive |
+| `Connection limit exceeded` | Already at 5 active connections for this key |
+
+
+---
+## OpenAPI (REST Reference)
+Source: /abp-api/openapi.json
+---
+
+```json
+{"openapi":"3.1.0","info":{"title":"ABP v2 - Automated Bet Placing API","description":"\nPlace bets across 30+ bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `X-ABP-API-KEY` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n","version":"2.0"},"servers":[{"url":"https://v2.55-tech.com","description":"Production"}],"paths":{"/accounts":{"get":{"tags":["Accounts"],"summary":"List accounts for client","description":"Get all accounts for the authenticated client.\n\nOptionally filter by bookmaker. Returns accounts ordered by priority (highest first).","operationId":"get_accounts_accounts_get","parameters":[{"name":"bookmaker","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Filter by bookmaker slug","title":"Bookmaker"},"description":"Filter by bookmaker slug"}],"responses":{"200":{"description":"List of accounts for the authenticated client","content":{"application/json":{"schema":{},"example":[{"bookmaker":"pinnacle","username":"my_pinnacle","client":"demo","password":"***","balance":5000.0,"active":true,"priority":10,"maxStake":1000.0,"minStake":5.0,"currencyId":"USD","verifyBetslip":false,"meta":{},"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-02-01T12:00:00Z"},{"bookmaker":"betfair_ex","username":"my_betfair","client":"demo","password":"***","balance":2500.0,"active":true,"priority":5,"minStake":2.0,"currencyId":"GBP","verifyBetslip":true,"meta":{"appKey":"***"},"createdAt":"2026-01-05T00:00:00Z","updatedAt":"2026-02-05T12:00:00Z"}]}}},"401":{"description":"Unauthorized - missing or invalid API key"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"post":{"tags":["Accounts"],"summary":"Create account","description":"Create a new bookmaker account for the authenticated client.\n\nEach client can have multiple accounts per bookmaker. Use priority\nto control which account is selected first.","operationId":"create_account_accounts_post","requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AccountCreateRequest"}}}},"responses":{"201":{"description":"Account created successfully","content":{"application/json":{"schema":{},"example":{"bookmaker":"pinnacle","username":"my_account","client":"demo","password":"***","balance":1000.0,"active":true,"priority":10,"maxStake":500.0,"minStake":1.0,"currencyId":"USD","verifyBetslip":false,"meta":{"affiliate":"xyz"},"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-15T12:00:00Z"}}}},"401":{"description":"Unauthorized - missing or invalid API key"},"409":{"description":"Account already exists"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/accounts/{bookmaker}/{username}":{"get":{"tags":["Accounts"],"summary":"Get account by key","description":"Get a specific account by its primary key (bookmaker, username).\n\nOnly returns account if it belongs to the authenticated client.","operationId":"get_account_accounts__bookmaker___username__get","parameters":[{"name":"bookmaker","in":"path","required":true,"schema":{"type":"string","title":"Bookmaker"}},{"name":"username","in":"path","required":true,"schema":{"type":"string","title":"Username"}}],"responses":{"200":{"description":"Account details","content":{"application/json":{"schema":{},"example":{"bookmaker":"pinnacle","username":"my_account","client":"demo","password":"***","balance":1000.0,"active":true,"priority":10,"maxStake":500.0,"minStake":1.0,"currencyId":"USD","verifyBetslip":false,"meta":{"affiliate":"xyz"},"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-15T12:00:00Z"}}}},"401":{"description":"Unauthorized - missing or invalid API key"},"403":{"description":"Access denied - account belongs to different client"},"404":{"description":"Account not found"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"patch":{"tags":["Accounts"],"summary":"Update account","description":"Update an existing account.\n\nOnly the account owner (client) can update their accounts.","operationId":"update_account_accounts__bookmaker___username__patch","parameters":[{"name":"bookmaker","in":"path","required":true,"schema":{"type":"string","title":"Bookmaker"}},{"name":"username","in":"path","required":true,"schema":{"type":"string","title":"Username"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AccountUpdateRequest"}}}},"responses":{"200":{"description":"Account updated successfully","content":{"application/json":{"schema":{},"example":{"bookmaker":"pinnacle","username":"my_account","client":"demo","password":"***","balance":1000.0,"active":true,"priority":10,"maxStake":500.0,"minStake":1.0,"currencyId":"USD","verifyBetslip":false,"meta":{"affiliate":"xyz"},"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-15T12:00:00Z"}}}},"401":{"description":"Unauthorized - missing or invalid API key"},"403":{"description":"Access denied - account belongs to different client"},"404":{"description":"Account not found"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"delete":{"tags":["Accounts"],"summary":"Delete account","description":"Delete an account.\n\nOnly the account owner (client) can delete their accounts.","operationId":"delete_account_accounts__bookmaker___username__delete","parameters":[{"name":"bookmaker","in":"path","required":true,"schema":{"type":"string","title":"Bookmaker"}},{"name":"username","in":"path","required":true,"schema":{"type":"string","title":"Username"}}],"responses":{"204":{"description":"Account deleted successfully"},"401":{"description":"Unauthorized - missing or invalid API key"},"403":{"description":"Access denied - account belongs to different client"},"404":{"description":"Account not found"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/positions":{"get":{"tags":["Analytics"],"summary":"Get open positions","description":"Retrieve aggregated open (unsettled) positions grouped by bookmaker, account, or userRef.\n\nReturns the number of open bets, total stake, and average price for each group.\nOnly includes bets with `betStatus` in (PLACED, CONFIRMED) and `settlementStatus` = UNSETTLED.\n\n**Group by options:**\n- `bookmaker` (default) - Group by bookmaker\n- `account` - Group by bookmaker account\n- `userRef` - Group by user reference\n\n**Filters:**\n- `bookmaker` - Filter to a specific bookmaker\n- `userRef` - Filter to a specific user reference\n- `account` - Filter to a specific account","operationId":"get_positions_positions_get","parameters":[{"name":"groupBy","in":"query","required":false,"schema":{"type":"string","description":"Group positions by: bookmaker, account, or userRef","default":"bookmaker","title":"Groupby"},"description":"Group positions by: bookmaker, account, or userRef"},{"name":"bookmaker","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Filter by bookmaker slug","title":"Bookmaker"},"description":"Filter by bookmaker slug"},{"name":"userRef","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Filter by user reference","title":"Userref"},"description":"Filter by user reference"},{"name":"account","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Filter by account username","title":"Account"},"description":"Filter by account username"}],"responses":{"200":{"description":"Successfully retrieved positions","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PositionsResponse"}}}},"400":{"description":"Invalid parameters"},"401":{"description":"Unauthorized"},"503":{"description":"Database unavailable"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/pnl":{"get":{"tags":["Analytics"],"summary":"Get profit and loss","description":"Calculates realized and unrealized PnL.\n\nOnly includes settled bets (`settlementStatus` NOT in UNSETTLED).\n\n**Group by options:**\n- `bookmaker` (default) - Group by bookmaker\n- `account` - Group by bookmaker account\n- `userRef` - Group by user reference\n\n**Filters:**\n- `bookmaker` - Filter to a specific bookmaker\n- `userRef` - Filter to a specific user reference\n- `account` - Filter to a specific account","operationId":"get_pnl_pnl_get","parameters":[{"name":"groupBy","in":"query","required":false,"schema":{"type":"string","description":"Group PnL by: bookmaker, account, or userRef","default":"bookmaker","title":"Groupby"},"description":"Group PnL by: bookmaker, account, or userRef"},{"name":"bookmaker","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Filter by bookmaker slug","title":"Bookmaker"},"description":"Filter by bookmaker slug"},{"name":"userRef","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Filter by user reference","title":"Userref"},"description":"Filter by user reference"},{"name":"account","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Filter by account username","title":"Account"},"description":"Filter by account username"}],"responses":{"200":{"description":"Successfully retrieved PnL","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PnlResponse"}}}},"400":{"description":"Invalid parameters"},"401":{"description":"Unauthorized"},"503":{"description":"Database unavailable"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/bets":{"get":{"tags":["Bets"],"summary":"Get bets","description":"Retrieve bets by various filters with keyset pagination. At least one filter must be provided.\n\n**Filters (OR logic):**\n- `betIds` - Comma-separated list of bet IDs\n- `orderIds` - Comma-separated list of order IDs\n- `userRef` - User reference string\n\n**Pagination:**\n- Results are ordered by betId descending (newest first)\n- Use `afterBetId` from `nextCursor` in the response to fetch the next page\n- `hasMore` indicates if more results are available\n\nAll matching bets are returned (union of all filter matches).\nResults are filtered to only include bets belonging to the authenticated client.\n\n**Bet Status Values:**\n- `PENDING` - Bet submitted, awaiting confirmation\n- `CONFIRMED` - Bet accepted by bookmaker\n- `DECLINED` - Bet rejected by bookmaker\n- `CANCELLED` - Bet cancelled before confirmation\n\n**Settlement Status Values:**\n- `UNSETTLED` - Event not yet settled\n- `WON` - Bet won\n- `LOST` - Bet lost\n- `VOID` - Bet voided/cancelled\n- `PUSHED` - Stake returned (tie)","operationId":"get_bets_bets_get","parameters":[{"name":"betIds","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Comma-separated bet IDs","title":"Betids"},"description":"Comma-separated bet IDs","example":"1,2,3"},{"name":"orderIds","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Comma-separated order IDs","title":"Orderids"},"description":"Comma-separated order IDs","example":"100,101,102"},{"name":"userRef","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"User reference to filter by","title":"Userref"},"description":"User reference to filter by","example":"user123"},{"name":"afterBetId","in":"query","required":false,"schema":{"anyOf":[{"type":"integer"},{"type":"null"}],"description":"Cursor for pagination: fetch bets with betId less than this value","title":"Afterbetid"},"description":"Cursor for pagination: fetch bets with betId less than this value","example":1000},{"name":"limit","in":"query","required":false,"schema":{"type":"integer","maximum":1000,"minimum":1,"description":"Maximum number of bets to return per page","default":50,"title":"Limit"},"description":"Maximum number of bets to return per page"}],"responses":{"200":{"description":"Successfully retrieved bets","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BetsResponse"},"example":{"status":"success","bets":[{"betId":67890,"orderId":12345,"bookmaker":"pinnacle","betStatus":"CONFIRMED","settlementStatus":"UNSETTLED","clientName":"demo","testBet":false,"requestUuid":"eb45b192-317b-42d5-9f65-af497b9fa8c1","bookmakerBetId":"3332684214","placedPrice":1.97,"placedStake":10.0,"placedCurrency":"USD","placedAt":"2026-02-07T17:29:32+00:00","userRef":"bettor1234","account":"my_pinnacle","sentData":{"stake":10.0,"price":1.95},"receivedData":{"betId":"3332684214","status":"accepted","price":1.97},"currencyInfo":{"currency":"USD","currencyValue":1.0}},{"betId":67889,"orderId":12344,"bookmaker":"betfair_ex","betStatus":"CONFIRMED","settlementStatus":"WON","clientName":"demo","testBet":false,"requestUuid":"fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d","bookmakerBetId":"234567890","placedPrice":1.94,"placedStake":50.0,"placedCurrency":"GBP","placedAt":"2026-02-07T16:00:00+00:00","settledAt":"2026-02-07T18:30:00+00:00","userRef":"bettor1234","account":"my_betfair","currencyInfo":{"currency":"GBP","currencyValue":0.73}}],"count":2,"hasMore":true,"nextCursor":67889}}}},"400":{"description":"Invalid filter parameters or missing required filter"},"401":{"description":"Unauthorized - missing or invalid API key"},"503":{"description":"Database unavailable"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/bets/{bet_id}":{"get":{"tags":["Bets"],"summary":"Get a single bet","description":"Retrieve a single bet by its ID. The bet must belong to the authenticated client.","operationId":"get_bet_by_id_bets__bet_id__get","parameters":[{"name":"bet_id","in":"path","required":true,"schema":{"type":"integer","title":"Bet Id"}}],"responses":{"200":{"description":"Successfully retrieved bet","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BetResponse"},"example":{"betId":67890,"orderId":12345,"bookmaker":"pinnacle","betStatus":"CONFIRMED","settlementStatus":"UNSETTLED","clientName":"demo","testBet":false,"requestUuid":"eb45b192-317b-42d5-9f65-af497b9fa8c1","bookmakerBetId":"3332684214","placedPrice":1.97,"placedStake":10.0,"placedCurrency":"USD","placedAt":"2026-02-07T17:29:32+00:00","userRef":"bettor1234","account":"my_pinnacle","sentData":{"stake":10.0,"price":1.95},"receivedData":{"betId":"3332684214","status":"accepted","price":1.97},"currencyInfo":{"currency":"USD","currencyValue":1.0}}}}},"401":{"description":"Unauthorized - missing or invalid API key"},"404":{"description":"Bet not found or not owned by client"},"503":{"description":"Database unavailable"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/betslip":{"get":{"tags":["Betslip"],"summary":"Get betslip metadata and live odds","description":"Returns a live betslip with real-time odds from bookmakers, enriched with fixture and outcome metadata.","operationId":"get_betslip_betslip_get","parameters":[{"name":"fixtureId","in":"query","required":true,"schema":{"type":"string","description":"Fixture identifier (e.g. 'id1000004461512432')","title":"Fixtureid"},"description":"Fixture identifier (e.g. 'id1000004461512432')"},{"name":"outcomeId","in":"query","required":true,"schema":{"type":"integer","description":"Outcome identifier (e.g. 103)","title":"Outcomeid"},"description":"Outcome identifier (e.g. 103)"},{"name":"playerId","in":"query","required":true,"schema":{"type":"integer","description":"Player ID (e.g. 0 if not a player prop)","title":"Playerid"},"description":"Player ID (e.g. 0 if not a player prop)"},{"name":"bookmakers","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Comma-separated bookmakers. If omitted, uses all client's configured bookmakers.","title":"Bookmakers"},"description":"Comma-separated bookmakers. If omitted, uses all client's configured bookmakers."}],"responses":{"200":{"description":"Current odds and betslip metadata for a fixture","content":{"application/json":{"schema":{},"example":{"fixtureId":"id1000002361061419","outcomeId":101,"playerId":0,"client":"demo","fixtureInfo":{"fixtureId":"id1000002361061419","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":23,"tournamentName":"Serie A","categoryName":"Italy"},"season":{"seasonId":130971,"seasonName":"Serie A 25/26"},"startTime":1770666300,"participants":{"participant1Id":2702,"participant1Name":"AS Roma","participant2Id":2719,"participant2Name":"Cagliari Calcio"},"scores":{},"expectedPeriods":2,"externalProviders":{"betgeniusId":100000,"betradarId":200000,"flashscoreId":"EXAMPLE123","mollybetId":"2026-01-01,100,200","opticoddsId":"20260101000000000","pinnacleId":300000,"sofascoreId":400000},"bookmakers":{}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"marketLength":3,"sportId":10,"outcomeId":101,"outcomeName":"1"},"odds":{"polymarket":{"id1000002361061419:polymarket:101:0":{"price":1.55,"limit":0,"limitMin":1,"limitCurrency":"USD","limitUsd":0,"limitMinUsd":1,"active":true,"account":"0x0000000000000000000000000000000000000000","currencyInfo":{"currency":"USD","currencyValue":1,"updatedAt":"2026-02-08T20:27:05+00:00"},"bookmakerMarketId":"101","bookmakerOutcomeId":"47560474994564756084533131483151433692089461304045858881876576415056110461089","meta":{"lay":2.817,"bookmakerLayOutcomeId":"68720233493513315549726110228454980604765404427736533364284705967981292940643"}}},"pinnacle":{"id1000002361061419:pinnacle:101:0":{"price":1.5,"limit":15000,"limitMin":5,"limitCurrency":"USD","limitUsd":15000,"limitMinUsd":5,"active":true,"account":"EXAMPLE01","currencyInfo":{"currency":"USD","currencyValue":1,"updatedAt":"2026-02-08T20:27:05+00:00"},"bookmakerMarketId":"101","bookmakerOutcomeId":"home"}},"sharpbet":{"id1000002361061419:sharpbet:101:0":{"price":1.52,"limit":751.343,"limitMin":1,"limitCurrency":"EUR","limitUsd":886.13,"limitMinUsd":1.18,"active":true,"account":"my_account","currencyInfo":{"currency":"EUR","currencyValue":0.84788876,"updatedAt":"2026-02-08T00:00:05+00:00"},"bookmakerMarketId":"101","bookmakerOutcomeId":"7"}}}}}}},"400":{"description":"Invalid request parameters","content":{"application/json":{"example":{"detail":"Invalid bookmaker slug: unknown_bookmaker"}}}},"403":{"description":"Access denied","content":{"application/json":{"example":{"detail":"No accounts configured for bookmaker(s): pinnacle"}}}},"404":{"description":"No odds found","content":{"application/json":{"example":{"detail":"No odds found for given parameters"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/bookmakers":{"get":{"tags":["Bookmakers"],"summary":"List all bookmakers","description":"Returns all supported bookmakers. Results are cached for 60 seconds.","operationId":"get_bookmakers_bookmakers_get","responses":{"200":{"description":"List of supported bookmakers","content":{"application/json":{"schema":{},"example":[{"bookmakerId":1,"bookmaker":"pinnacle","bookmakerName":"Pinnacle","active":true,"maxStake":10000.0,"minStake":1.0},{"bookmakerId":2,"bookmaker":"betfair_ex","bookmakerName":"Betfair Exchange","active":true,"minStake":2.0},{"bookmakerId":3,"bookmaker":"polymarket","bookmakerName":"Polymarket","active":true,"minStake":1.0}]}}},"401":{"description":"Unauthorized - missing or invalid API key"},"404":{"description":"No bookmakers found"},"500":{"description":"Internal server error"}}}},"/markets":{"get":{"tags":["Markets"],"summary":"Get all markets with odds types","description":"Returns all available markets and their outcome types. Optionally filter by sportId.","operationId":"get_markets_markets_get","parameters":[{"name":"sportId","in":"query","required":false,"schema":{"anyOf":[{"type":"integer"},{"type":"null"}],"description":"Filter by sportId","title":"Sportid"},"description":"Filter by sportId"}],"responses":{"200":{"description":"List of markets with odds types","content":{"application/json":{"schema":{"title":"Response Get Markets Markets Get"},"example":[{"marketId":101,"marketLength":3,"sportId":10,"playerProp":false,"handicap":0,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","oddsTypes":[{"outcomeId":101,"outcomeName":"1"},{"outcomeId":102,"outcomeName":"X"},{"outcomeId":103,"outcomeName":"2"}]},{"marketId":201,"marketLength":2,"sportId":10,"playerProp":false,"handicap":-1.5,"marketName":"Asian Handicap -1.5","marketNameShort":"AH -1.5","marketType":"asian_handicap","period":"fulltime","oddsTypes":[{"outcomeId":201,"outcomeName":"1"},{"outcomeId":202,"outcomeName":"2"}]}]}}},"401":{"description":"Unauthorized - missing or invalid API key"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/orders":{"get":{"tags":["Orders"],"summary":"Retrieve placed orders by orderIds, userRef, or requestUuids","operationId":"get_orders_orders_get","parameters":[{"name":"orderIds","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Comma-separated order IDs","title":"Orderids"},"description":"Comma-separated order IDs"},{"name":"requestUuids","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"Comma-separated request UUIDs","title":"Requestuuids"},"description":"Comma-separated request UUIDs"},{"name":"userRef","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"description":"User reference to filter by","title":"Userref"},"description":"User reference to filter by"},{"name":"afterOrderId","in":"query","required":false,"schema":{"anyOf":[{"type":"integer"},{"type":"null"}],"description":"Cursor for pagination: fetch orders with orderId less than this value","title":"Afterorderid"},"description":"Cursor for pagination: fetch orders with orderId less than this value"},{"name":"limit","in":"query","required":false,"schema":{"type":"integer","maximum":1000,"minimum":1,"description":"Maximum number of orders to return per page","default":50,"title":"Limit"},"description":"Maximum number of orders to return per page"}],"responses":{"200":{"description":"Successfully retrieved matching orders","content":{"application/json":{"schema":{"title":"Response Get Orders Orders Get"},"example":[{"orderId":371,"requestUuid":"9eb7d99a-ab9b-41f3-9a06-23e70006bbe5","allowedBookmakers":"*","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":50.0,"filledStake":0.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T16:15:53.270816+00:00","acceptBetterOdds":true,"acceptPartialStake":true,"clientName":"demo","orderStatus":"PENDING","createdAt":"2026-02-07T16:15:48.270816+00:00","updatedAt":"2026-02-07T16:15:48.270816+00:00","bets":[],"fixtureInfo":{"fixtureId":"id1000004461512432","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":44,"tournamentName":"2. Bundesliga","categoryName":"Germany"},"startTime":1754159400,"participants":{"participant1Id":2540,"participant1Name":"Arminia Bielefeld","participant2Id":2588,"participant2Name":"Fortuna Dusseldorf"}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"outcomeId":103,"outcomeName":"2"},"currencyInfo":{"currency":"USD","currencyValue":1.0}},{"orderId":372,"requestUuid":"be81ba8f-55f4-48ed-a6f9-69b8d920263b","allowedBookmakers":"sharpbet","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":2.65,"orderStake":10.0,"filledStake":10.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T16:18:34.366795+00:00","acceptBetterOdds":true,"acceptPartialStake":true,"clientName":"demo","orderStatus":"FILLED","createdAt":"2026-02-07T16:18:29.366795+00:00","updatedAt":"2026-02-07T16:18:29.366795+00:00","bets":[{"betId":91,"orderId":372,"bookmaker":"sharpbet","bookmakerBetId":"63aeba8d-a2d6-49ba-a6cd-7ce70bb17701","placedPrice":2.65,"placedStake":10.0,"placedCurrency":"USD","placedAt":"2026-02-07T16:18:29.300906+00:00","betStatus":"CONFIRMED","settlementStatus":"UNSETTLED","clientName":"demo","testBet":false,"userRef":"bettor1234","requestUuid":"be81ba8f-55f4-48ed-a6f9-69b8d920263b"}],"fixtureInfo":{"fixtureId":"id1000004461512432","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":44,"tournamentName":"2. Bundesliga","categoryName":"Germany"},"startTime":1754159400,"participants":{"participant1Id":2540,"participant1Name":"Arminia Bielefeld","participant2Id":2588,"participant2Name":"Fortuna Dusseldorf"}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"outcomeId":103,"outcomeName":"2"},"currencyInfo":{"currency":"USD","currencyValue":1.0}}]}}},"400":{"description":"Missing required query parameter"},"403":{"description":"Access denied: client not resolved"},"404":{"description":"No orders found"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/cancel-orders":{"post":{"tags":["Orders"],"summary":"Cancel specific orders","description":"Cancel orders by one or more filters.\n\n- `orderIds`: numeric IDs\n- `requestUuids`: UUID strings from when the order was placed\n- `userRef`: your custom reference string\n\nOnly orders in a pending state are cancelled (\"pending\" or \"partial-placed\").\nAny associated pending bets are marked cancelled.","operationId":"cancel_orders_cancel_orders_post","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CancelOrdersRequest"},"example":{"requestUuids":["ee9f4007-e5ab-4085-bffb-8d938e4cad5f","fb5f2dd9-c855-4ba9-8eh9-4c2278ca2f1d"]}}},"required":true},"responses":{"200":{"description":"Cancellation result with enriched order details","content":{"application/json":{"schema":{"title":"Response Cancel Orders Cancel Orders Post"},"example":{"status":"cancelled","cancelledCount":1,"cancelled":[{"orderId":327,"requestUuid":"eb45b192-317b-42d5-9f65-af497b9fa8c1","allowedBookmakers":"*","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":10.0,"filledStake":0.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T12:20:06.302841+00:00","acceptBetterOdds":true,"acceptPartialStake":true,"clientName":"demo","orderStatus":"CANCELLED","createdAt":"2026-02-07T12:20:01.302841+00:00","updatedAt":"2026-02-07T12:20:01.302841+00:00","bets":[],"fixtureInfo":{"fixtureId":"id1000004461512432","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":44,"tournamentName":"2. Bundesliga","categoryName":"Germany"},"startTime":1754159400,"participants":{"participant1Id":2540,"participant1Name":"Arminia Bielefeld","participant2Id":2588,"participant2Name":"Fortuna Dusseldorf"}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"outcomeId":103,"outcomeName":"2"},"currencyInfo":{"currency":"USD","currencyValue":1.0}}],"notCancelled":{"reason":"Order not cancellable","orders":[{"orderId":328,"requestUuid":"be81ba8f-55f4-48ed-a6f9-69b8d920263b","allowedBookmakers":"*","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":10.0,"filledStake":10.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T16:18:34.366795+00:00","acceptBetterOdds":true,"acceptPartialStake":true,"clientName":"demo","orderStatus":"FILLED","createdAt":"2026-02-07T16:18:29.366795+00:00","updatedAt":"2026-02-07T16:18:29.366795+00:00","bets":[{"betId":91,"orderId":328,"bookmaker":"pinnacle","bookmakerBetId":"63aeba8d-a2d6-49ba-a6cd-7ce70bb17701","placedPrice":1.98,"placedStake":10.0,"placedCurrency":"USD","placedAt":"2026-02-07T16:18:29.300906+00:00","betStatus":"CONFIRMED","settlementStatus":"UNSETTLED","clientName":"demo","testBet":false,"userRef":"bettor1234","requestUuid":"be81ba8f-55f4-48ed-a6f9-69b8d920263b"}],"fixtureInfo":{"fixtureId":"id1000004461512432","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":44,"tournamentName":"2. Bundesliga","categoryName":"Germany"},"startTime":1754159400,"participants":{"participant1Id":2540,"participant1Name":"Arminia Bielefeld","participant2Id":2588,"participant2Name":"Fortuna Dusseldorf"}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"outcomeId":103,"outcomeName":"2"},"currencyInfo":{"currency":"USD","currencyValue":1.0}}]}}}}},"400":{"description":"Missing required filter parameter"},"403":{"description":"Access denied: client not resolved"},"404":{"description":"No matching orders found"},"500":{"description":"Internal server error"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/place-orders":{"post":{"tags":["Orders"],"summary":"Place multiple betting orders","description":"Validates and places orders through the configured bookmakers.\n\nEach order may specify a comma-separated `bookmakers` string or rely on\nauto-selection (missing/empty/\"*\").","operationId":"place_orders_place_orders_post","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlaceOrdersRequest"},"example":{"orders":[{"requestUuid":"eb45b192-317b-42d5-9f65-af497b9fa8c1","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":10.0,"userRef":"bettor1234","testOrder":false},{"requestUuid":"fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d","fixtureId":"id1000000758265385","outcomeId":101,"playerId":0,"orderPrice":1.88,"orderStake":250.25,"userRef":"bettor1234","testOrder":false,"bookmakers":"pinnacle,vertex","orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T22:26:05Z","acceptBetterOdds":true,"acceptPartialStake":true,"meta":{"strategy":"value","source":"api"}}]}}},"required":true},"responses":{"200":{"description":"Order placement results with accepted and declined orders","content":{"application/json":{"schema":{"title":"Response Place Orders Place Orders Post"},"example":{"status":"partial-success","acceptedOrders":[{"orderId":327,"requestUuid":"eb45b192-317b-42d5-9f65-af497b9fa8c1","allowedBookmakers":"*","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":10.0,"filledStake":10.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T17:29:37.311377+00:00","acceptBetterOdds":true,"acceptPartialStake":true,"clientName":"demo","orderStatus":"FILLED","createdAt":"2026-02-07T17:29:32.265368+00:00","updatedAt":"2026-02-07T17:29:32.265368+00:00","bets":[{"betId":73,"orderId":327,"bookmaker":"pinnacle","bookmakerBetId":"3332684214","placedPrice":1.98,"placedStake":10.0,"placedCurrency":"USD","placedAt":"2026-02-07T17:29:32+00:00","betStatus":"CONFIRMED","settlementStatus":"UNSETTLED","clientName":"demo","testBet":false,"userRef":"bettor1234","requestUuid":"eb45b192-317b-42d5-9f65-af497b9fa8c1"}],"fixtureInfo":{"fixtureId":"id1000004461512432","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":44,"tournamentName":"2. Bundesliga","categoryName":"Germany"},"startTime":1754159400,"participants":{"participant1Id":2540,"participant1Name":"Arminia Bielefeld","participant2Id":2588,"participant2Name":"Fortuna Dusseldorf"}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"outcomeId":103,"outcomeName":"2"},"currencyInfo":{"currency":"USD","currencyValue":1.0}}],"declinedOrders":[{"requestUuid":"fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d","allowedBookmakers":"vertex","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":10.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"clientName":"demo","declineReason":"Odds temporarily unavailable; please retry","bets":[]}]}}}},"400":{"description":"Validation error or all orders declined","content":{"application/json":{"example":{"status":"declined","acceptedOrders":[],"declinedOrders":[{"requestUuid":"fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d","fixtureId":"id1000004461512432","outcomeId":103,"declineReason":"Order stake 100.00 USD exceeds available limit 50.00 USD","bets":[]}]}}}},"409":{"description":"All orders are duplicates","content":{"application/json":{"example":{"error":"All orders are duplicates","duplicateUuids":["eb45b192-317b-42d5-9f65-af497b9fa8c1"],"inProgressUuids":[]}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/cancel-all-orders":{"post":{"tags":["Orders","Orders"],"summary":"Cancel all pending orders","description":"Cancel ALL pending and partial-placed orders for the authenticated client.\nOnly cancels orders without placed bets.","operationId":"cancel_all_orders_cancel_all_orders_post","responses":{"200":{"description":"Cancellation result with enriched order details","content":{"application/json":{"schema":{"title":"Response Cancel All Orders Cancel All Orders Post"},"example":{"status":"cancelled","cancelledCount":1,"cancelled":[{"orderId":327,"requestUuid":"eb45b192-317b-42d5-9f65-af497b9fa8c1","allowedBookmakers":"*","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":10.0,"filledStake":0.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T12:20:06.302841+00:00","acceptBetterOdds":true,"acceptPartialStake":true,"clientName":"demo","orderStatus":"CANCELLED","createdAt":"2026-02-07T12:20:01.302841+00:00","updatedAt":"2026-02-07T12:20:01.302841+00:00","bets":[],"fixtureInfo":{"fixtureId":"id1000004461512432","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":44,"tournamentName":"2. Bundesliga","categoryName":"Germany"},"startTime":1754159400,"participants":{"participant1Id":2540,"participant1Name":"Arminia Bielefeld","participant2Id":2588,"participant2Name":"Fortuna Dusseldorf"}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"outcomeId":103,"outcomeName":"2"},"currencyInfo":{"currency":"USD","currencyValue":1.0}}],"notCancelled":{"reason":"Order not cancellable","orders":[{"orderId":328,"requestUuid":"be81ba8f-55f4-48ed-a6f9-69b8d920263b","allowedBookmakers":"*","fixtureId":"id1000004461512432","outcomeId":103,"playerId":0,"orderPrice":1.95,"orderStake":10.0,"filledStake":10.0,"userRef":"bettor1234","testOrder":false,"orderCurrency":"USD","back":true,"expiresAt":"2026-02-07T16:18:34.366795+00:00","acceptBetterOdds":true,"acceptPartialStake":true,"clientName":"demo","orderStatus":"FILLED","createdAt":"2026-02-07T16:18:29.366795+00:00","updatedAt":"2026-02-07T16:18:29.366795+00:00","bets":[{"betId":91,"orderId":328,"bookmaker":"pinnacle","bookmakerBetId":"63aeba8d-a2d6-49ba-a6cd-7ce70bb17701","placedPrice":1.98,"placedStake":10.0,"placedCurrency":"USD","placedAt":"2026-02-07T16:18:29.300906+00:00","betStatus":"CONFIRMED","settlementStatus":"UNSETTLED","clientName":"demo","testBet":false,"userRef":"bettor1234","requestUuid":"be81ba8f-55f4-48ed-a6f9-69b8d920263b"}],"fixtureInfo":{"fixtureId":"id1000004461512432","status":{"live":false,"statusId":0,"statusName":"Pre-Game"},"sport":{"sportId":10,"sportName":"Soccer"},"tournament":{"tournamentId":44,"tournamentName":"2. Bundesliga","categoryName":"Germany"},"startTime":1754159400,"participants":{"participant1Id":2540,"participant1Name":"Arminia Bielefeld","participant2Id":2588,"participant2Name":"Fortuna Dusseldorf"}},"outcomeInfo":{"marketId":101,"marketName":"Full Time Result","marketNameShort":"1X2","marketType":"1x2","period":"fulltime","playerProp":false,"handicap":0,"outcomeId":103,"outcomeName":"2"},"currencyInfo":{"currency":"USD","currencyValue":1.0}}]}}}}},"400":{"description":"Missing required filter parameter"},"403":{"description":"Access denied: client not resolved"},"404":{"description":"No matching orders found"},"500":{"description":"Internal server error"}}}}},"components":{"schemas":{"AccountCreateRequest":{"properties":{"bookmaker":{"type":"string","title":"Bookmaker","description":"Bookmaker slug (e.g., 'pinnacle')"},"username":{"type":"string","title":"Username","description":"Account username"},"password":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Password","description":"Account password"},"balance":{"type":"number","title":"Balance","description":"Initial balance","default":0.0},"active":{"type":"boolean","title":"Active","description":"Whether account is active","default":true},"priority":{"type":"integer","title":"Priority","description":"Priority for account selection (higher = preferred)","default":0},"maxStake":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Maxstake","description":"Maximum stake override"},"minStake":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Minstake","description":"Minimum stake override"},"currencyId":{"type":"string","title":"Currencyid","description":"Account's trading currency (e.g., 'USD', 'EUR')","default":"USD"},"meta":{"additionalProperties":true,"type":"object","title":"Meta","description":"Additional metadata"}},"type":"object","required":["bookmaker","username"],"title":"AccountCreateRequest","description":"Request body for creating an account."},"AccountUpdateRequest":{"properties":{"password":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Password"},"balance":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Balance"},"active":{"anyOf":[{"type":"boolean"},{"type":"null"}],"title":"Active"},"priority":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Priority"},"maxStake":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Maxstake"},"minStake":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Minstake"},"currencyId":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Currencyid"},"meta":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Meta"}},"type":"object","title":"AccountUpdateRequest","description":"Request body for updating an account."},"BetResponse":{"properties":{"betId":{"type":"integer","title":"Betid"},"orderId":{"type":"integer","title":"Orderid"},"bookmaker":{"type":"string","title":"Bookmaker"},"betStatus":{"type":"string","title":"Betstatus"},"settlementStatus":{"type":"string","title":"Settlementstatus"},"clientName":{"type":"string","title":"Clientname"},"testBet":{"type":"boolean","title":"Testbet"},"requestUuid":{"type":"string","title":"Requestuuid"},"bookmakerBetId":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Bookmakerbetid"},"betRequestId":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Betrequestid"},"placedPrice":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Placedprice"},"placedStake":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Placedstake"},"placedCurrency":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Placedcurrency"},"placedAt":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Placedat"},"declineReason":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Declinereason"},"userRef":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Userref"},"account":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Account"},"sentData":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Sentdata"},"receivedData":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Receiveddata"},"currencyInfo":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Currencyinfo"},"settledAt":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Settledat"},"settlementAmount":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Settlementamount"},"settlementReason":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Settlementreason"},"oddsInfo":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Oddsinfo"}},"type":"object","required":["betId","orderId","bookmaker","betStatus","settlementStatus","clientName","testBet","requestUuid"],"title":"BetResponse","description":"Response model for a single bet."},"BetsResponse":{"properties":{"status":{"type":"string","title":"Status","default":"success"},"bets":{"items":{"$ref":"#/components/schemas/BetResponse"},"type":"array","title":"Bets"},"count":{"type":"integer","title":"Count"},"hasMore":{"type":"boolean","title":"Hasmore","default":false},"nextCursor":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Nextcursor"}},"type":"object","required":["bets","count"],"title":"BetsResponse","description":"Response model for bets endpoint."},"CancelOrdersRequest":{"properties":{"orderIds":{"anyOf":[{"items":{"type":"integer"},"type":"array","minItems":1},{"type":"null"}],"title":"Orderids","description":"List of numeric order IDs to cancel","example":[123,456]},"requestUuids":{"anyOf":[{"items":{"type":"string","format":"uuid4"},"type":"array","minItems":1},{"type":"null"}],"title":"Requestuuids","description":"List of request UUIDs to cancel","example":["eb45b192-317b-42d5-9f65-af497b9fa8c1"]},"userRef":{"anyOf":[{"type":"string","minLength":1},{"type":"null"}],"title":"Userref","description":"Cancel all orders matching this user reference","example":"bettor1234"}},"type":"object","title":"CancelOrdersRequest","description":"Request body for the POST /cancel-orders endpoint.\n\nCancel one or more pending orders. At least one filter must be provided.\nMultiple filters are combined with OR logic.\n\n## Behavior\n- Only orders in \"pending\" or \"partial-placed\" status can be cancelled\n- Orders with placed bets may not be fully cancellable (bookmaker-dependent)\n- Cancelled orders are marked in the database and signaled to stop retry loops\n\n## Response\nReturns cancelled orders and any that couldn't be cancelled with reasons."},"HTTPValidationError":{"properties":{"detail":{"items":{"$ref":"#/components/schemas/ValidationError"},"type":"array","title":"Detail"}},"type":"object","title":"HTTPValidationError"},"PlaceOrderRequest":{"properties":{"requestUuid":{"type":"string","minLength":1,"title":"Requestuuid","description":"Unique idempotency key for this order. Duplicate UUIDs within 5 minutes are rejected.","example":"eb45b192-317b-42d5-9f65-af497b9fa8c1"},"fixtureId":{"type":"string","minLength":1,"title":"Fixtureid","description":"OddsPAPI fixture identifier (e.g., 'id1000004461512432')","example":"id1000004461512432"},"outcomeId":{"type":"integer","title":"Outcomeid","description":"Outcome/market ID from OddsPAPI (e.g., 103 for Match Winner Home)","example":103},"playerId":{"type":"integer","title":"Playerid","description":"Player ID for player prop markets. Use 0 for non-player markets.","example":0},"orderPrice":{"type":"number","exclusiveMinimum":0.0,"title":"Orderprice","description":"Minimum acceptable decimal odds. Bets will only be placed at this price or better.","example":1.95},"orderStake":{"type":"number","exclusiveMinimum":0.0,"title":"Orderstake","description":"Stake amount in orderCurrency. Must be within bookmaker min/max limits.","example":10.0},"userRef":{"type":"string","minLength":1,"title":"Userref","description":"Your reference string for grouping/filtering orders (e.g., user ID, session ID)","example":"bettor1234"},"testOrder":{"type":"boolean","title":"Testorder","description":"If true, order is validated and persisted but NOT placed with bookmaker. Use for testing.","example":false},"bookmakers":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Bookmakers","description":"Comma-separated bookmaker slugs to target (e.g., 'pinnacle,bet365'). Use '*' or omit for automatic selection among all allowed bookmakers.","example":"pinnacle,vertex"},"orderCurrency":{"type":"string","minLength":1,"title":"Ordercurrency","description":"ISO 4217 currency code for orderStake. Converted to bookmaker currency at placement.","default":"USD","example":"USD"},"back":{"type":"boolean","title":"Back","description":"Bet direction. True = back bet (win if selection wins). False = lay bet (win if selection loses).","default":true,"example":true},"expiresAt":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Expiresat","description":"ISO 8601 timestamp when order expires. Defaults to 5 seconds from now if not provided. Order stops trying to place after this time.","example":"2024-01-15T12:00:05Z"},"acceptBetterOdds":{"type":"boolean","title":"Acceptbetterodds","description":"Accept odds better than orderPrice. If false, only exact price or worse is accepted.","default":true,"example":true},"acceptPartialStake":{"type":"boolean","title":"Acceptpartialstake","description":"Allow partial stake fills when full stake exceeds bookmaker limit.","default":true,"example":true},"meta":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Meta","description":"Custom metadata object. Stored with order but not sent to bookmaker.","example":{"source":"api","strategy":"value"}}},"type":"object","required":["requestUuid","fixtureId","outcomeId","playerId","orderPrice","orderStake","userRef","testOrder"],"title":"PlaceOrderRequest","description":"Single order payload for the place-orders endpoint.\n\nThis model represents the shape of an incoming order before\nserver-side enrichment and bookmaker selection.\n\n## Required Fields\n- `requestUuid`: Idempotency key - prevents duplicate order placement\n- `fixtureId`: OddsPAPI fixture ID (e.g., \"id1000004461512432\")\n- `outcomeId`: Market outcome ID (e.g., 103 for Match Winner Home)\n- `playerId`: Player ID for player props (use 0 for non-player markets)\n- `orderPrice`: Minimum acceptable decimal odds (e.g., 1.95)\n- `orderStake`: Stake amount in orderCurrency\n- `userRef`: Your reference for grouping/tracking orders\n- `testOrder`: If true, order is validated but not placed with bookmaker\n\n## Optional Fields\n- `bookmakers`: Target specific bookmakers (comma-separated or \"*\" for all)\n- `orderCurrency`: Currency code (default: \"USD\")\n- `back`: True for back bets, false for lay bets (default: true)\n- `expiresAt`: ISO 8601 expiry timestamp (default: 5 seconds from now)\n- `acceptBetterOdds`: Accept odds better than orderPrice (default: true)\n- `acceptPartialStake`: Allow partial fills (default: true)\n- `meta`: Custom metadata object"},"PlaceOrdersRequest":{"properties":{"orders":{"items":{"$ref":"#/components/schemas/PlaceOrderRequest"},"type":"array","maxItems":100,"minItems":1,"title":"Orders","description":"List of orders to place. Each order is processed independently. Maximum 100 orders per request."}},"type":"object","required":["orders"],"title":"PlaceOrdersRequest","description":"Request body for the POST /place-orders endpoint.\n\nSubmit one or more betting orders for placement with bookmakers.\nEach order is independently validated and placed.\n\n## Response\nReturns a JSON object with:\n- `status`: \"success\" | \"partial-success\" | \"declined\"\n- `acceptedOrders`: List of successfully placed/pending orders with bets\n- `declinedOrders`: List of orders that failed validation with reasons\n\n## Idempotency\nEach order's `requestUuid` is used as an idempotency key. Duplicate\nUUIDs within 5 minutes are rejected to prevent double-placement."},"PnlEntry":{"properties":{"bookmaker":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Bookmaker"},"account":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Account"},"userRef":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Userref"},"settledBets":{"type":"integer","title":"Settledbets"},"wins":{"type":"integer","title":"Wins"},"losses":{"type":"integer","title":"Losses"},"voids":{"type":"integer","title":"Voids"},"pushes":{"type":"integer","title":"Pushes"},"totalStaked":{"type":"number","title":"Totalstaked"},"totalWon":{"type":"number","title":"Totalwon"},"totalLost":{"type":"number","title":"Totallost"},"netPnl":{"type":"number","title":"Netpnl"},"winRate":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Winrate"}},"type":"object","required":["settledBets","wins","losses","voids","pushes","totalStaked","totalWon","totalLost","netPnl"],"title":"PnlEntry","description":"A single aggregated PnL row."},"PnlResponse":{"properties":{"status":{"type":"string","title":"Status","default":"success"},"groupBy":{"type":"string","title":"Groupby"},"pnl":{"items":{"$ref":"#/components/schemas/PnlEntry"},"type":"array","title":"Pnl"},"count":{"type":"integer","title":"Count"},"totalNetPnl":{"type":"number","title":"Totalnetpnl"},"totalStaked":{"type":"number","title":"Totalstaked"},"totalSettledBets":{"type":"integer","title":"Totalsettledbets"}},"type":"object","required":["groupBy","pnl","count","totalNetPnl","totalStaked","totalSettledBets"],"title":"PnlResponse","description":"Response for the PnL endpoint."},"PositionEntry":{"properties":{"bookmaker":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Bookmaker"},"account":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Account"},"userRef":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Userref"},"openBets":{"type":"integer","title":"Openbets"},"totalStake":{"type":"number","title":"Totalstake"},"avgPrice":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Avgprice"},"fixtureIds":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Fixtureids"}},"type":"object","required":["openBets","totalStake"],"title":"PositionEntry","description":"A single aggregated position row."},"PositionsResponse":{"properties":{"status":{"type":"string","title":"Status","default":"success"},"groupBy":{"type":"string","title":"Groupby"},"positions":{"items":{"$ref":"#/components/schemas/PositionEntry"},"type":"array","title":"Positions"},"count":{"type":"integer","title":"Count"},"totalStake":{"type":"number","title":"Totalstake"},"totalOpenBets":{"type":"integer","title":"Totalopenbets"}},"type":"object","required":["groupBy","positions","count","totalStake","totalOpenBets"],"title":"PositionsResponse","description":"Response for the positions endpoint."},"ValidationError":{"properties":{"loc":{"items":{"anyOf":[{"type":"string"},{"type":"integer"}]},"type":"array","title":"Location"},"msg":{"type":"string","title":"Message"},"type":{"type":"string","title":"Error Type"},"input":{"title":"Input"},"ctx":{"type":"object","title":"Context"}},"type":"object","required":["loc","msg","type"],"title":"ValidationError"}},"securitySchemes":{"apiKey":{"type":"apiKey","in":"header","name":"X-ABP-API-KEY","description":"API key for authentication. Contact admin to obtain a key."}}},"tags":[{"name":"Orders","description":"Place, retrieve, and cancel betting orders"},{"name":"Bets","description":"Query individual bets placed with bookmakers"},{"name":"Betslip","description":"Get live odds and metadata for fixtures"},{"name":"Accounts","description":"Manage bookmaker accounts"},{"name":"Markets","description":"Get available markets and odds types"},{"name":"Bookmakers","description":"List supported bookmakers"}],"security":[{"apiKey":[]}]}
+```
+
+
+---
+## OpenAPI (REST Reference)
+Source: /mm-api/openapi.json
+---
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MM-V2 Trading API",
+    "description": "\n## High-Frequency Market Making Engine API\n\nThis API powers the MM-V2 market making system, providing:\n\n### For Trading Clients\n- **Orders**: View and track orders placed on exchanges (Polymarket, Kalshi, etc.)\n- **Bets**: View hedge bets placed on bookmakers\n- **Fixtures**: Access event/fixture metadata and scores\n- **Positions**: Get aggregated exposure across markets\n\n### Authentication\nClient endpoints require the `X-API-Key` header with a valid UUID.\n\n### Rate Limits\n- REST API: 100 requests/minute per client\n- WebSocket: 5 connections per API key\n\n### Quick Start\n1. Click **Authorize** button above\n2. Enter your API key (UUID format)\n3. All client endpoints will use this key automatically\n        ",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://mmapi.55-tech.com",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get current client info",
+        "description": "Returns the authenticated client's information based on their API key.",
+        "operationId": "get_me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List orders",
+        "description": "Retrieve a paginated list of orders for your client account.\n\n    Orders are sorted by creation date (newest first) and can be filtered by:\n    - **fixture_id**: Filter by specific fixture/event\n    - **exchange**: Filter by exchange (polymarket, kalshi, etc.)\n    - **status**: Filter by order status (PLACED, FILLED, CANCELLED, etc.)\n\n    Use pagination parameters to navigate through large result sets.",
+        "operationId": "list_orders_api_v1_orders_get",
+        "parameters": [
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by fixture ID",
+              "title": "Fixture Id"
+            },
+            "description": "Filter by fixture ID"
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by exchange (polymarket, kalshi, etc.)",
+              "title": "Exchange"
+            },
+            "description": "Filter by exchange (polymarket, kalshi, etc.)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by order status (PLACED, FILLED, CANCELLED)",
+              "title": "Status"
+            },
+            "description": "Filter by order status (PLACED, FILLED, CANCELLED)"
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter orders created on or after this date (YYYY-MM-DD)",
+              "title": "From Date"
+            },
+            "description": "Filter orders created on or after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter orders created on or before this date (YYYY-MM-DD)",
+              "title": "To Date"
+            },
+            "description": "Filter orders created on or before this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "description": "Items per page (max 2000)",
+              "default": 50,
+              "title": "Page Size"
+            },
+            "description": "Items per page (max 2000)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "orderId": 123,
+                      "fixtureId": "id1604296768235456",
+                      "outcomeId": 161,
+                      "exchange": "polymarket",
+                      "orderStatus": "PLACED",
+                      "orderStake": 100.0,
+                      "matchedStake": 50.0
+                    }
+                  ],
+                  "total": 100,
+                  "page": 1,
+                  "page_size": 50,
+                  "total_pages": 2
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/open": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List open orders",
+        "description": "Retrieve all currently open (unfilled) orders for your client account.\n\n    Open orders have status PLACED or PENDING_PLACEMENT and are not yet fully matched.\n    This endpoint does not paginate - it returns all open orders at once.",
+        "operationId": "list_open_orders_api_v1_orders_open_get",
+        "parameters": [
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by fixture ID",
+              "title": "Fixture Id"
+            },
+            "description": "Filter by fixture ID"
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by exchange",
+              "title": "Exchange"
+            },
+            "description": "Filter by exchange"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Open Orders Api V1 Orders Open Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get order details",
+        "description": "Retrieve detailed information about a specific order by its ID.",
+        "operationId": "get_order_api_v1_orders__order_id__get",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Order Api V1 Orders  Order Id  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/summary": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get orders summary",
+        "description": "Get aggregated statistics about all orders for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
+        "operationId": "get_orders_summary_api_v1_orders_summary_get",
+        "parameters": [
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter orders created on or after this date (YYYY-MM-DD)",
+              "title": "From Date"
+            },
+            "description": "Filter orders created on or after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter orders created on or before this date (YYYY-MM-DD)",
+              "title": "To Date"
+            },
+            "description": "Filter orders created on or before this date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bets": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List bets",
+        "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **order_id**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (vertex, pinnacle, demo)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
+        "operationId": "list_bets_api_v1_bets_get",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by order ID",
+              "title": "Order Id"
+            },
+            "description": "Filter by order ID"
+          },
+          {
+            "name": "bookmaker",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by bookmaker (vertex, pinnacle, demo)",
+              "title": "Bookmaker"
+            },
+            "description": "Filter by bookmaker (vertex, pinnacle, demo)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by bet status - comma-separated (e.g., 'placed,pending')",
+              "title": "Status"
+            },
+            "description": "Filter by bet status - comma-separated (e.g., 'placed,pending')"
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter bets created on or after this date (YYYY-MM-DD)",
+              "title": "From Date"
+            },
+            "description": "Filter bets created on or after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter bets created on or before this date (YYYY-MM-DD)",
+              "title": "To Date"
+            },
+            "description": "Filter bets created on or before this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "description": "Items per page (max 2000)",
+              "default": 50,
+              "title": "Page Size"
+            },
+            "description": "Items per page (max 2000)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bets/summary": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get bets summary",
+        "description": "Get aggregated statistics about all bets for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
+        "operationId": "get_bets_summary_api_v1_bets_summary_get",
+        "parameters": [
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter bets created on or after this date (YYYY-MM-DD)",
+              "title": "From Date"
+            },
+            "description": "Filter bets created on or after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter bets created on or before this date (YYYY-MM-DD)",
+              "title": "To Date"
+            },
+            "description": "Filter bets created on or before this date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bets/{bet_id}": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get bet details",
+        "description": "Retrieve detailed information about a specific bet by its ID.",
+        "operationId": "get_bet_api_v1_bets__bet_id__get",
+        "parameters": [
+          {
+            "name": "bet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bet Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Bet Api V1 Bets  Bet Id  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/fixtures": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List fixtures",
+        "description": "Retrieve a paginated list of fixtures (events/matches).\n\n    Fixtures contain event metadata like participants, start time, and scores.\n\n    Filter by:\n    - **fixtureIds**: Filter by specific fixture IDs (repeated query param)\n    - **tournament_id**: Filter by tournament (e.g., 234 for NHL)\n    - **sport_id**: Filter by sport (e.g., 1 for Soccer)\n    - **live**: Filter by live status (true/false)\n    - **all**: Set to true to see all available fixtures (not just ones with your orders)",
+        "operationId": "list_fixtures_api_v1_fixtures_get",
+        "parameters": [
+          {
+            "name": "fixtureIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by fixture IDs",
+              "title": "Fixtureids"
+            },
+            "description": "Filter by fixture IDs"
+          },
+          {
+            "name": "tournament_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tournament ID",
+              "title": "Tournament Id"
+            },
+            "description": "Filter by tournament ID"
+          },
+          {
+            "name": "sport_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by sport ID",
+              "title": "Sport Id"
+            },
+            "description": "Filter by sport ID"
+          },
+          {
+            "name": "live",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by live status",
+              "title": "Live"
+            },
+            "description": "Filter by live status"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include all fixtures, not just ones with your orders",
+              "default": false,
+              "title": "All"
+            },
+            "description": "Include all fixtures, not just ones with your orders"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-indexed)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "description": "Items per page (max 2000)",
+              "default": 50,
+              "title": "Page Size"
+            },
+            "description": "Items per page (max 2000)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/markets": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List markets for sport",
+        "description": "Get available markets for a sport from cached odds data.\n\n    **Note:** Markets are global reference data - they describe what market types\n    exist (1x2, Over/Under, etc.) and are not specific to any client. All clients\n    see the same market definitions.\n\n    Markets are aggregated from all active fixtures for the specified sport.\n\n    **Required:**\n    - **sportId**: Get markets for a sport (e.g., 1=Soccer, 14=Ice Hockey)\n\n    **Response fields:**\n    - `marketId`: Market identifier\n    - `outcomeIds`: List of outcome IDs available for this market\n    - `playerIds`: List of player IDs (for player prop markets)\n    - `bookmakers`: Bookmakers offering this market",
+        "operationId": "list_markets_api_v1_markets_get",
+        "parameters": [
+          {
+            "name": "sportId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Sport ID (required)",
+              "title": "Sportid"
+            },
+            "description": "Sport ID (required)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Markets from cache",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Markets Api V1 Markets Get"
+                },
+                "example": {
+                  "markets": [
+                    {
+                      "marketId": 1,
+                      "outcomeIds": [
+                        1,
+                        2,
+                        3
+                      ],
+                      "playerIds": [],
+                      "bookmakers": [
+                        "pinnacle"
+                      ]
+                    }
+                  ],
+                  "count": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/players": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List players for sport",
+        "description": "Get players for a sport from cached odds data.\n\n    **Note:** Players are global reference data - they describe what players\n    have prop markets available. All clients see the same player data.\n\n    Players are aggregated from all active fixtures for the specified sport\n    where playerId > 0 (player prop markets).\n\n    **Required:**\n    - **sportId**: Get players for a sport (e.g., 1=Soccer, 14=Ice Hockey)\n\n    **Response fields:**\n    - `playerId`: Player identifier\n    - `marketIds`: Markets this player has props in\n    - `outcomeIds`: Outcome IDs for this player\n    - `bookmakers`: Bookmakers offering props for this player",
+        "operationId": "list_players_api_v1_players_get",
+        "parameters": [
+          {
+            "name": "sportId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Sport ID (required)",
+              "title": "Sportid"
+            },
+            "description": "Sport ID (required)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Players from cache",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Players Api V1 Players Get"
+                },
+                "example": {
+                  "players": [
+                    {
+                      "playerId": 847392,
+                      "marketIds": [
+                        18,
+                        19
+                      ],
+                      "outcomeIds": [
+                        161,
+                        162
+                      ],
+                      "bookmakers": [
+                        "pinnacle"
+                      ]
+                    }
+                  ],
+                  "count": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/positions": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List positions",
+        "description": "Get aggregated positions for your client account.\n\n    A position aggregates all orders for a specific fixture/outcome/exchange combination,\n    showing total stake, matched stake, and open stake.\n\n    This gives you a consolidated view of your exposure on each market.\n\n    **Status filters** (supports comma-separated values, e.g., `open,matched`):\n    - `open`: Only positions with open orders (still on exchange, not fully matched)\n    - `matched`: Only positions with matched stake > 0 (excludes cancelled)\n    - `filled`: Only fully matched orders\n    - `cancelled`: Only cancelled orders\n    - `active`: Exclude cancelled orders (default)\n\n    Examples:\n    - `/positions?status=open` - Only open positions\n    - `/positions?status=open,matched` - Open or matched positions\n    - `/positions?status=filled` - Only filled positions\n\n    Optionally filter by date range to see positions from a specific time period.",
+        "operationId": "list_positions_api_v1_positions_get",
+        "parameters": [
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by fixture ID",
+              "title": "Fixture Id"
+            },
+            "description": "Filter by fixture ID"
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by exchange",
+              "title": "Exchange"
+            },
+            "description": "Filter by exchange"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status - comma-separated (e.g., 'open,matched'). Options: open, matched, filled, cancelled, active",
+              "default": "active",
+              "title": "Status"
+            },
+            "description": "Filter by status - comma-separated (e.g., 'open,matched'). Options: open, matched, filled, cancelled, active"
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter positions from orders created on or after this date (YYYY-MM-DD)",
+              "title": "From Date"
+            },
+            "description": "Filter positions from orders created on or after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter positions from orders created on or before this date (YYYY-MM-DD)",
+              "title": "To Date"
+            },
+            "description": "Filter positions from orders created on or before this date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Positions Api V1 Positions Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/positions/summary": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get positions summary",
+        "description": "Get aggregated statistics about all positions for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
+        "operationId": "get_positions_summary_api_v1_positions_summary_get",
+        "parameters": [
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter from orders created on or after this date (YYYY-MM-DD)",
+              "title": "From Date"
+            },
+            "description": "Filter from orders created on or after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter from orders created on or before this date (YYYY-MM-DD)",
+              "title": "To Date"
+            },
+            "description": "Filter from orders created on or before this date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/pnl": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get profit and loss",
+        "description": "Get profit and loss (PnL) statistics for your client account.\n\n    **Realized PnL**: Profit/loss from settled orders\n    - WON orders: profit = matchedStake * (1/probability - 1)\n    - LOST orders: loss = -matchedStake\n    - HALF_WON/HALF_LOST: 50% of the above\n\n    **Unrealized PnL**: Potential profit from open positions (if they win)\n    - Calculated as: matchedStake * (1/probability - 1) for all unsettled matched orders\n\n    Optionally filter by date range to see PnL for a specific time period.",
+        "operationId": "get_pnl_api_v1_pnl_get",
+        "parameters": [
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter orders created on or after this date (YYYY-MM-DD)",
+              "title": "From Date"
+            },
+            "description": "Filter orders created on or after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter orders created on or before this date (YYYY-MM-DD)",
+              "title": "To Date"
+            },
+            "description": "Filter orders created on or before this date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PnL statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PnLResponse"
+                },
+                "example": {
+                  "pnl": 54514.93,
+                  "realized_pnl": 50000.0,
+                  "unrealized_pnl": 4514.93,
+                  "total_matched_stake": 100000.0,
+                  "settled_count": 150,
+                  "unsettled_count": 25,
+                  "from_date": "2026-01-29",
+                  "to_date": "2026-02-01"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List accounts",
+        "description": "List exchange accounts configured for your client.\n\n    Returns account metadata without sensitive credentials.\n    Shows which exchanges you have accounts on and their configuration.",
+        "operationId": "list_accounts_api_v1_accounts_get",
+        "parameters": [
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by exchange",
+              "title": "Exchange"
+            },
+            "description": "Filter by exchange"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Accounts Api V1 Accounts Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/cancel-all": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Cancel all open orders",
+        "description": "Cancel ALL open orders for your client account across all exchanges.\n\n    **Use with caution** - this will cancel every open order you have.\n\n    Optionally filter by:\n    - **exchange**: Only cancel orders on a specific exchange\n    - **fixture_id**: Only cancel orders for a specific fixture",
+        "operationId": "cancel_all_client_orders_api_v1_orders_cancel_all_post",
+        "parameters": [
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by exchange",
+              "title": "Exchange"
+            },
+            "description": "Filter by exchange"
+          },
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by fixture ID",
+              "title": "Fixture Id"
+            },
+            "description": "Filter by fixture ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cancel All Client Orders Api V1 Orders Cancel All Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{order_id}/cancel": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Cancel a specific order",
+        "description": "Cancel a specific order by its ID.",
+        "operationId": "cancel_order_api_v1_orders__order_id__cancel_post",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cancel Order Api V1 Orders  Order Id  Cancel Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/ws/subscribe": {
+      "get": {
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "Real-time Subscription (WebSocket)",
+        "description": "## Real-time Data Subscription (WebSocket)\n\n**URL:** `wss://mmapi.55-tech.com/ws/subscribe`\n\n**Connection Limits:** Maximum 5 concurrent connections per API key.\n\n### Protocol\n\n1. **Connect** to `/ws/subscribe`\n\n2. **Subscribe** (within 30 seconds):\n```json\n{\n  \"type\": \"subscribe\",\n  \"api_key\": \"your-client-api-key-uuid\",\n  \"channels\": [\"orders\", \"bets\", \"accounts\", \"scores\", \"emergency\"]\n}\n```\n\n3. **Confirmation**:\n```json\n{\"type\": \"subscribed\", \"subscription_id\": 1, \"channels\": [\"orders\", \"bets\"]}\n```\n\n4. **Receive broadcasts**:\n```json\n{\n  \"type\": \"broadcast\",\n  \"channel\": \"orders\",\n  \"event\": \"UPDATE\",\n  \"payload\": {\"id\": 123, \"orderStatus\": \"FILLED\"},\n  \"old\": {\"orderStatus\": \"PLACED\"}\n}\n```\n\n5. **Keep-alive**: Send `{\"type\": \"ping\"}` \u2192 Receive `{\"type\": \"pong\"}`\n\n6. **Heartbeat**: Server sends `{\"type\": \"heartbeat\"}` every 60s\n\n7. **Unsubscribe**: Send `{\"type\": \"unsubscribe\"}`\n\n### Channels\n\n| Channel | Description | Filtered |\n|---------|-------------|----------|\n| `orders` | Order placement, updates, fills | By client |\n| `bets` | Hedge bet updates | By client |\n| `accounts` | Balance changes | By client |\n| `scores` | Live score updates | Global |\n| `emergency` | Emergency mode status | Global |\n\n### Error Codes\n\n- `api_key required` - Missing api_key\n- `Invalid api_key format` - Must be UUID\n- `Invalid API key` - Not found or inactive\n- `Connection limit exceeded` - Max 5 per API key",
+        "operationId": "websocket_subscribe_docs_ws_subscribe_get",
+        "responses": {
+          "200": {
+            "description": "Returns 426 - use WebSocket connection instead",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "426": {
+            "description": "Upgrade Required - Connect via WebSocket",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "This endpoint requires a WebSocket connection. Use wss://mmapi.55-tech.com/ws/subscribe"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BetSummary": {
+        "properties": {
+          "total_bets": {
+            "type": "integer",
+            "title": "Total Bets",
+            "description": "Total number of bets"
+          },
+          "order_count": {
+            "type": "integer",
+            "title": "Order Count",
+            "description": "Number of unique orders"
+          },
+          "bookmaker_count": {
+            "type": "integer",
+            "title": "Bookmaker Count",
+            "description": "Number of unique bookmakers"
+          },
+          "total_stake": {
+            "type": "number",
+            "title": "Total Stake",
+            "description": "Sum of all bet stakes"
+          },
+          "avg_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Price",
+            "description": "Average bet price"
+          },
+          "placed_count": {
+            "type": "integer",
+            "title": "Placed Count",
+            "description": "Number of placed bets"
+          },
+          "pending_count": {
+            "type": "integer",
+            "title": "Pending Count",
+            "description": "Number of pending bets"
+          },
+          "declined_count": {
+            "type": "integer",
+            "title": "Declined Count",
+            "description": "Number of declined bets"
+          },
+          "won_count": {
+            "type": "integer",
+            "title": "Won Count",
+            "description": "Number of won bets"
+          },
+          "lost_count": {
+            "type": "integer",
+            "title": "Lost Count",
+            "description": "Number of lost bets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_bets",
+          "order_count",
+          "bookmaker_count",
+          "total_stake",
+          "avg_price",
+          "placed_count",
+          "pending_count",
+          "declined_count",
+          "won_count",
+          "lost_count"
+        ],
+        "title": "BetSummary",
+        "description": "Summary of bet statistics for a client."
+      },
+      "ClientInfo": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client",
+            "description": "Client identifier (e.g., 'demo', 'pinnacle')"
+          },
+          "clientName": {
+            "type": "string",
+            "title": "Clientname",
+            "description": "Client display name (e.g., 'Demo', 'Pinnacle')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "clientName"
+        ],
+        "title": "ClientInfo",
+        "description": "Client information from API key lookup."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "OrderSummary": {
+        "properties": {
+          "total_orders": {
+            "type": "integer",
+            "title": "Total Orders",
+            "description": "Total number of orders"
+          },
+          "fixture_count": {
+            "type": "integer",
+            "title": "Fixture Count",
+            "description": "Number of unique fixtures"
+          },
+          "exchange_count": {
+            "type": "integer",
+            "title": "Exchange Count",
+            "description": "Number of unique exchanges"
+          },
+          "total_stake": {
+            "type": "number",
+            "title": "Total Stake",
+            "description": "Sum of all order stakes"
+          },
+          "total_matched": {
+            "type": "number",
+            "title": "Total Matched",
+            "description": "Sum of all matched stakes"
+          },
+          "total_open": {
+            "type": "number",
+            "title": "Total Open",
+            "description": "Sum of open (unmatched) stakes"
+          },
+          "filled_count": {
+            "type": "integer",
+            "title": "Filled Count",
+            "description": "Number of filled orders"
+          },
+          "cancelled_count": {
+            "type": "integer",
+            "title": "Cancelled Count",
+            "description": "Number of cancelled orders"
+          },
+          "open_count": {
+            "type": "integer",
+            "title": "Open Count",
+            "description": "Number of open orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_orders",
+          "fixture_count",
+          "exchange_count",
+          "total_stake",
+          "total_matched",
+          "total_open",
+          "filled_count",
+          "cancelled_count",
+          "open_count"
+        ],
+        "title": "OrderSummary",
+        "description": "Summary of order statistics for a client."
+      },
+      "PaginatedResponse": {
+        "properties": {
+          "data": {
+            "items": {},
+            "type": "array",
+            "title": "Data",
+            "description": "List of items for current page"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items across all pages"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-indexed)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "total",
+          "page",
+          "page_size",
+          "total_pages"
+        ],
+        "title": "PaginatedResponse",
+        "description": "Paginated response wrapper for list endpoints."
+      },
+      "PnLResponse": {
+        "properties": {
+          "pnl": {
+            "type": "number",
+            "title": "Pnl",
+            "description": "Total PnL (realized + unrealized)"
+          },
+          "realized_pnl": {
+            "type": "number",
+            "title": "Realized Pnl",
+            "description": "PnL from settled orders"
+          },
+          "unrealized_pnl": {
+            "type": "number",
+            "title": "Unrealized Pnl",
+            "description": "Potential PnL from open positions"
+          },
+          "total_matched_stake": {
+            "type": "number",
+            "title": "Total Matched Stake",
+            "description": "Total matched stake"
+          },
+          "settled_count": {
+            "type": "integer",
+            "title": "Settled Count",
+            "description": "Number of settled orders"
+          },
+          "unsettled_count": {
+            "type": "integer",
+            "title": "Unsettled Count",
+            "description": "Number of unsettled orders with matches"
+          },
+          "from_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Date",
+            "description": "Start date filter (if applied)"
+          },
+          "to_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Date",
+            "description": "End date filter (if applied)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pnl",
+          "realized_pnl",
+          "unrealized_pnl",
+          "total_matched_stake",
+          "settled_count",
+          "unsettled_count",
+          "from_date",
+          "to_date"
+        ],
+        "title": "PnLResponse",
+        "description": "Profit and Loss response for a client."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Client API key (UUID format). Get your key from the admin dashboard."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Client API",
+      "description": "Endpoints for trading clients to access orders, bets, fixtures, and positions. Requires `X-API-Key` header authentication."
+    },
+    {
+      "name": "WebSocket",
+      "description": "Real-time data subscriptions for orders, bets, accounts, and scores."
+    }
+  ]
+}
+```

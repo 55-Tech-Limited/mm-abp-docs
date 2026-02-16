@@ -1,0 +1,40 @@
+---
+title: "55-Tech API 文档"
+sidebarTitle: "简介"
+description: "55-Tech 做市（MM）和自动投注（ABP）平台的官方API文档。面向体育博彩市场的高频交易和自动化投注执行。"
+---
+
+<Note>
+**B2B 平台** — 55-Tech 为持牌运营商、交易公司和体育博彩平台提供企业级交易基础设施。联系 [support@55-tech.com](mailto:support@55-tech.com) 获取API访问权限。
+</Note>
+
+## 什么是 55-Tech？
+
+55-Tech 运营两个核心交易平台：
+
+- **做市（MM）** — 高频做市引擎，在预测市场交易所（Polymarket、Kalshi）上下单，并在博彩公司进行对冲
+- **自动投注（ABP）** — 通过单一API在30多家博彩公司进行投注，提供实时跟踪和结算
+
+两个平台均从 [OddsPapi](https://docs.oddspapi.io/) 获取实时赔率数据，并提供 REST + WebSocket API 供客户端集成。
+
+---
+
+## 开始使用
+
+<Columns cols={2}>
+  <Card title="快速入门" icon="rocket" href="/zh/quickstart">
+    几分钟内连接两个API。
+  </Card>
+
+  <Card title="ABP API" icon="bolt" href="/zh/abp-api/overview">
+    通过单一API在30多家博彩公司进行投注。
+  </Card>
+
+  <Card title="MM API" icon="chart-line" href="/zh/mm-api/overview">
+    在预测交易所进行高频做市。
+  </Card>
+
+  <Card title="OddsPapi 数据" icon="database" href="https://docs.oddspapi.io/">
+    为两个平台提供动力的实时赔率数据。
+  </Card>
+</Columns>

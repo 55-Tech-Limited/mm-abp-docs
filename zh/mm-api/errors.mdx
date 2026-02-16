@@ -1,0 +1,96 @@
+---
+title: "MM 错误处理"
+sidebarTitle: "错误"
+description: "MM API 错误码、HTTP状态码和错误响应格式。"
+---
+
+## 错误响应格式
+
+所有API错误返回JSON正文：
+
+```json
+{
+  "detail": "Invalid or missing API key"
+}
+```
+
+验证错误包含位置详情：
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["query", "fixture_id"],
+      "msg": "Field required",
+      "type": "missing"
+    }
+  ]
+}
+```
+
+## HTTP 状态码
+
+| 状态码 | 描述 |
+|--------|------|
+| `200` | 成功 |
+| `401` | 未授权 — 无效或缺少API密钥（必须是有效UUID） |
+| `404` | 未找到 — 资源不存在 |
+| `422` | 验证错误 — 请求参数验证失败 |
+| `426` | 需要升级 — 通过HTTP调用了WebSocket端点 |
+| `429` | 速率限制 — 超出每分钟100个请求 |
+| `500` | 内部服务器错误 |
+
+## 速率限制
+
+MM API 按客户端API密钥执行 **每分钟100个请求** 的限制。
+
+超出速率限制时，API返回 `429 Too Many Requests`。在重试逻辑中实施指数退避（等待1秒、2秒、4秒等）。
+
+## 常见错误
+
+### 身份验证 (401)
+
+您的API密钥缺失、无效或不是UUID格式。
+
+```bash
+# 正确
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# 错误的头名 — 返回 401
+curl -H "Authorization: Bearer your-key" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# 缺少头 — 返回 401
+curl https://mmapi.55-tech.com/api/v1/me
+```
+
+### 未找到 (404)
+
+请求的资源不存在：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/999999
+# 返回: 404
+```
+
+### 验证错误 (422)
+
+必需的查询参数缺失或值无效。检查 `loc` 字段以确定有问题的参数。
+
+### WebSocket 升级 (426)
+
+如果通过HTTP调用WebSocket端点而不是升级到WebSocket连接，您会收到 `426 Upgrade Required`。
+
+## WebSocket 错误
+
+订阅WebSocket时，可能返回以下错误消息：
+
+| 错误 | 描述 |
+|------|------|
+| `api_key required` | 订阅消息中无 `api_key` 字段 |
+| `Invalid api_key format` | 不是有效的UUID |
+| `Invalid API key` | 密钥未找到或客户端未激活 |
+| `Connection limit exceeded` | 此密钥已达5个活跃连接 |
+

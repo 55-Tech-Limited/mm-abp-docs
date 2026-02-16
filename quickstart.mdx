@@ -17,27 +17,21 @@ You need an API key for the platform you want to use. Contact [support@55-tech.c
 
 ## ABP — Automated Bet Placing
 
-### 1. Check connectivity
-
-```bash
-curl https://v2.55-tech.com/health
-```
-
-### 2. List your accounts
+### 1. List your accounts
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
-### 3. Get a betslip (live odds)
+### 2. Get a betslip (live odds)
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
   "https://v2.55-tech.com/betslip?fixtureId=ID&outcomeId=161&playerId=0"
 ```
 
-### 4. Place an order
+### 3. Place an order
 
 ```bash
 curl -X POST -H "X-ABP-API-KEY: YOUR_API_KEY" \
@@ -46,7 +40,7 @@ curl -X POST -H "X-ABP-API-KEY: YOUR_API_KEY" \
   https://v2.55-tech.com/place-orders
 ```
 
-### 5. Track results
+### 4. Track results
 
 ```bash
 curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
@@ -57,34 +51,28 @@ curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
 
 ## MM — Market Making
 
-### 1. Check connectivity
-
-```bash
-curl https://mmapi.55-tech.com/health
-```
-
-### 2. Verify your identity
+### 1. Verify your identity
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/me
 ```
 
-### 3. List your orders
+### 2. List your orders
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/orders
 ```
 
-### 4. Check positions
+### 3. Check positions
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/positions
 ```
 
-### 5. View profit & loss
+### 4. View profit & loss
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \

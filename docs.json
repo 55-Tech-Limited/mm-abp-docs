@@ -18,58 +18,130 @@
       "title": "55-Tech API Documentation - Market Making & Automated Bet Placing",
       "description": "Official 55-Tech API documentation. Market Making (MM) engine and Automated Bet Placing (ABP) APIs for trading firms and sports betting platforms.",
       "og:site_name": "55-Tech API Documentation",
-      "og:type": "website"
+      "og:type": "website",
+      "og:locale": "en_US",
+      "keywords": "market making api, automated bet placing, sports trading api, prediction markets api, polymarket api, kalshi api, bookmaker api, hedge betting, sports betting api, 55-tech, abp api, mm api"
     }
   },
   "navigation": {
-    "tabs": [
+    "languages": [
       {
-        "tab": "Welcome",
-        "groups": [
+        "language": "en",
+        "tabs": [
           {
-            "group": "Start here",
-            "pages": [
-              "index",
-              "quickstart"
+            "tab": "Welcome",
+            "groups": [
+              {
+                "group": "Start here",
+                "pages": [
+                  "index",
+                  "quickstart",
+                  "ai"
+                ]
+              }
             ]
+          },
+          {
+            "tab": "ABP API",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": [
+                  "abp-api/overview",
+                  "abp-api/authentication",
+                  "abp-api/quickstart",
+                  "abp-api/websocket",
+                  "abp-api/errors"
+                ]
+              },
+              {
+                "group": "Reference",
+                "openapi": "abp-api/openapi.json"
+              }
+            ]
+          },
+          {
+            "tab": "MM API",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": [
+                  "mm-api/overview",
+                  "mm-api/authentication",
+                  "mm-api/quickstart",
+                  "mm-api/websocket",
+                  "mm-api/errors"
+                ]
+              },
+              {
+                "group": "Reference",
+                "openapi": "mm-api/openapi.json"
+              }
+            ]
+          },
+          {
+            "tab": "OddsPapi+",
+            "href": "https://docs.oddspapi.io/"
           }
         ]
       },
       {
-        "tab": "ABP API",
-        "groups": [
+        "language": "zh",
+        "tabs": [
           {
-            "group": "Getting Started",
-            "pages": [
-              "abp-api/overview",
-              "abp-api/authentication",
-              "abp-api/quickstart",
-              "abp-api/websocket",
-              "abp-api/errors"
+            "tab": "欢迎",
+            "groups": [
+              {
+                "group": "开始",
+                "pages": [
+                  "zh/index",
+                  "zh/quickstart",
+                  "zh/ai"
+                ]
+              }
             ]
           },
           {
-            "group": "Reference",
-            "openapi": "abp-api/openapi.json"
-          }
-        ]
-      },
-      {
-        "tab": "MM API",
-        "groups": [
-          {
-            "group": "Getting Started",
-            "pages": [
-              "mm-api/overview",
-              "mm-api/authentication",
-              "mm-api/quickstart",
-              "mm-api/websocket",
-              "mm-api/errors"
+            "tab": "ABP API",
+            "groups": [
+              {
+                "group": "入门",
+                "pages": [
+                  "zh/abp-api/overview",
+                  "zh/abp-api/authentication",
+                  "zh/abp-api/quickstart",
+                  "zh/abp-api/websocket",
+                  "zh/abp-api/errors"
+                ]
+              },
+              {
+                "group": "API 参考",
+                "openapi": "zh/abp-api/openapi.json"
+              }
             ]
           },
           {
-            "group": "Reference",
-            "openapi": "mm-api/openapi.json"
+            "tab": "MM API",
+            "groups": [
+              {
+                "group": "入门",
+                "pages": [
+                  "zh/mm-api/overview",
+                  "zh/mm-api/authentication",
+                  "zh/mm-api/quickstart",
+                  "zh/mm-api/websocket",
+                  "zh/mm-api/errors"
+                ]
+              },
+              {
+                "group": "API 参考",
+                "openapi": "zh/mm-api/openapi.json"
+              }
+            ]
+          },
+          {
+            "tab": "OddsPapi+",
+            "href": "https://docs.oddspapi.io/"
           }
         ]
       }

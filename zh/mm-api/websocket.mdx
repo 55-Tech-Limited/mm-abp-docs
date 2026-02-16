@@ -1,24 +1,24 @@
 ---
-title: "MM WebSocket - Real-Time Updates"
+title: "MM WebSocket - 实时更新"
 sidebarTitle: "WebSocket"
-description: "Connect to the MM WebSocket for real-time order fills, hedge bet updates, account balance changes, live scores, and emergency status. server-backed broadcasting."
+description: "连接 MM WebSocket 获取实时订单成交、对冲投注更新、账户余额变动、比分和紧急状态。基于服务端广播。"
 ---
 
-## Endpoint
+## 端点
 
 ```
 wss://mmapi.55-tech.com/ws/subscribe
 ```
 
-## Connection flow
+## 连接流程
 
-### 1. Connect
+### 1. 连接
 
-Open a WebSocket connection. No authentication is needed at connection time.
+打开WebSocket连接。连接时无需身份验证。
 
-### 2. Subscribe
+### 2. 订阅
 
-Send a subscribe message within **30 seconds** of connecting:
+在连接后 **30秒** 内发送订阅消息：
 
 ```json
 {
@@ -28,9 +28,9 @@ Send a subscribe message within **30 seconds** of connecting:
 }
 ```
 
-### 3. Confirmation
+### 3. 确认
 
-On success, the server responds with:
+成功后，服务器响应：
 
 ```json
 {
@@ -40,9 +40,9 @@ On success, the server responds with:
 }
 ```
 
-### 4. Receive broadcasts
+### 4. 接收广播
 
-Data updates arrive as broadcast messages with both current and previous state:
+数据更新以广播消息形式到达，包含当前和先前状态：
 
 ```json
 {
@@ -62,62 +62,62 @@ Data updates arrive as broadcast messages with both current and previous state:
 }
 ```
 
-The `old` field contains the previous state, making it easy to detect what changed.
+`old` 字段包含先前状态，便于检测变更。
 
-### 5. Keep alive
+### 5. 保持活跃
 
-Send a ping to keep the connection alive:
+发送心跳保持连接：
 
 ```json
 {"type": "ping"}
 ```
 
-Server responds with:
+服务器响应：
 
 ```json
 {"type": "pong"}
 ```
 
-The server also sends heartbeats every **60 seconds**:
+服务器也会每 **60秒** 发送心跳：
 
 ```json
 {"type": "heartbeat"}
 ```
 
-### 6. Unsubscribe
+### 6. 取消订阅
 
-To stop receiving updates and clean up your subscription:
+停止接收更新并清理订阅：
 
 ```json
 {"type": "unsubscribe"}
 ```
 
-## Channels
+## 频道
 
-### Client-filtered channels
+### 客户端过滤频道
 
-These channels only deliver data belonging to your client:
+这些频道仅传递属于您客户端的数据：
 
-| Channel | Events | Description |
-|---------|--------|-------------|
-| `orders` | INSERT, UPDATE | Exchange order placement, status changes, fills |
-| `bets` | INSERT, UPDATE | Hedge bet placement, confirmation, settlement |
-| `accounts` | UPDATE | Account balance and status changes |
+| 频道 | 事件 | 描述 |
+|------|------|------|
+| `orders` | INSERT, UPDATE | 交易所订单下达、状态变更、成交 |
+| `bets` | INSERT, UPDATE | 对冲投注下达、确认、结算 |
+| `accounts` | UPDATE | 账户余额和状态变更 |
 
-### Global channels
+### 全局频道
 
-All subscribers receive these:
+所有订阅者都会收到：
 
-| Channel | Events | Description |
-|---------|--------|-------------|
-| `scores` | UPDATE | Live score updates (goals, sets, periods) |
-| `emergency` | UPDATE | Emergency mode activation/deactivation |
+| 频道 | 事件 | 描述 |
+|------|------|------|
+| `scores` | UPDATE | 实时比分更新（进球、盘、节） |
+| `emergency` | UPDATE | 紧急模式激活/停用 |
 
-## Payload examples
+## 消息示例
 
-### Order fill
+### 订单成交
 
-When an exchange order gets matched:
+当交易所订单被匹配时：
 
 ```json
 {
@@ -145,9 +145,9 @@ When an exchange order gets matched:
 }
 ```
 
-### Hedge bet placed
+### 对冲投注下达
 
-After an order fills, the system automatically places a hedge bet:
+订单成交后，系统自动下对冲注：
 
 ```json
 {
@@ -178,7 +178,7 @@ After an order fills, the system automatically places a hedge bet:
 }
 ```
 
-### Live score update
+### 实时比分更新
 
 ```json
 {
@@ -189,7 +189,7 @@ After an order fills, the system automatically places a hedge bet:
     "fixtureId": "id1000000861624412",
     "live": true,
     "statusId": 1,
-    "currentPeriod": "2nd Half",
+    "currentPeriod": "下半场",
     "currentMinute": 67,
     "scores": {
       "home": 2,
@@ -201,7 +201,7 @@ After an order fills, the system automatically places a hedge bet:
 }
 ```
 
-### Emergency status
+### 紧急状态
 
 ```json
 {
@@ -210,31 +210,31 @@ After an order fills, the system automatically places a hedge bet:
   "event": "UPDATE",
   "payload": {
     "emergency": true,
-    "reason": "Manual trigger",
+    "reason": "手动触发",
     "triggeredAt": "2026-02-15T10:30:00Z"
   }
 }
 ```
 
-## Connection limits
+## 连接限制
 
-| Setting | Value |
-|---------|-------|
-| Max connections per API key | 5 |
-| Auth timeout | 30 seconds |
-| Server heartbeat interval | 60 seconds |
-| Client ping interval | 30 seconds (recommended) |
+| 设置 | 值 |
+|------|-----|
+| 每API密钥最大连接数 | 5 |
+| 认证超时 | 30秒 |
+| 服务器心跳间隔 | 60秒 |
+| 客户端心跳间隔 | 30秒（推荐） |
 
-## Error messages
+## 错误消息
 
-| Error | Description |
-|-------|-------------|
-| `api_key required` | Missing `api_key` field in subscribe message |
-| `Invalid api_key format` | API key must be a valid UUID |
-| `Invalid API key` | API key not found or client is inactive |
-| `Connection limit exceeded` | Already have 5 active connections for this API key |
+| 错误 | 描述 |
+|------|------|
+| `api_key required` | 订阅消息中缺少 `api_key` 字段 |
+| `Invalid api_key format` | API密钥必须是有效的UUID |
+| `Invalid API key` | API密钥未找到或客户端未激活 |
+| `Connection limit exceeded` | 此API密钥已有5个活跃连接 |
 
-## Example: Python client
+## 示例：Python 客户端
 
 ```python
 import asyncio
@@ -244,18 +244,18 @@ import websockets
 async def connect():
     uri = "wss://mmapi.55-tech.com/ws/subscribe"
     async with websockets.connect(uri) as ws:
-        # Subscribe
+        # 订阅
         await ws.send(json.dumps({
             "type": "subscribe",
             "api_key": "YOUR_API_KEY",
             "channels": ["orders", "bets", "scores"]
         }))
 
-        # Wait for confirmation
+        # 等待确认
         sub_resp = json.loads(await ws.recv())
-        print(f"Subscribed (id={sub_resp.get('subscription_id')})")
+        print(f"已订阅 (id={sub_resp.get('subscription_id')})")
 
-        # Keep-alive task
+        # 保活任务
         async def keep_alive():
             while True:
                 await asyncio.sleep(30)
@@ -263,7 +263,7 @@ async def connect():
 
         asyncio.create_task(keep_alive())
 
-        # Listen for updates
+        # 监听更新
         async for message in ws:
             data = json.loads(message)
             if data["type"] == "broadcast":
@@ -271,12 +271,12 @@ async def connect():
                 event = data["event"]
                 print(f"[{channel}:{event}] {data['payload']}")
                 if "old" in data:
-                    print(f"  Changed from: {data['old']}")
+                    print(f"  变更自: {data['old']}")
 
 asyncio.run(connect())
 ```
 
-## Example: JavaScript client
+## 示例：JavaScript 客户端
 
 ```javascript
 const WebSocket = require('ws');
@@ -295,18 +295,18 @@ ws.on('message', (raw) => {
   const msg = JSON.parse(raw);
 
   if (msg.type === 'subscribed') {
-    console.log(`Subscribed (id=${msg.subscription_id})`);
+    console.log(`已订阅 (id=${msg.subscription_id})`);
   }
 
   if (msg.type === 'broadcast') {
     console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
     if (msg.old) {
-      console.log('  Changed from:', msg.old);
+      console.log('  变更自:', msg.old);
     }
   }
 });
 
-// Keep alive
+// 保持活跃
 setInterval(() => {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'ping' }));

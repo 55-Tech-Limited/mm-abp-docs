@@ -143,18 +143,11 @@ ABP implements several resilience mechanisms that may affect your integration:
 
 Per-bookmaker circuit breakers prevent cascading failures. If a bookmaker is experiencing issues, orders targeting that bookmaker may be declined until the circuit recovers.
 
-- Opens after 5 consecutive failures
-- Half-open state allows 3 test requests
-- Auto-recovers after 30 seconds
+Opens after consecutive failures, automatically tests recovery, and resumes normal operation once the bookmaker responds successfully.
 
 ### Emergency mode
 
-In rare cases, the system may enter emergency mode (triggered by data staleness or upstream failures). During emergency mode:
-
-- New orders are rejected
-- Existing pending orders may be expired
-- The `emergency` WebSocket channel broadcasts status changes
-- Recovery is automatic (soft pause) or manual (full emergency)
+In rare cases, the system may temporarily pause order processing during maintenance or upstream issues. The `emergency` WebSocket channel broadcasts status changes.
 
 ### Order expiry
 

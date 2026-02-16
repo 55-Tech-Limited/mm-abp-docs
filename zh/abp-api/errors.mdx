@@ -1,0 +1,154 @@
+---
+title: "ABP 错误处理"
+sidebarTitle: "错误"
+description: "ABP API 错误码、验证错误、订单拒绝原因和可靠性模式。了解如何在集成中处理错误。"
+---
+
+## 错误响应格式
+
+所有API错误返回JSON正文：
+
+```json
+{
+  "detail": "Unauthorized - missing or invalid API key"
+}
+```
+
+验证错误包含字段级详情：
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "orders", 0, "orderStake"],
+      "msg": "Input should be greater than 0",
+      "type": "greater_than"
+    }
+  ]
+}
+```
+
+## HTTP 状态码
+
+| 状态码 | 描述 |
+|--------|------|
+| `200` | 成功 |
+| `201` | 资源已创建 |
+| `204` | 资源已删除（无内容） |
+| `400` | 错误请求 — 参数无效 |
+| `401` | 未授权 — 缺少或无效的API密钥 |
+| `403` | 禁止 — 资源属于其他客户 |
+| `404` | 未找到 — 资源不存在 |
+| `409` | 冲突 — `requestUuid` 重复，已在处理中 |
+| `422` | 验证错误 — 请求体验证失败 |
+| `429` | 速率限制 — 超出每分钟请求数 |
+| `500` | 内部服务器错误 |
+| `503` | 服务不可用 — 数据库或依赖服务不可用 |
+
+## 订单拒绝原因
+
+通过 `POST /place-orders` 下单时，未通过业务验证的订单会在 `declinedOrders` 数组中返回（不作为HTTP错误）。每个被拒绝的订单包含 `declineReason`：
+
+| 拒绝原因 | 描述 |
+|----------|------|
+| 投注额超限 | `orderStake` 高于可用博彩公司限额 |
+| 投注额低于最低要求 | `orderStake` 低于博彩公司或账户的最低限额 |
+| 赔率无效 | `orderPrice` 不可用或市场已暂停 |
+| 无活跃账户 | 此市场无可用的活跃博彩公司账户 |
+| 货币转换失败 | 无法在订单货币和博彩公司货币之间转换 |
+| 博彩公司不可用 | 指定的博彩公司没有此赛事/结果的赔率 |
+| requestUuid重复 | 此 `requestUuid` 已在处理中（5分钟去重窗口） |
+
+**被拒订单响应示例：**
+
+```json
+{
+  "orders": [],
+  "declinedOrders": [
+    {
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "playerId": 0,
+      "orderStake": 15000,
+      "orderPrice": 1.80,
+      "declineReason": "Order stake 15000.00 USD exceeds available limit 5000.00 USD"
+    }
+  ]
+}
+```
+
+## 常见错误
+
+### 身份验证 (401)
+
+缺少或无效的API密钥。
+
+```bash
+# 缺少头
+curl https://v2.55-tech.com/accounts
+# 返回: 401 {"detail": "Unauthorized - missing or invalid API key"}
+
+# 包含头
+curl -H "X-ABP-API-KEY: your-key" https://v2.55-tech.com/accounts
+# 返回: 200
+```
+
+### 拒绝访问 (403)
+
+尝试访问属于其他客户的资源。
+
+```json
+{"detail": "Access denied - account does not belong to your client"}
+```
+
+### 重复请求 (409)
+
+`requestUuid` 在过去5分钟内已使用。
+
+```json
+{"detail": "Duplicate request - requestUuid already in-flight"}
+```
+
+### 验证错误 (422)
+
+请求体包含无效数据。检查 `loc` 字段以找到问题路径：
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "orders", 0, "fixtureId"],
+      "msg": "Field required",
+      "type": "missing"
+    }
+  ]
+}
+```
+
+### 速率限制 (429)
+
+超出您API密钥的每分钟请求数。默认限制：60/分钟。
+
+```json
+{"detail": "Rate limit exceeded"}
+```
+
+实施指数退避：重试前等待1秒、2秒、4秒等。
+
+## 可靠性模式
+
+ABP 实施了多种可靠性机制，可能影响您的集成：
+
+### 熔断器
+
+每博彩公司熔断器防止级联故障。如果某个博彩公司出现问题，针对该博彩公司的订单可能被拒绝，直到熔断器恢复。
+
+连续失败后打开，自动测试恢复，博彩公司成功响应后恢复正常运行。
+
+### 紧急模式
+
+在罕见情况下，系统可能在维护或上游问题期间临时暂停订单处理。`emergency` WebSocket频道广播状态变更。
+
+### 订单过期
+
+订单默认 `expiresAt` 为创建后5秒。如果在此窗口内未下注，订单状态变为 `EXPIRED`。可设置自定义 `expiresAt` 用于更长时效的订单。

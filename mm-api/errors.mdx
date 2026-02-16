@@ -54,7 +54,7 @@ Your API key is missing, invalid, or not in UUID format.
 
 ```bash
 # Correct
-curl -H "X-API-Key: 550e8400-e29b-41d4-a716-446655440000" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/me
 
 # Wrong header name — returns 401
@@ -94,42 +94,3 @@ When subscribing to the WebSocket, these error messages may be returned:
 | `Invalid API key` | Key not found or client inactive |
 | `Connection limit exceeded` | Already at 5 active connections for this key |
 
-## Emergency mode
-
-The MM engine has a two-tier emergency system that can affect API behavior:
-
-### Full emergency
-
-Triggered manually via `POST /emergency/trigger` or automatically when critical thresholds are exceeded (e.g., OddsPapi disconnection for >30 seconds).
-
-**Impact:**
-- All open exchange orders are cancelled immediately
-- No new orders are placed
-- Existing data remains accessible via the API
-- Requires manual `POST /emergency/resume` to restart
-
-### Soft pause
-
-Triggered automatically by data staleness (>5 seconds) or message processing lag (>30 seconds).
-
-**Impact:**
-- No new orders are placed
-- Existing orders remain active
-- Auto-recovers when conditions clear
-- Does not require manual intervention
-
-### Checking emergency status
-
-```bash
-curl https://mmapi.55-tech.com/emergency/status
-```
-
-```json
-{
-  "emergency": false,
-  "paused": false,
-  "reason": null
-}
-```
-
-Subscribe to the `emergency` WebSocket channel for real-time status updates.

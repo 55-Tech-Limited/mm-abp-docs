@@ -1,0 +1,96 @@
+---
+title: "快速入门 - 连接 55-Tech API"
+sidebarTitle: "快速入门"
+description: "开始使用 55-Tech ABP 和 MM API。检查连接、进行身份验证并发起您的首次API调用。"
+---
+
+## 前提条件
+
+您需要所使用平台的API密钥。联系 [support@55-tech.com](mailto:support@55-tech.com) 获取您的密钥。
+
+| 平台 | 认证头 | 基础URL |
+|------|--------|---------|
+| ABP（自动投注） | `X-ABP-API-KEY` | `https://v2.55-tech.com` |
+| MM（做市） | `X-API-Key` | `https://mmapi.55-tech.com` |
+
+---
+
+## ABP — 自动投注
+
+### 1. 列出您的账户
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/accounts
+```
+
+### 2. 获取投注单（实时赔率）
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=ID&outcomeId=161&playerId=0"
+```
+
+### 3. 下单
+
+```bash
+curl -X POST -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"orders": [{"fixtureId": "...", "outcomeId": 161, "playerId": 0, "stake": 10, "minPrice": 1.5}]}' \
+  https://v2.55-tech.com/place-orders
+```
+
+### 4. 跟踪结果
+
+```bash
+curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  https://v2.55-tech.com/orders
+```
+
+---
+
+## MM — 做市
+
+### 1. 验证身份
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+### 2. 列出您的订单
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders
+```
+
+### 3. 查看持仓
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions
+```
+
+### 4. 查看盈亏
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/pnl
+```
+
+---
+
+## 实时更新
+
+两个API都支持WebSocket连接以获取实时更新。请参阅各API的WebSocket文档：
+
+<Columns cols={2}>
+  <Card title="ABP WebSocket" icon="bolt" href="/zh/abp-api/websocket">
+    实时订单、投注和结算更新。
+  </Card>
+
+  <Card title="MM WebSocket" icon="bolt" href="/zh/mm-api/websocket">
+    实时订单成交、投注和比分更新。
+  </Card>
+</Columns>
