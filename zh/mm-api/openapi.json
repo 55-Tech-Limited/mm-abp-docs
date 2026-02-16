@@ -464,7 +464,7 @@
           "Client API"
         ],
         "summary": "List bets",
-        "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **order_id**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (vertex, pinnacle, demo)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
+        "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **order_id**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (e.g., vertex, pinnacle)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
         "operationId": "list_bets_api_v1_bets_get",
         "parameters": [
           {
@@ -498,10 +498,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by bookmaker (vertex, pinnacle, demo)",
+              "description": "Filter by bookmaker (e.g., vertex, pinnacle)",
               "title": "Bookmaker"
             },
-            "description": "Filter by bookmaker (vertex, pinnacle, demo)"
+            "description": "Filter by bookmaker (e.g., vertex, pinnacle)"
           },
           {
             "name": "status",
@@ -1957,7 +1957,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "Client API key (UUID format). Get your key from the admin dashboard."
+        "description": "Client API key (UUID format). Contact support@55-tech.com to obtain your key."
       }
     }
   },
