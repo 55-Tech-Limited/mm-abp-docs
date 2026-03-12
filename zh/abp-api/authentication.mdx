@@ -1,17 +1,17 @@
 ---
 title: "ABP 身份验证 - API密钥设置"
 sidebarTitle: "身份验证"
-description: "了解如何使用 X-ABP-API-KEY 头进行 ABP API 请求身份验证。API密钥解析、速率限制和WebSocket身份验证。"
+description: "了解如何使用 x-api-key 头进行 ABP API 请求身份验证。API密钥解析、速率限制和WebSocket身份验证。"
 ---
 
-所有 ABP 端点都需要通过 `X-ABP-API-KEY` 头进行身份验证。
+所有 ABP 端点都需要通过 `x-api-key` 头进行身份验证。
 
 ## 如何验证
 
-在 `X-ABP-API-KEY` 请求头中传入您的API密钥：
+在 `x-api-key` 请求头中传入您的API密钥：
 
 ```bash
-curl -H "X-ABP-API-KEY: your-api-key" \
+curl -H "x-api-key: your-api-key" \
   https://v2.55-tech.com/accounts
 ```
 

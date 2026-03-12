@@ -23,7 +23,7 @@ Send a login message within **30 seconds** of connecting:
 ```json
 {
   "type": "login",
-  "apiKey": "your-api-key",
+  "apiKey": "YOUR_API_KEY",
   "channels": []
 }
 ```
@@ -33,8 +33,19 @@ An empty `channels` array subscribes to all available channels. To subscribe to 
 ```json
 {
   "type": "login",
-  "apiKey": "your-api-key",
+  "apiKey": "YOUR_API_KEY",
   "channels": ["orders", "bets", "settlements"]
+}
+```
+
+You can optionally enable reliable delivery with message acknowledgments:
+
+```json
+{
+  "type": "login",
+  "apiKey": "YOUR_API_KEY",
+  "channels": ["orders", "bets"],
+  "reliableDelivery": true
 }
 ```
 
@@ -52,6 +63,7 @@ On success, the server responds with:
     "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance"],
     "global": ["fixtures", "currencies", "status", "emergency"]
   },
+  "reliableDelivery": false,
   "features": {
     "messageOrdering": true,
     "acknowledgments": false,
@@ -79,30 +91,27 @@ Data messages follow this format:
 |-------|-------------|
 | `type` | Always `"data"` for data messages |
 | `channel` | Which channel this message belongs to |
-| `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `STATUS_CHANGE`, `SETTLED` |
-| `payload` | The full updated object |
+| `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `SETTLED`, `STATUS` |
+| `payload` | The full updated object (see per-channel payload schemas below) |
 | `ts` | Server timestamp (milliseconds since epoch) |
-| `seq` | Sequence number for message ordering |
+| `seq` | Per-subscription monotonically increasing sequence number |
+| `requireAck` | Present and `true` only when reliable delivery is enabled |
 
 ### 5. Keep alive
 
-Send a ping every **30 seconds**:
+The server sends a ping every **30 seconds**:
 
 ```json
 {"type": "ping"}
 ```
 
-The server responds with:
+Respond with pong within **120 seconds** or the connection is closed:
 
 ```json
 {"type": "pong"}
 ```
 
-The server also sends heartbeats every **60 seconds**:
-
-```json
-{"type": "heartbeat", "ts": 1771183909789}
-```
+You can also send pings from the client — the server responds with pong.
 
 ## Channels
 
@@ -112,10 +121,10 @@ These channels only deliver data belonging to your `clientName`:
 
 | Channel | Events | Description |
 |---------|--------|-------------|
-| `orders` | INSERT, UPDATE, STATUS_CHANGE | Order placement, fills, status changes |
-| `bets` | INSERT, UPDATE, SETTLED | Bet placement, confirmation, settlement |
-| `settlements` | UPDATE | Settlement status updates |
-| `accounts` | UPDATE | Account balance and status changes |
+| `orders` | INSERT, UPDATE, DELETE | Order placement, fills, status changes |
+| `bets` | INSERT, UPDATE | Bet placement and confirmation |
+| `settlements` | SETTLED | Settlement status updates (same payload as bets) |
+| `accounts` | UPDATE | Account status changes |
 | `balance` | UPDATE | Balance change notifications |
 
 ### Global channels
@@ -126,89 +135,98 @@ All subscribers receive these:
 |---------|--------|-------------|
 | `fixtures` | UPDATE | Fixture metadata and score changes |
 | `currencies` | UPDATE | Currency exchange rate updates |
-| `status` | UPDATE | System status changes |
-| `emergency` | UPDATE | Emergency mode activation/deactivation |
+| `status` | STATUS | System status changes |
+| `emergency` | STATUS | Emergency mode activation/deactivation |
 
-## Payload examples
+## Payload schemas
 
-### Order update
+### Orders payload
+
+Full database row from the `orders` table:
 
 ```json
 {
-  "type": "data",
-  "channel": "orders",
-  "event": "STATUS_CHANGE",
-  "payload": {
-    "orderId": 12345,
-    "requestUuid": "eb45b192-358b-32d5-9f65-af497b9fa8c1",
-    "clientName": "your-client",
-    "fixtureId": "id1000000861624412",
-    "outcomeId": 161,
-    "playerId": 0,
-    "orderPrice": 1.80,
-    "orderStake": 50,
-    "filledStake": 50,
-    "remainingStake": 0,
-    "orderStatus": "FILLED",
-    "userRef": "my-strategy-1",
-    "testOrder": false,
-    "acceptBetterOdds": true,
-    "acceptPartialStake": true,
-    "orderCurrency": "USD",
-    "back": true,
-    "createdAt": "2026-02-15T19:31:49.778Z",
-    "expiresAt": "2026-02-15T19:31:54.759Z"
-  },
-  "ts": 1771183909789,
-  "seq": 42
+  "orderId": 327,
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "client": "demo",
+  "clientName": "demo",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "orderPrice": 1.95,
+  "orderStake": 10.0,
+  "filledStake": 10.0,
+  "remainingStake": 0.0,
+  "orderStatus": "FILLED",
+  "statusReason": null,
+  "userRef": "bettor1234",
+  "testOrder": false,
+  "acceptBetterOdds": true,
+  "acceptPartialStake": true,
+  "orderCurrency": "USD",
+  "back": true,
+  "allowedBookmakers": "*",
+  "meta": {},
+  "expiresAt": "2026-02-07T17:29:37+00:00",
+  "filledAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
 }
 ```
 
-### Bet confirmation
+### Bets / settlements payload
+
+Full database row from the `bets` table:
 
 ```json
 {
-  "type": "data",
-  "channel": "bets",
-  "event": "UPDATE",
-  "payload": {
-    "betId": 1,
-    "orderId": 12345,
-    "bookmaker": "pinnacle",
-    "bookmakerBetId": "3587791057",
-    "placedStake": 50,
-    "placedPrice": 1.85,
-    "placedCurrency": "USD",
-    "betStatus": "CONFIRMED",
-    "settlementStatus": "UNSETTLED",
-    "account": "your-username",
-    "userRef": "my-strategy-1",
-    "testBet": false,
-    "placedAt": "2026-02-15T19:31:50+00:00"
-  },
-  "ts": 1771183910123,
-  "seq": 43
+  "betId": 73,
+  "orderId": 327,
+  "bookmaker": "pinnacle",
+  "bookmakerBetId": "3332684214",
+  "betStatus": "CONFIRMED",
+  "settlementStatus": "UNSETTLED",
+  "placedStake": 10.0,
+  "placedPrice": 1.98,
+  "placedCurrency": "USD",
+  "account": "pinnacle_main",
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "userRef": "bettor1234",
+  "testBet": false,
+  "client": "demo",
+  "clientName": "demo",
+  "sentData": { "stake": 10.0, "price": 1.95 },
+  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
+  "settlementAmount": null,
+  "settlementReason": null,
+  "settledAt": null,
+  "declineReason": null,
+  "placedAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
 }
 ```
 
-### Bet settlement
+### Balance payload
 
 ```json
 {
-  "type": "data",
-  "channel": "bets",
-  "event": "SETTLED",
-  "payload": {
-    "betId": 1,
-    "orderId": 12345,
-    "bookmaker": "pinnacle",
-    "betStatus": "CONFIRMED",
-    "settlementStatus": "WON",
-    "settlementAmount": 92.50,
-    "settledAt": "2026-02-15T21:45:00+00:00"
-  },
-  "ts": 1771191900456,
-  "seq": 89
+  "clientName": "demo",
+  "bookmaker": "pinnacle",
+  "username": "pinnacle_main",
+  "balance": 4990.0,
+  "currency": "USD",
+  "ts": 1771183910123
+}
+```
+
+### Emergency payload
+
+```json
+{
+  "active": true,
+  "reason": "Upstream provider maintenance",
+  "ts": 1771183910123
 }
 ```
 
@@ -218,9 +236,10 @@ All subscribers receive these:
 |---------|-------|
 | Max connections per API key | 5 |
 | Auth timeout | 30 seconds |
-| Server heartbeat interval | 60 seconds |
-| Client ping interval | 30 seconds (recommended) |
-| Message buffer size | 100 per subscription |
+| Server ping interval | 30 seconds |
+| Pong timeout (disconnect) | 120 seconds |
+| Message buffer (reliable delivery) | 100 messages |
+| Output queue per client | 2000 messages |
 
 ## Example: Python client
 
@@ -243,18 +262,12 @@ async def connect():
         login_resp = json.loads(await ws.recv())
         print(f"Logged in as {login_resp.get('clientName')}")
 
-        # Keep-alive task
-        async def keep_alive():
-            while True:
-                await asyncio.sleep(30)
-                await ws.send(json.dumps({"type": "ping"}))
-
-        asyncio.create_task(keep_alive())
-
-        # Listen for updates
+        # Listen for updates (respond to pings automatically)
         async for message in ws:
             data = json.loads(message)
-            if data["type"] == "data":
+            if data["type"] == "ping":
+                await ws.send(json.dumps({"type": "pong"}))
+            elif data["type"] == "data":
                 print(f"[{data['channel']}:{data['event']}] {data['payload']}")
 
 asyncio.run(connect())
@@ -282,15 +295,12 @@ ws.on('message', (raw) => {
     console.log(`Logged in as ${msg.clientName}`);
   }
 
+  if (msg.type === 'ping') {
+    ws.send(JSON.stringify({ type: 'pong' }));
+  }
+
   if (msg.type === 'data') {
     console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
   }
 });
-
-// Keep alive
-setInterval(() => {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'ping' }));
-  }
-}, 30000);
 ```

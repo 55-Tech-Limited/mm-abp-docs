@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ABP v2 - Automated Bet Placing API",
-    "description": "\nPlace bets across 30+ bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `X-ABP-API-KEY` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
+    "description": "\nPlace bets across 30+ bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `x-api-key` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
     "version": "2.0"
   },
   "servers": [
@@ -14,29 +14,16 @@
   "paths": {
     "/accounts": {
       "get": {
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "summary": "List accounts for client",
-        "description": "Get all accounts for the authenticated client.\n\nOptionally filter by bookmaker. Returns accounts ordered by priority (highest first).",
-        "operationId": "get_accounts_accounts_get",
+        "description": "Get all bookmaker accounts for the authenticated client. Optionally filter by bookmaker. Accounts are ordered by priority (highest first). Passwords are always masked.",
+        "operationId": "get_accounts",
         "parameters": [
           {
             "name": "bookmaker",
             "in": "query",
             "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by bookmaker slug",
-              "title": "Bookmaker"
-            },
+            "schema": { "type": "string", "nullable": true },
             "description": "Filter by bookmaker slug"
           }
         ],
@@ -45,11 +32,14 @@
             "description": "List of accounts for the authenticated client",
             "content": {
               "application/json": {
-                "schema": {},
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AccountResponse" }
+                },
                 "example": [
                   {
                     "bookmaker": "pinnacle",
-                    "username": "my_pinnacle",
+                    "username": "pinnacle_main",
                     "client": "demo",
                     "password": "***",
                     "balance": 5000.0,
@@ -64,19 +54,18 @@
                     "updatedAt": "2026-02-01T12:00:00Z"
                   },
                   {
-                    "bookmaker": "betfair_ex",
-                    "username": "my_betfair",
+                    "bookmaker": "betfair-ex",
+                    "username": "betfair_user",
                     "client": "demo",
                     "password": "***",
                     "balance": 2500.0,
                     "active": true,
                     "priority": 5,
+                    "maxStake": null,
                     "minStake": 2.0,
                     "currencyId": "GBP",
                     "verifyBetslip": true,
-                    "meta": {
-                      "appKey": "***"
-                    },
+                    "meta": { "appKey": "***" },
                     "createdAt": "2026-01-05T00:00:00Z",
                     "updatedAt": "2026-02-05T12:00:00Z"
                   }
@@ -84,37 +73,31 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "500": { "description": "Internal server error" }
         }
       },
       "post": {
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "summary": "Create account",
-        "description": "Create a new bookmaker account for the authenticated client.\n\nEach client can have multiple accounts per bookmaker. Use priority\nto control which account is selected first.",
-        "operationId": "create_account_accounts_post",
+        "description": "Create a new bookmaker account for the authenticated client. Each client can have multiple accounts per bookmaker. Use `priority` to control which account is selected first.",
+        "operationId": "create_account",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AccountCreateRequest"
+              "schema": { "$ref": "#/components/schemas/AccountCreateRequest" },
+              "example": {
+                "bookmaker": "pinnacle",
+                "username": "my_account",
+                "password": "secret123",
+                "balance": 1000.0,
+                "active": true,
+                "priority": 10,
+                "maxStake": 500.0,
+                "minStake": 1.0,
+                "currencyId": "USD",
+                "meta": { "affiliate": "xyz" }
               }
             }
           }
@@ -124,7 +107,7 @@
             "description": "Account created successfully",
             "content": {
               "application/json": {
-                "schema": {},
+                "schema": { "$ref": "#/components/schemas/AccountResponse" },
                 "example": {
                   "bookmaker": "pinnacle",
                   "username": "my_account",
@@ -137,71 +120,35 @@
                   "minStake": 1.0,
                   "currencyId": "USD",
                   "verifyBetslip": false,
-                  "meta": {
-                    "affiliate": "xyz"
-                  },
+                  "meta": { "affiliate": "xyz" },
                   "createdAt": "2026-01-01T00:00:00Z",
                   "updatedAt": "2026-01-15T12:00:00Z"
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "409": {
-            "description": "Account already exists"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "409": { "description": "Account already exists (bookmaker + username must be unique)" },
+          "500": { "description": "Internal server error" }
         }
       }
     },
     "/accounts/{bookmaker}/{username}": {
       "get": {
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "summary": "Get account by key",
-        "description": "Get a specific account by its primary key (bookmaker, username).\n\nOnly returns account if it belongs to the authenticated client.",
-        "operationId": "get_account_accounts__bookmaker___username__get",
+        "description": "Get a specific account by its primary key (bookmaker, username). Only returns the account if it belongs to the authenticated client.",
+        "operationId": "get_account",
         "parameters": [
-          {
-            "name": "bookmaker",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Bookmaker"
-            }
-          },
-          {
-            "name": "username",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Username"
-            }
-          }
+          { "name": "bookmaker", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Bookmaker slug (e.g., 'pinnacle')" },
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Account username" }
         ],
         "responses": {
           "200": {
             "description": "Account details",
             "content": {
               "application/json": {
-                "schema": {},
+                "schema": { "$ref": "#/components/schemas/AccountResponse" },
                 "example": {
                   "bookmaker": "pinnacle",
                   "username": "my_account",
@@ -214,72 +161,38 @@
                   "minStake": 1.0,
                   "currencyId": "USD",
                   "verifyBetslip": false,
-                  "meta": {
-                    "affiliate": "xyz"
-                  },
+                  "meta": { "affiliate": "xyz" },
                   "createdAt": "2026-01-01T00:00:00Z",
                   "updatedAt": "2026-01-15T12:00:00Z"
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "403": {
-            "description": "Access denied - account belongs to different client"
-          },
-          "404": {
-            "description": "Account not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "403": { "description": "Access denied — account belongs to different client" },
+          "404": { "description": "Account not found" },
+          "500": { "description": "Internal server error" }
         }
       },
       "patch": {
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "summary": "Update account",
-        "description": "Update an existing account.\n\nOnly the account owner (client) can update their accounts.",
-        "operationId": "update_account_accounts__bookmaker___username__patch",
+        "description": "Update an existing bookmaker account. Only provided fields are updated. Only the account owner (client) can update their accounts.",
+        "operationId": "update_account",
         "parameters": [
-          {
-            "name": "bookmaker",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Bookmaker"
-            }
-          },
-          {
-            "name": "username",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Username"
-            }
-          }
+          { "name": "bookmaker", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Bookmaker slug" },
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Account username" }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AccountUpdateRequest"
+              "schema": { "$ref": "#/components/schemas/AccountUpdateRequest" },
+              "example": {
+                "balance": 2000.0,
+                "active": true,
+                "priority": 15,
+                "maxStake": 750.0
               }
             }
           }
@@ -289,660 +202,72 @@
             "description": "Account updated successfully",
             "content": {
               "application/json": {
-                "schema": {},
-                "example": {
-                  "bookmaker": "pinnacle",
-                  "username": "my_account",
-                  "client": "demo",
-                  "password": "***",
-                  "balance": 1000.0,
-                  "active": true,
-                  "priority": 10,
-                  "maxStake": 500.0,
-                  "minStake": 1.0,
-                  "currencyId": "USD",
-                  "verifyBetslip": false,
-                  "meta": {
-                    "affiliate": "xyz"
-                  },
-                  "createdAt": "2026-01-01T00:00:00Z",
-                  "updatedAt": "2026-01-15T12:00:00Z"
-                }
+                "schema": { "$ref": "#/components/schemas/AccountResponse" }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "403": {
-            "description": "Access denied - account belongs to different client"
-          },
-          "404": {
-            "description": "Account not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "403": { "description": "Access denied — account belongs to different client" },
+          "404": { "description": "Account not found" },
+          "500": { "description": "Internal server error" }
         }
       },
       "delete": {
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "summary": "Delete account",
-        "description": "Delete an account.\n\nOnly the account owner (client) can delete their accounts.",
-        "operationId": "delete_account_accounts__bookmaker___username__delete",
+        "description": "Delete a bookmaker account. Only the account owner (client) can delete their accounts.",
+        "operationId": "delete_account",
         "parameters": [
-          {
-            "name": "bookmaker",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Bookmaker"
-            }
-          },
-          {
-            "name": "username",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Username"
-            }
-          }
+          { "name": "bookmaker", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Bookmaker slug" },
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Account username" }
         ],
         "responses": {
-          "204": {
-            "description": "Account deleted successfully"
-          },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "403": {
-            "description": "Access denied - account belongs to different client"
-          },
-          "404": {
-            "description": "Account not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/positions": {
-      "get": {
-        "tags": [
-          "Analytics"
-        ],
-        "summary": "Get open positions",
-        "description": "Retrieve aggregated open (unsettled) positions grouped by bookmaker, account, or userRef.\n\nReturns the number of open bets, total stake, and average price for each group.\nOnly includes bets with `betStatus` in (PLACED, CONFIRMED) and `settlementStatus` = UNSETTLED.\n\n**Group by options:**\n- `bookmaker` (default) - Group by bookmaker\n- `account` - Group by bookmaker account\n- `userRef` - Group by user reference\n\n**Filters:**\n- `bookmaker` - Filter to a specific bookmaker\n- `userRef` - Filter to a specific user reference\n- `account` - Filter to a specific account",
-        "operationId": "get_positions_positions_get",
-        "parameters": [
-          {
-            "name": "groupBy",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Group positions by: bookmaker, account, or userRef",
-              "default": "bookmaker",
-              "title": "Groupby"
-            },
-            "description": "Group positions by: bookmaker, account, or userRef"
-          },
-          {
-            "name": "bookmaker",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by bookmaker slug",
-              "title": "Bookmaker"
-            },
-            "description": "Filter by bookmaker slug"
-          },
-          {
-            "name": "userRef",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by user reference",
-              "title": "Userref"
-            },
-            "description": "Filter by user reference"
-          },
-          {
-            "name": "account",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by account username",
-              "title": "Account"
-            },
-            "description": "Filter by account username"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved positions",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PositionsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid parameters"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "503": {
-            "description": "Database unavailable"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/pnl": {
-      "get": {
-        "tags": [
-          "Analytics"
-        ],
-        "summary": "Get profit and loss",
-        "description": "Calculates realized and unrealized PnL.\n\nOnly includes settled bets (`settlementStatus` NOT in UNSETTLED).\n\n**Group by options:**\n- `bookmaker` (default) - Group by bookmaker\n- `account` - Group by bookmaker account\n- `userRef` - Group by user reference\n\n**Filters:**\n- `bookmaker` - Filter to a specific bookmaker\n- `userRef` - Filter to a specific user reference\n- `account` - Filter to a specific account",
-        "operationId": "get_pnl_pnl_get",
-        "parameters": [
-          {
-            "name": "groupBy",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Group PnL by: bookmaker, account, or userRef",
-              "default": "bookmaker",
-              "title": "Groupby"
-            },
-            "description": "Group PnL by: bookmaker, account, or userRef"
-          },
-          {
-            "name": "bookmaker",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by bookmaker slug",
-              "title": "Bookmaker"
-            },
-            "description": "Filter by bookmaker slug"
-          },
-          {
-            "name": "userRef",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by user reference",
-              "title": "Userref"
-            },
-            "description": "Filter by user reference"
-          },
-          {
-            "name": "account",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by account username",
-              "title": "Account"
-            },
-            "description": "Filter by account username"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved PnL",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PnlResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid parameters"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "503": {
-            "description": "Database unavailable"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bets": {
-      "get": {
-        "tags": [
-          "Bets"
-        ],
-        "summary": "Get bets",
-        "description": "Retrieve bets by various filters with keyset pagination. At least one filter must be provided.\n\n**Filters (OR logic):**\n- `betIds` - Comma-separated list of bet IDs\n- `orderIds` - Comma-separated list of order IDs\n- `userRef` - User reference string\n\n**Pagination:**\n- Results are ordered by betId descending (newest first)\n- Use `afterBetId` from `nextCursor` in the response to fetch the next page\n- `hasMore` indicates if more results are available\n\nAll matching bets are returned (union of all filter matches).\nResults are filtered to only include bets belonging to the authenticated client.\n\n**Bet Status Values:**\n- `PENDING` - Bet submitted, awaiting confirmation\n- `CONFIRMED` - Bet accepted by bookmaker\n- `DECLINED` - Bet rejected by bookmaker\n- `CANCELLED` - Bet cancelled before confirmation\n\n**Settlement Status Values:**\n- `UNSETTLED` - Event not yet settled\n- `WON` - Bet won\n- `LOST` - Bet lost\n- `VOID` - Bet voided/cancelled\n- `PUSHED` - Stake returned (tie)",
-        "operationId": "get_bets_bets_get",
-        "parameters": [
-          {
-            "name": "betIds",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Comma-separated bet IDs",
-              "title": "Betids"
-            },
-            "description": "Comma-separated bet IDs",
-            "example": "1,2,3"
-          },
-          {
-            "name": "orderIds",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Comma-separated order IDs",
-              "title": "Orderids"
-            },
-            "description": "Comma-separated order IDs",
-            "example": "100,101,102"
-          },
-          {
-            "name": "userRef",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "User reference to filter by",
-              "title": "Userref"
-            },
-            "description": "User reference to filter by",
-            "example": "user123"
-          },
-          {
-            "name": "afterBetId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Cursor for pagination: fetch bets with betId less than this value",
-              "title": "Afterbetid"
-            },
-            "description": "Cursor for pagination: fetch bets with betId less than this value",
-            "example": 1000
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "description": "Maximum number of bets to return per page",
-              "default": 50,
-              "title": "Limit"
-            },
-            "description": "Maximum number of bets to return per page"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved bets",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BetsResponse"
-                },
-                "example": {
-                  "status": "success",
-                  "bets": [
-                    {
-                      "betId": 67890,
-                      "orderId": 12345,
-                      "bookmaker": "pinnacle",
-                      "betStatus": "CONFIRMED",
-                      "settlementStatus": "UNSETTLED",
-                      "clientName": "demo",
-                      "testBet": false,
-                      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-                      "bookmakerBetId": "3332684214",
-                      "placedPrice": 1.97,
-                      "placedStake": 10.0,
-                      "placedCurrency": "USD",
-                      "placedAt": "2026-02-07T17:29:32+00:00",
-                      "userRef": "bettor1234",
-                      "account": "my_pinnacle",
-                      "sentData": {
-                        "stake": 10.0,
-                        "price": 1.95
-                      },
-                      "receivedData": {
-                        "betId": "3332684214",
-                        "status": "accepted",
-                        "price": 1.97
-                      },
-                      "currencyInfo": {
-                        "currency": "USD",
-                        "currencyValue": 1.0
-                      }
-                    },
-                    {
-                      "betId": 67889,
-                      "orderId": 12344,
-                      "bookmaker": "betfair_ex",
-                      "betStatus": "CONFIRMED",
-                      "settlementStatus": "WON",
-                      "clientName": "demo",
-                      "testBet": false,
-                      "requestUuid": "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d",
-                      "bookmakerBetId": "234567890",
-                      "placedPrice": 1.94,
-                      "placedStake": 50.0,
-                      "placedCurrency": "GBP",
-                      "placedAt": "2026-02-07T16:00:00+00:00",
-                      "settledAt": "2026-02-07T18:30:00+00:00",
-                      "userRef": "bettor1234",
-                      "account": "my_betfair",
-                      "currencyInfo": {
-                        "currency": "GBP",
-                        "currencyValue": 0.73
-                      }
-                    }
-                  ],
-                  "count": 2,
-                  "hasMore": true,
-                  "nextCursor": 67889
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid filter parameters or missing required filter"
-          },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "503": {
-            "description": "Database unavailable"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bets/{bet_id}": {
-      "get": {
-        "tags": [
-          "Bets"
-        ],
-        "summary": "Get a single bet",
-        "description": "Retrieve a single bet by its ID. The bet must belong to the authenticated client.",
-        "operationId": "get_bet_by_id_bets__bet_id__get",
-        "parameters": [
-          {
-            "name": "bet_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Bet Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved bet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BetResponse"
-                },
-                "example": {
-                  "betId": 67890,
-                  "orderId": 12345,
-                  "bookmaker": "pinnacle",
-                  "betStatus": "CONFIRMED",
-                  "settlementStatus": "UNSETTLED",
-                  "clientName": "demo",
-                  "testBet": false,
-                  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-                  "bookmakerBetId": "3332684214",
-                  "placedPrice": 1.97,
-                  "placedStake": 10.0,
-                  "placedCurrency": "USD",
-                  "placedAt": "2026-02-07T17:29:32+00:00",
-                  "userRef": "bettor1234",
-                  "account": "my_pinnacle",
-                  "sentData": {
-                    "stake": 10.0,
-                    "price": 1.95
-                  },
-                  "receivedData": {
-                    "betId": "3332684214",
-                    "status": "accepted",
-                    "price": 1.97
-                  },
-                  "currencyInfo": {
-                    "currency": "USD",
-                    "currencyValue": 1.0
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "404": {
-            "description": "Bet not found or not owned by client"
-          },
-          "503": {
-            "description": "Database unavailable"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "204": { "description": "Account deleted successfully" },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "403": { "description": "Access denied — account belongs to different client" },
+          "404": { "description": "Account not found" },
+          "500": { "description": "Internal server error" }
         }
       }
     },
     "/betslip": {
       "get": {
-        "tags": [
-          "Betslip"
-        ],
-        "summary": "Get betslip metadata and live odds",
-        "description": "Returns a live betslip with real-time odds from bookmakers, enriched with fixture and outcome metadata.",
-        "operationId": "get_betslip_betslip_get",
+        "tags": ["Betslip"],
+        "summary": "Get live odds and betslip metadata",
+        "description": "Get current odds and metadata for a specific fixture/outcome/player combination.\n\n**Required parameters:** `fixtureId`, `outcomeId`, `playerId`\n\n**Response includes:**\n- `fixtureInfo` — Fixture details (teams, sport, tournament, start time, scores)\n- `outcomeInfo` — Market and outcome details (market name, type, handicap)\n- `playerInfo` — Player details (for player prop markets, null otherwise)\n- `odds` — Live odds keyed by bookmaker, each containing:\n  - `price` — Current decimal odds\n  - `limit` / `limitMin` — Max/min stake in account currency\n  - `limitUsd` / `limitMinUsd` — Limits converted to USD\n  - `limitCurrency` — Account currency for limits\n  - `active` — Whether odds are currently available\n  - `account` — Account username for this bookmaker\n  - `currencyInfo` — Currency exchange rate details\n  - `bookmakerFixtureId/MarketId/OutcomeId` — Bookmaker's internal IDs\n  - `meta` — Exchange orderbook data (for Betfair, Polymarket, etc.)\n\n**Limit cascade:** account.minStake/maxStake > bookmaker.minStake/maxStake > odds.limitMin/limit",
+        "operationId": "get_betslip",
         "parameters": [
           {
             "name": "fixtureId",
             "in": "query",
             "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Fixture identifier (e.g. 'id1000004461512432')",
-              "title": "Fixtureid"
-            },
-            "description": "Fixture identifier (e.g. 'id1000004461512432')"
+            "schema": { "type": "string" },
+            "description": "Fixture identifier (e.g., 'id1000004461512432')",
+            "example": "id1000004461512432"
           },
           {
             "name": "outcomeId",
             "in": "query",
             "required": true,
-            "schema": {
-              "type": "integer",
-              "description": "Outcome identifier (e.g. 103)",
-              "title": "Outcomeid"
-            },
-            "description": "Outcome identifier (e.g. 103)"
+            "schema": { "type": "integer" },
+            "description": "Outcome identifier (e.g., 103 for Match Winner Away)",
+            "example": 103
           },
           {
             "name": "playerId",
             "in": "query",
             "required": true,
-            "schema": {
-              "type": "integer",
-              "description": "Player ID (e.g. 0 if not a player prop)",
-              "title": "Playerid"
-            },
-            "description": "Player ID (e.g. 0 if not a player prop)"
+            "schema": { "type": "integer" },
+            "description": "Player ID. Use 0 for non-player prop markets.",
+            "example": 0
           },
           {
             "name": "bookmakers",
             "in": "query",
             "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Comma-separated bookmakers. If omitted, uses all client's configured bookmakers.",
-              "title": "Bookmakers"
-            },
-            "description": "Comma-separated bookmakers. If omitted, uses all client's configured bookmakers."
+            "schema": { "type": "string", "nullable": true },
+            "description": "Comma-separated bookmaker slugs (e.g., 'pinnacle,betfair-ex'). If omitted, uses all client's configured bookmakers.",
+            "example": "pinnacle,sharpbet"
           }
         ],
         "responses": {
@@ -950,32 +275,19 @@
             "description": "Current odds and betslip metadata for a fixture",
             "content": {
               "application/json": {
-                "schema": {},
+                "schema": { "$ref": "#/components/schemas/BetslipResponse" },
                 "example": {
                   "fixtureId": "id1000002361061419",
                   "outcomeId": 101,
                   "playerId": 0,
                   "client": "demo",
+                  "userRef": null,
                   "fixtureInfo": {
                     "fixtureId": "id1000002361061419",
-                    "status": {
-                      "live": false,
-                      "statusId": 0,
-                      "statusName": "Pre-Game"
-                    },
-                    "sport": {
-                      "sportId": 10,
-                      "sportName": "Soccer"
-                    },
-                    "tournament": {
-                      "tournamentId": 23,
-                      "tournamentName": "Serie A",
-                      "categoryName": "Italy"
-                    },
-                    "season": {
-                      "seasonId": 130971,
-                      "seasonName": "Serie A 25/26"
-                    },
+                    "status": { "live": false, "statusId": 0, "statusName": "Pre-Game" },
+                    "sport": { "sportId": 10, "sportName": "Soccer" },
+                    "tournament": { "tournamentId": 23, "tournamentName": "Serie A", "categoryName": "Italy" },
+                    "season": { "seasonId": 130971, "seasonName": "Serie A 25/26" },
                     "startTime": 1770666300,
                     "participants": {
                       "participant1Id": 2702,
@@ -983,18 +295,14 @@
                       "participant2Id": 2719,
                       "participant2Name": "Cagliari Calcio"
                     },
-                    "scores": {},
-                    "expectedPeriods": 2,
                     "externalProviders": {
                       "betgeniusId": 12418676,
                       "betradarId": 61061419,
                       "flashscoreId": "QRHiwdZQ",
                       "mollybetId": "2026-02-09,240,227",
-                      "opticoddsId": "2026020952992728",
                       "pinnacleId": 1623026170,
                       "sofascoreId": 13981664
-                    },
-                    "bookmakers": {}
+                    }
                   },
                   "outcomeInfo": {
                     "marketId": 101,
@@ -1004,11 +312,10 @@
                     "period": "fulltime",
                     "playerProp": false,
                     "handicap": 0,
-                    "marketLength": 3,
-                    "sportId": 10,
                     "outcomeId": 101,
                     "outcomeName": "1"
                   },
+                  "playerInfo": null,
                   "odds": {
                     "polymarket": {
                       "id1000002361061419:polymarket:101:0": {
@@ -1019,12 +326,9 @@
                         "limitUsd": 0,
                         "limitMinUsd": 1,
                         "active": true,
-                        "account": "0x0000000000000000000000000000000000000000",
-                        "currencyInfo": {
-                          "currency": "USD",
-                          "currencyValue": 1,
-                          "updatedAt": "2026-02-08T20:27:05+00:00"
-                        },
+                        "account": "0xAe58B89E84a625C8D0b7E630f40Cb163fcA73F01",
+                        "currencyInfo": { "currency": "USD", "currencyValue": 1 },
+                        "bookmakerFixtureId": null,
                         "bookmakerMarketId": "101",
                         "bookmakerOutcomeId": "47560474994564756084533131483151433692089461304045858881876576415056110461089",
                         "meta": {
@@ -1042,14 +346,12 @@
                         "limitUsd": 15000,
                         "limitMinUsd": 5,
                         "active": true,
-                        "account": "EXAMPLE01",
-                        "currencyInfo": {
-                          "currency": "USD",
-                          "currencyValue": 1,
-                          "updatedAt": "2026-02-08T20:27:05+00:00"
-                        },
+                        "account": "PWFSE02PP1",
+                        "currencyInfo": { "currency": "USD", "currencyValue": 1 },
+                        "bookmakerFixtureId": null,
                         "bookmakerMarketId": "101",
-                        "bookmakerOutcomeId": "home"
+                        "bookmakerOutcomeId": "home",
+                        "meta": null
                       }
                     },
                     "sharpbet": {
@@ -1061,14 +363,12 @@
                         "limitUsd": 886.13,
                         "limitMinUsd": 1.18,
                         "active": true,
-                        "account": "my_account",
-                        "currencyInfo": {
-                          "currency": "EUR",
-                          "currencyValue": 0.84788876,
-                          "updatedAt": "2026-02-08T00:00:05+00:00"
-                        },
+                        "account": "devsb01",
+                        "currencyInfo": { "currency": "EUR", "currencyValue": 0.84788876 },
+                        "bookmakerFixtureId": null,
                         "bookmakerMarketId": "101",
-                        "bookmakerOutcomeId": "7"
+                        "bookmakerOutcomeId": "7",
+                        "meta": null
                       }
                     }
                   }
@@ -1078,554 +378,104 @@
           },
           "400": {
             "description": "Invalid request parameters",
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Invalid bookmaker slug: unknown_bookmaker"
-                }
-              }
-            }
+            "content": { "application/json": { "example": { "detail": "Invalid bookmaker slug: unknown_bookmaker" } } }
           },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
           "403": {
-            "description": "Access denied",
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "No accounts configured for bookmaker(s): pinnacle"
-                }
-              }
-            }
+            "description": "Access denied — no accounts for requested bookmaker(s) or sport not allowed",
+            "content": { "application/json": { "example": { "detail": "No accounts configured for bookmaker(s): pinnacle" } } }
           },
           "404": {
-            "description": "No odds found",
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "No odds found for given parameters"
-                }
-              }
-            }
+            "description": "No odds found for the given fixture/outcome/player combination",
+            "content": { "application/json": { "example": { "detail": "No odds found for given parameters" } } }
           },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bookmakers": {
-      "get": {
-        "tags": [
-          "Bookmakers"
-        ],
-        "summary": "List all bookmakers",
-        "description": "Returns all supported bookmakers. Results are cached for 60 seconds.",
-        "operationId": "get_bookmakers_bookmakers_get",
-        "responses": {
-          "200": {
-            "description": "List of supported bookmakers",
-            "content": {
-              "application/json": {
-                "schema": {},
-                "example": [
-                  {
-                    "bookmakerId": 1,
-                    "bookmaker": "pinnacle",
-                    "bookmakerName": "Pinnacle",
-                    "active": true,
-                    "maxStake": 10000.0,
-                    "minStake": 1.0
-                  },
-                  {
-                    "bookmakerId": 2,
-                    "bookmaker": "betfair_ex",
-                    "bookmakerName": "Betfair Exchange",
-                    "active": true,
-                    "minStake": 2.0
-                  },
-                  {
-                    "bookmakerId": 3,
-                    "bookmaker": "polymarket",
-                    "bookmakerName": "Polymarket",
-                    "active": true,
-                    "minStake": 1.0
-                  }
-                ]
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "404": {
-            "description": "No bookmakers found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        }
-      }
-    },
-    "/markets": {
-      "get": {
-        "tags": [
-          "Markets"
-        ],
-        "summary": "Get all markets with odds types",
-        "description": "Returns all available markets and their outcome types. Optionally filter by sportId.",
-        "operationId": "get_markets_markets_get",
-        "parameters": [
-          {
-            "name": "sportId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by sportId",
-              "title": "Sportid"
-            },
-            "description": "Filter by sportId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of markets with odds types",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Get Markets Markets Get"
-                },
-                "example": [
-                  {
-                    "marketId": 101,
-                    "marketLength": 3,
-                    "sportId": 10,
-                    "playerProp": false,
-                    "handicap": 0,
-                    "marketName": "Full Time Result",
-                    "marketNameShort": "1X2",
-                    "marketType": "1x2",
-                    "period": "fulltime",
-                    "oddsTypes": [
-                      {
-                        "outcomeId": 101,
-                        "outcomeName": "1"
-                      },
-                      {
-                        "outcomeId": 102,
-                        "outcomeName": "X"
-                      },
-                      {
-                        "outcomeId": 103,
-                        "outcomeName": "2"
-                      }
-                    ]
-                  },
-                  {
-                    "marketId": 201,
-                    "marketLength": 2,
-                    "sportId": 10,
-                    "playerProp": false,
-                    "handicap": -1.5,
-                    "marketName": "Asian Handicap -1.5",
-                    "marketNameShort": "AH -1.5",
-                    "marketType": "asian_handicap",
-                    "period": "fulltime",
-                    "oddsTypes": [
-                      {
-                        "outcomeId": 201,
-                        "outcomeName": "1"
-                      },
-                      {
-                        "outcomeId": 202,
-                        "outcomeName": "2"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - missing or invalid API key"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "500": { "description": "Internal server error" }
         }
       }
     },
     "/orders": {
       "get": {
-        "tags": [
-          "Orders"
-        ],
-        "summary": "Retrieve placed orders by orderIds, userRef, or requestUuids",
-        "operationId": "get_orders_orders_get",
+        "tags": ["Orders"],
+        "summary": "Get orders",
+        "description": "Retrieve orders with keyset pagination. At least one filter must be provided.\n\n**Filters (OR logic):**\n- `orderIds` — Comma-separated list of order IDs\n- `requestUuids` — Comma-separated list of request UUIDs\n- `userRef` — User reference string\n\n**Pagination:**\n- Results are ordered by orderId descending (newest first)\n- Use `afterOrderId` from `nextCursor` in the response to fetch the next page\n- `hasMore` indicates if more results are available\n\nReturns enriched order details including bets and fixture/outcome/player metadata.\n\n**Order Status Values:** PENDING, PROCESSING, FILLED, PARTIALLY_FILLED, CANCELLED, REJECTED, EXPIRED, FAILED",
+        "operationId": "get_orders",
         "parameters": [
           {
             "name": "orderIds",
             "in": "query",
             "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Comma-separated order IDs",
-              "title": "Orderids"
-            },
-            "description": "Comma-separated order IDs"
+            "schema": { "type": "string", "nullable": true },
+            "description": "Comma-separated order IDs (e.g., '123,456,789')",
+            "example": "123,456"
           },
           {
             "name": "requestUuids",
             "in": "query",
             "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Comma-separated request UUIDs",
-              "title": "Requestuuids"
-            },
-            "description": "Comma-separated request UUIDs"
+            "schema": { "type": "string", "nullable": true },
+            "description": "Comma-separated request UUIDs",
+            "example": "eb45b192-317b-42d5-9f65-af497b9fa8c1"
           },
           {
             "name": "userRef",
             "in": "query",
             "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "User reference to filter by",
-              "title": "Userref"
-            },
-            "description": "User reference to filter by"
+            "schema": { "type": "string", "nullable": true },
+            "description": "User reference to filter by",
+            "example": "bettor1234"
           },
           {
             "name": "afterOrderId",
             "in": "query",
             "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Cursor for pagination: fetch orders with orderId less than this value",
-              "title": "Afterorderid"
-            },
-            "description": "Cursor for pagination: fetch orders with orderId less than this value"
+            "schema": { "type": "integer", "nullable": true },
+            "description": "Cursor for pagination: fetch orders with orderId less than this value",
+            "example": 1000
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "description": "Maximum number of orders to return per page",
-              "default": 50,
-              "title": "Limit"
-            },
+            "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 1000 },
             "description": "Maximum number of orders to return per page"
           }
         ],
         "responses": {
           "200": {
-            "description": "Successfully retrieved matching orders",
+            "description": "Successfully retrieved matching orders with enriched metadata",
             "content": {
               "application/json": {
-                "schema": {
-                  "title": "Response Get Orders Orders Get"
-                },
-                "example": [
-                  {
-                    "orderId": 371,
-                    "requestUuid": "9eb7d99a-ab9b-41f3-9a06-23e70006bbe5",
-                    "allowedBookmakers": "*",
-                    "fixtureId": "id1000004461512432",
-                    "outcomeId": 103,
-                    "playerId": 0,
-                    "orderPrice": 1.95,
-                    "orderStake": 50.0,
-                    "filledStake": 0.0,
-                    "userRef": "bettor1234",
-                    "testOrder": false,
-                    "orderCurrency": "USD",
-                    "back": true,
-                    "expiresAt": "2026-02-07T16:15:53.270816+00:00",
-                    "acceptBetterOdds": true,
-                    "acceptPartialStake": true,
-                    "clientName": "demo",
-                    "orderStatus": "PENDING",
-                    "createdAt": "2026-02-07T16:15:48.270816+00:00",
-                    "updatedAt": "2026-02-07T16:15:48.270816+00:00",
-                    "bets": [],
-                    "fixtureInfo": {
-                      "fixtureId": "id1000004461512432",
-                      "status": {
-                        "live": false,
-                        "statusId": 0,
-                        "statusName": "Pre-Game"
-                      },
-                      "sport": {
-                        "sportId": 10,
-                        "sportName": "Soccer"
-                      },
-                      "tournament": {
-                        "tournamentId": 44,
-                        "tournamentName": "2. Bundesliga",
-                        "categoryName": "Germany"
-                      },
-                      "startTime": 1754159400,
-                      "participants": {
-                        "participant1Id": 2540,
-                        "participant1Name": "Arminia Bielefeld",
-                        "participant2Id": 2588,
-                        "participant2Name": "Fortuna Dusseldorf"
-                      }
-                    },
-                    "outcomeInfo": {
-                      "marketId": 101,
-                      "marketName": "Full Time Result",
-                      "marketNameShort": "1X2",
-                      "marketType": "1x2",
-                      "period": "fulltime",
-                      "playerProp": false,
-                      "handicap": 0,
-                      "outcomeId": 103,
-                      "outcomeName": "2"
-                    },
-                    "currencyInfo": {
-                      "currency": "USD",
-                      "currencyValue": 1.0
-                    }
-                  },
-                  {
-                    "orderId": 372,
-                    "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b",
-                    "allowedBookmakers": "sharpbet",
-                    "fixtureId": "id1000004461512432",
-                    "outcomeId": 103,
-                    "playerId": 0,
-                    "orderPrice": 2.65,
-                    "orderStake": 10.0,
-                    "filledStake": 10.0,
-                    "userRef": "bettor1234",
-                    "testOrder": false,
-                    "orderCurrency": "USD",
-                    "back": true,
-                    "expiresAt": "2026-02-07T16:18:34.366795+00:00",
-                    "acceptBetterOdds": true,
-                    "acceptPartialStake": true,
-                    "clientName": "demo",
-                    "orderStatus": "FILLED",
-                    "createdAt": "2026-02-07T16:18:29.366795+00:00",
-                    "updatedAt": "2026-02-07T16:18:29.366795+00:00",
-                    "bets": [
-                      {
-                        "betId": 91,
-                        "orderId": 372,
-                        "bookmaker": "sharpbet",
-                        "bookmakerBetId": "63aeba8d-a2d6-49ba-a6cd-7ce70bb17701",
-                        "placedPrice": 2.65,
-                        "placedStake": 10.0,
-                        "placedCurrency": "USD",
-                        "placedAt": "2026-02-07T16:18:29.300906+00:00",
-                        "betStatus": "CONFIRMED",
-                        "settlementStatus": "UNSETTLED",
-                        "clientName": "demo",
-                        "testBet": false,
-                        "userRef": "bettor1234",
-                        "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b"
-                      }
-                    ],
-                    "fixtureInfo": {
-                      "fixtureId": "id1000004461512432",
-                      "status": {
-                        "live": false,
-                        "statusId": 0,
-                        "statusName": "Pre-Game"
-                      },
-                      "sport": {
-                        "sportId": 10,
-                        "sportName": "Soccer"
-                      },
-                      "tournament": {
-                        "tournamentId": 44,
-                        "tournamentName": "2. Bundesliga",
-                        "categoryName": "Germany"
-                      },
-                      "startTime": 1754159400,
-                      "participants": {
-                        "participant1Id": 2540,
-                        "participant1Name": "Arminia Bielefeld",
-                        "participant2Id": 2588,
-                        "participant2Name": "Fortuna Dusseldorf"
-                      }
-                    },
-                    "outcomeInfo": {
-                      "marketId": 101,
-                      "marketName": "Full Time Result",
-                      "marketNameShort": "1X2",
-                      "marketType": "1x2",
-                      "period": "fulltime",
-                      "playerProp": false,
-                      "handicap": 0,
-                      "outcomeId": 103,
-                      "outcomeName": "2"
-                    },
-                    "currencyInfo": {
-                      "currency": "USD",
-                      "currencyValue": 1.0
-                    }
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "Missing required query parameter"
-          },
-          "403": {
-            "description": "Access denied: client not resolved"
-          },
-          "404": {
-            "description": "No orders found"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/cancel-orders": {
-      "post": {
-        "tags": [
-          "Orders"
-        ],
-        "summary": "Cancel specific orders",
-        "description": "Cancel orders by one or more filters.\n\n- `orderIds`: numeric IDs\n- `requestUuids`: UUID strings from when the order was placed\n- `userRef`: your custom reference string\n\nOnly orders in a pending state are cancelled (\"pending\" or \"partial-placed\").\nAny associated pending bets are marked cancelled.",
-        "operationId": "cancel_orders_cancel_orders_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CancelOrdersRequest"
-              },
-              "example": {
-                "requestUuids": [
-                  "ee9f4007-e5ab-4085-bffb-8d938e4cad5f",
-                  "fb5f2dd9-c855-4ba9-8eh9-4c2278ca2f1d"
-                ]
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Cancellation result with enriched order details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "Response Cancel Orders Cancel Orders Post"
-                },
+                "schema": { "$ref": "#/components/schemas/GetOrdersResponse" },
                 "example": {
-                  "status": "cancelled",
-                  "cancelledCount": 1,
-                  "cancelled": [
+                  "orders": [
                     {
-                      "orderId": 327,
-                      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+                      "orderId": 371,
+                      "requestUuid": "9eb7d99a-ab9b-41f3-9a06-23e70006bbe5",
                       "allowedBookmakers": "*",
                       "fixtureId": "id1000004461512432",
                       "outcomeId": 103,
                       "playerId": 0,
                       "orderPrice": 1.95,
-                      "orderStake": 10.0,
+                      "orderStake": 50.0,
                       "filledStake": 0.0,
                       "userRef": "bettor1234",
                       "testOrder": false,
                       "orderCurrency": "USD",
                       "back": true,
-                      "expiresAt": "2026-02-07T12:20:06.302841+00:00",
+                      "expiresAt": "2026-02-07T16:15:53.270816+00:00",
                       "acceptBetterOdds": true,
                       "acceptPartialStake": true,
                       "clientName": "demo",
-                      "orderStatus": "CANCELLED",
-                      "createdAt": "2026-02-07T12:20:01.302841+00:00",
-                      "updatedAt": "2026-02-07T12:20:01.302841+00:00",
+                      "orderStatus": "PENDING",
+                      "createdAt": "2026-02-07T16:15:48.270816+00:00",
+                      "updatedAt": "2026-02-07T16:15:48.270816+00:00",
+                      "meta": null,
                       "bets": [],
                       "fixtureInfo": {
                         "fixtureId": "id1000004461512432",
-                        "status": {
-                          "live": false,
-                          "statusId": 0,
-                          "statusName": "Pre-Game"
-                        },
-                        "sport": {
-                          "sportId": 10,
-                          "sportName": "Soccer"
-                        },
-                        "tournament": {
-                          "tournamentId": 44,
-                          "tournamentName": "2. Bundesliga",
-                          "categoryName": "Germany"
-                        },
+                        "status": { "live": false, "statusId": 0, "statusName": "Pre-Game" },
+                        "sport": { "sportId": 10, "sportName": "Soccer" },
+                        "tournament": { "tournamentId": 44, "tournamentName": "2. Bundesliga", "categoryName": "Germany" },
                         "startTime": 1754159400,
                         "participants": {
                           "participant1Id": 2540,
@@ -1645,139 +495,104 @@
                         "outcomeId": 103,
                         "outcomeName": "2"
                       },
-                      "currencyInfo": {
-                        "currency": "USD",
-                        "currencyValue": 1.0
-                      }
+                      "playerInfo": null,
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                    },
+                    {
+                      "orderId": 372,
+                      "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b",
+                      "allowedBookmakers": "sharpbet",
+                      "fixtureId": "id1000004461512432",
+                      "outcomeId": 103,
+                      "playerId": 0,
+                      "orderPrice": 2.65,
+                      "orderStake": 10.0,
+                      "filledStake": 10.0,
+                      "userRef": "bettor1234",
+                      "testOrder": false,
+                      "orderCurrency": "USD",
+                      "back": true,
+                      "expiresAt": "2026-02-07T16:18:34.366795+00:00",
+                      "acceptBetterOdds": true,
+                      "acceptPartialStake": true,
+                      "clientName": "demo",
+                      "orderStatus": "FILLED",
+                      "createdAt": "2026-02-07T16:18:29.366795+00:00",
+                      "updatedAt": "2026-02-07T16:18:29.366795+00:00",
+                      "meta": null,
+                      "bets": [
+                        {
+                          "betId": 91,
+                          "orderId": 372,
+                          "bookmaker": "sharpbet",
+                          "bookmakerBetId": "63aeba8d-a2d6-49ba-a6cd-7ce70bb17701",
+                          "placedPrice": 2.65,
+                          "placedStake": 10.0,
+                          "placedCurrency": "USD",
+                          "placedAt": "2026-02-07T16:18:29.300906+00:00",
+                          "betStatus": "CONFIRMED",
+                          "settlementStatus": "UNSETTLED",
+                          "clientName": "demo",
+                          "testBet": false,
+                          "userRef": "bettor1234",
+                          "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b",
+                          "declineReason": null
+                        }
+                      ],
+                      "fixtureInfo": {
+                        "fixtureId": "id1000004461512432",
+                        "status": { "live": false, "statusId": 0, "statusName": "Pre-Game" },
+                        "sport": { "sportId": 10, "sportName": "Soccer" },
+                        "tournament": { "tournamentId": 44, "tournamentName": "2. Bundesliga", "categoryName": "Germany" },
+                        "startTime": 1754159400,
+                        "participants": {
+                          "participant1Id": 2540,
+                          "participant1Name": "Arminia Bielefeld",
+                          "participant2Id": 2588,
+                          "participant2Name": "Fortuna Dusseldorf"
+                        }
+                      },
+                      "outcomeInfo": {
+                        "marketId": 101,
+                        "marketName": "Full Time Result",
+                        "marketNameShort": "1X2",
+                        "marketType": "1x2",
+                        "period": "fulltime",
+                        "playerProp": false,
+                        "handicap": 0,
+                        "outcomeId": 103,
+                        "outcomeName": "2"
+                      },
+                      "playerInfo": null,
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
                     }
                   ],
-                  "notCancelled": {
-                    "reason": "Order not cancellable",
-                    "orders": [
-                      {
-                        "orderId": 328,
-                        "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b",
-                        "allowedBookmakers": "*",
-                        "fixtureId": "id1000004461512432",
-                        "outcomeId": 103,
-                        "playerId": 0,
-                        "orderPrice": 1.95,
-                        "orderStake": 10.0,
-                        "filledStake": 10.0,
-                        "userRef": "bettor1234",
-                        "testOrder": false,
-                        "orderCurrency": "USD",
-                        "back": true,
-                        "expiresAt": "2026-02-07T16:18:34.366795+00:00",
-                        "acceptBetterOdds": true,
-                        "acceptPartialStake": true,
-                        "clientName": "demo",
-                        "orderStatus": "FILLED",
-                        "createdAt": "2026-02-07T16:18:29.366795+00:00",
-                        "updatedAt": "2026-02-07T16:18:29.366795+00:00",
-                        "bets": [
-                          {
-                            "betId": 91,
-                            "orderId": 328,
-                            "bookmaker": "pinnacle",
-                            "bookmakerBetId": "63aeba8d-a2d6-49ba-a6cd-7ce70bb17701",
-                            "placedPrice": 1.98,
-                            "placedStake": 10.0,
-                            "placedCurrency": "USD",
-                            "placedAt": "2026-02-07T16:18:29.300906+00:00",
-                            "betStatus": "CONFIRMED",
-                            "settlementStatus": "UNSETTLED",
-                            "clientName": "demo",
-                            "testBet": false,
-                            "userRef": "bettor1234",
-                            "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b"
-                          }
-                        ],
-                        "fixtureInfo": {
-                          "fixtureId": "id1000004461512432",
-                          "status": {
-                            "live": false,
-                            "statusId": 0,
-                            "statusName": "Pre-Game"
-                          },
-                          "sport": {
-                            "sportId": 10,
-                            "sportName": "Soccer"
-                          },
-                          "tournament": {
-                            "tournamentId": 44,
-                            "tournamentName": "2. Bundesliga",
-                            "categoryName": "Germany"
-                          },
-                          "startTime": 1754159400,
-                          "participants": {
-                            "participant1Id": 2540,
-                            "participant1Name": "Arminia Bielefeld",
-                            "participant2Id": 2588,
-                            "participant2Name": "Fortuna Dusseldorf"
-                          }
-                        },
-                        "outcomeInfo": {
-                          "marketId": 101,
-                          "marketName": "Full Time Result",
-                          "marketNameShort": "1X2",
-                          "marketType": "1x2",
-                          "period": "fulltime",
-                          "playerProp": false,
-                          "handicap": 0,
-                          "outcomeId": 103,
-                          "outcomeName": "2"
-                        },
-                        "currencyInfo": {
-                          "currency": "USD",
-                          "currencyValue": 1.0
-                        }
-                      }
-                    ]
-                  }
+                  "count": 2,
+                  "hasMore": false,
+                  "nextCursor": null
                 }
               }
             }
           },
-          "400": {
-            "description": "Missing required filter parameter"
-          },
-          "403": {
-            "description": "Access denied: client not resolved"
-          },
-          "404": {
-            "description": "No matching orders found"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "400": { "description": "Missing required query parameter (at least one of orderIds, requestUuids, or userRef required)" },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "403": { "description": "Access denied — client not resolved from API key" },
+          "404": { "description": "No orders found matching the filters" },
+          "500": { "description": "Internal server error" }
         }
       }
     },
     "/place-orders": {
       "post": {
-        "tags": [
-          "Orders"
-        ],
-        "summary": "Place multiple betting orders",
-        "description": "Validates and places orders through the configured bookmakers.\n\nEach order may specify a comma-separated `bookmakers` string or rely on\nauto-selection (missing/empty/\"*\").",
-        "operationId": "place_orders_place_orders_post",
+        "tags": ["Orders"],
+        "summary": "Place betting orders",
+        "description": "Submit one or more betting orders for placement with bookmakers.\n\n**Required fields per order:** `requestUuid`, `fixtureId`, `outcomeId`, `playerId`, `orderPrice`, `orderStake`, `userRef`, `testOrder`\n\n**Optional fields:** `bookmakers`, `orderCurrency`, `back`, `expiresAt`, `acceptBetterOdds`, `acceptPartialStake`, `meta`\n\n**Key behavior:**\n- `requestUuid` must be a valid UUID format (used for idempotency — duplicates within 5 minutes are rejected with 409)\n- Server automatically selects the best bookmaker by odds/limits unless `bookmakers` is specified\n- `clientName` is set automatically from your API key\n- Orders expire after `expiresAt` (default: 5 seconds from now)\n- Maximum 100 orders per request\n\n**Response:**\n- `status`: \"accepted\" (all accepted), \"partial-success\" (some declined), or \"declined\" (all declined)\n- `acceptedOrders`: Orders that passed validation with their current status and any placed bets\n- `declinedOrders`: Orders that failed validation with `declineReason`",
+        "operationId": "place_orders",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlaceOrdersRequest"
-              },
+              "schema": { "$ref": "#/components/schemas/PlaceOrdersRequest" },
               "example": {
                 "orders": [
                   {
@@ -1805,25 +620,19 @@
                     "expiresAt": "2026-02-07T22:26:05Z",
                     "acceptBetterOdds": true,
                     "acceptPartialStake": true,
-                    "meta": {
-                      "strategy": "value",
-                      "source": "api"
-                    }
+                    "meta": { "strategy": "value", "source": "api" }
                   }
                 ]
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
             "description": "Order placement results with accepted and declined orders",
             "content": {
               "application/json": {
-                "schema": {
-                  "title": "Response Place Orders Place Orders Post"
-                },
+                "schema": { "$ref": "#/components/schemas/PlaceOrdersResponse" },
                 "example": {
                   "status": "partial-success",
                   "acceptedOrders": [
@@ -1848,6 +657,7 @@
                       "orderStatus": "FILLED",
                       "createdAt": "2026-02-07T17:29:32.265368+00:00",
                       "updatedAt": "2026-02-07T17:29:32.265368+00:00",
+                      "meta": null,
                       "bets": [
                         {
                           "betId": 73,
@@ -1863,25 +673,15 @@
                           "clientName": "demo",
                           "testBet": false,
                           "userRef": "bettor1234",
-                          "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1"
+                          "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+                          "declineReason": null
                         }
                       ],
                       "fixtureInfo": {
                         "fixtureId": "id1000004461512432",
-                        "status": {
-                          "live": false,
-                          "statusId": 0,
-                          "statusName": "Pre-Game"
-                        },
-                        "sport": {
-                          "sportId": 10,
-                          "sportName": "Soccer"
-                        },
-                        "tournament": {
-                          "tournamentId": 44,
-                          "tournamentName": "2. Bundesliga",
-                          "categoryName": "Germany"
-                        },
+                        "status": { "live": false, "statusId": 0, "statusName": "Pre-Game" },
+                        "sport": { "sportId": 10, "sportName": "Soccer" },
+                        "tournament": { "tournamentId": 44, "tournamentName": "2. Bundesliga", "categoryName": "Germany" },
                         "startTime": 1754159400,
                         "participants": {
                           "participant1Id": 2540,
@@ -1901,10 +701,8 @@
                         "outcomeId": 103,
                         "outcomeName": "2"
                       },
-                      "currencyInfo": {
-                        "currency": "USD",
-                        "currencyValue": 1.0
-                      }
+                      "playerInfo": null,
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
                     }
                   ],
                   "declinedOrders": [
@@ -1949,50 +747,51 @@
               }
             }
           },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "403": { "description": "Access denied — client not resolved from API key" },
           "409": {
-            "description": "All orders are duplicates",
+            "description": "All orders are duplicates (requestUuid already processed within 5 minutes)",
             "content": {
               "application/json": {
                 "example": {
                   "error": "All orders are duplicates",
-                  "duplicateUuids": [
-                    "eb45b192-317b-42d5-9f65-af497b9fa8c1"
-                  ],
+                  "duplicateUuids": ["eb45b192-317b-42d5-9f65-af497b9fa8c1"],
                   "inProgressUuids": []
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
+          "422": { "description": "Request body validation error (invalid field values)" },
+          "500": { "description": "Internal server error" }
         }
       }
     },
-    "/cancel-all-orders": {
+    "/cancel-orders": {
       "post": {
-        "tags": [
-          "Orders",
-          "Orders"
-        ],
-        "summary": "Cancel all pending orders",
-        "description": "Cancel ALL pending and partial-placed orders for the authenticated client.\nOnly cancels orders without placed bets.",
-        "operationId": "cancel_all_orders_cancel_all_orders_post",
+        "tags": ["Orders"],
+        "summary": "Cancel specific orders",
+        "description": "Cancel one or more orders by filter. At least one filter must be provided. Multiple filters are combined with OR logic.\n\n**Filters:**\n- `orderIds` — List of numeric order IDs\n- `requestUuids` — List of request UUID strings\n- `userRef` — Cancel all orders matching this user reference\n\n**Behavior:**\n- Only orders in PENDING or PARTIALLY_FILLED status can be cancelled\n- Orders with confirmed bets cannot be fully cancelled\n- Cancelled orders are marked in the database and signaled to stop retry loops",
+        "operationId": "cancel_orders",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CancelOrdersRequest" },
+              "example": {
+                "requestUuids": [
+                  "ee9f4007-e5ab-4085-bffb-8d938e4cad5f",
+                  "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d"
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Cancellation result with enriched order details",
             "content": {
               "application/json": {
-                "schema": {
-                  "title": "Response Cancel All Orders Cancel All Orders Post"
-                },
+                "schema": { "$ref": "#/components/schemas/CancelOrdersResponse" },
                 "example": {
                   "status": "cancelled",
                   "cancelledCount": 1,
@@ -2018,1185 +817,635 @@
                       "orderStatus": "CANCELLED",
                       "createdAt": "2026-02-07T12:20:01.302841+00:00",
                       "updatedAt": "2026-02-07T12:20:01.302841+00:00",
+                      "meta": null,
                       "bets": [],
                       "fixtureInfo": {
                         "fixtureId": "id1000004461512432",
-                        "status": {
-                          "live": false,
-                          "statusId": 0,
-                          "statusName": "Pre-Game"
-                        },
-                        "sport": {
-                          "sportId": 10,
-                          "sportName": "Soccer"
-                        },
-                        "tournament": {
-                          "tournamentId": 44,
-                          "tournamentName": "2. Bundesliga",
-                          "categoryName": "Germany"
-                        },
-                        "startTime": 1754159400,
-                        "participants": {
-                          "participant1Id": 2540,
-                          "participant1Name": "Arminia Bielefeld",
-                          "participant2Id": 2588,
-                          "participant2Name": "Fortuna Dusseldorf"
-                        }
+                        "status": { "live": false, "statusId": 0, "statusName": "Pre-Game" },
+                        "sport": { "sportId": 10, "sportName": "Soccer" },
+                        "tournament": { "tournamentId": 44, "tournamentName": "2. Bundesliga", "categoryName": "Germany" }
                       },
                       "outcomeInfo": {
                         "marketId": 101,
                         "marketName": "Full Time Result",
-                        "marketNameShort": "1X2",
-                        "marketType": "1x2",
-                        "period": "fulltime",
-                        "playerProp": false,
-                        "handicap": 0,
                         "outcomeId": 103,
                         "outcomeName": "2"
-                      },
-                      "currencyInfo": {
-                        "currency": "USD",
-                        "currencyValue": 1.0
                       }
                     }
                   ],
                   "notCancelled": {
                     "reason": "Order not cancellable",
-                    "orders": [
-                      {
-                        "orderId": 328,
-                        "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b",
-                        "allowedBookmakers": "*",
-                        "fixtureId": "id1000004461512432",
-                        "outcomeId": 103,
-                        "playerId": 0,
-                        "orderPrice": 1.95,
-                        "orderStake": 10.0,
-                        "filledStake": 10.0,
-                        "userRef": "bettor1234",
-                        "testOrder": false,
-                        "orderCurrency": "USD",
-                        "back": true,
-                        "expiresAt": "2026-02-07T16:18:34.366795+00:00",
-                        "acceptBetterOdds": true,
-                        "acceptPartialStake": true,
-                        "clientName": "demo",
-                        "orderStatus": "FILLED",
-                        "createdAt": "2026-02-07T16:18:29.366795+00:00",
-                        "updatedAt": "2026-02-07T16:18:29.366795+00:00",
-                        "bets": [
-                          {
-                            "betId": 91,
-                            "orderId": 328,
-                            "bookmaker": "pinnacle",
-                            "bookmakerBetId": "63aeba8d-a2d6-49ba-a6cd-7ce70bb17701",
-                            "placedPrice": 1.98,
-                            "placedStake": 10.0,
-                            "placedCurrency": "USD",
-                            "placedAt": "2026-02-07T16:18:29.300906+00:00",
-                            "betStatus": "CONFIRMED",
-                            "settlementStatus": "UNSETTLED",
-                            "clientName": "demo",
-                            "testBet": false,
-                            "userRef": "bettor1234",
-                            "requestUuid": "be81ba8f-55f4-48ed-a6f9-69b8d920263b"
-                          }
-                        ],
-                        "fixtureInfo": {
-                          "fixtureId": "id1000004461512432",
-                          "status": {
-                            "live": false,
-                            "statusId": 0,
-                            "statusName": "Pre-Game"
-                          },
-                          "sport": {
-                            "sportId": 10,
-                            "sportName": "Soccer"
-                          },
-                          "tournament": {
-                            "tournamentId": 44,
-                            "tournamentName": "2. Bundesliga",
-                            "categoryName": "Germany"
-                          },
-                          "startTime": 1754159400,
-                          "participants": {
-                            "participant1Id": 2540,
-                            "participant1Name": "Arminia Bielefeld",
-                            "participant2Id": 2588,
-                            "participant2Name": "Fortuna Dusseldorf"
-                          }
-                        },
-                        "outcomeInfo": {
-                          "marketId": 101,
-                          "marketName": "Full Time Result",
-                          "marketNameShort": "1X2",
-                          "marketType": "1x2",
-                          "period": "fulltime",
-                          "playerProp": false,
-                          "handicap": 0,
-                          "outcomeId": 103,
-                          "outcomeName": "2"
-                        },
-                        "currencyInfo": {
-                          "currency": "USD",
-                          "currencyValue": 1.0
-                        }
-                      }
-                    ]
+                    "orders": []
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Missing required filter parameter"
+          "400": { "description": "Missing required filter parameter (at least one of orderIds, requestUuids, or userRef required)" },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "403": { "description": "Access denied — client not resolved from API key" },
+          "404": { "description": "No matching orders found" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/cancel-all-orders": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Cancel all pending orders",
+        "description": "Cancel ALL pending and partially-placed orders for the authenticated client.\n\n**Behavior:**\n- Cancels orders in PENDING or PARTIALLY_FILLED status\n- Only cancels orders without already-placed bets\n- Orders with confirmed bets are returned in `notCancelled`\n- No request body required",
+        "operationId": "cancel_all_orders",
+        "responses": {
+          "200": {
+            "description": "Cancellation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CancelOrdersResponse" }
+              }
+            }
           },
-          "403": {
-            "description": "Access denied: client not resolved"
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "403": { "description": "Access denied — client not resolved from API key" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/bets": {
+      "get": {
+        "tags": ["Bets"],
+        "summary": "Get bets",
+        "description": "Retrieve bets by various filters with keyset pagination. At least one filter must be provided.\n\n**Filters (OR logic):**\n- `betIds` — Comma-separated list of bet IDs\n- `orderIds` — Comma-separated list of order IDs\n- `userRef` — User reference string\n\n**Pagination:**\n- Results are ordered by betId descending (newest first)\n- Use `afterBetId` from `nextCursor` in the response to fetch the next page\n- `hasMore` indicates if more results are available\n\n**Bet Status Values:** PENDING, CONFIRMED, DECLINED, CANCELLED\n\n**Settlement Status Values:** UNSETTLED, WON, LOST, VOID, HALF_WON, HALF_LOST, PUSH, CASHOUT",
+        "operationId": "get_bets",
+        "parameters": [
+          {
+            "name": "betIds",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true },
+            "description": "Comma-separated bet IDs",
+            "example": "1,2,3"
           },
-          "404": {
-            "description": "No matching orders found"
+          {
+            "name": "orderIds",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true },
+            "description": "Comma-separated order IDs",
+            "example": "100,101,102"
           },
-          "500": {
-            "description": "Internal server error"
+          {
+            "name": "userRef",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true },
+            "description": "User reference to filter by",
+            "example": "bettor1234"
+          },
+          {
+            "name": "afterBetId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "nullable": true },
+            "description": "Cursor for pagination: fetch bets with betId less than this value",
+            "example": 1000
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 1000 },
+            "description": "Maximum number of bets to return per page"
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bets",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BetsResponse" },
+                "example": {
+                  "status": "success",
+                  "bets": [
+                    {
+                      "betId": 67890,
+                      "orderId": 12345,
+                      "bookmaker": "pinnacle",
+                      "betStatus": "CONFIRMED",
+                      "settlementStatus": "UNSETTLED",
+                      "clientName": "demo",
+                      "testBet": false,
+                      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+                      "bookmakerBetId": "3332684214",
+                      "placedPrice": 1.97,
+                      "placedStake": 10.0,
+                      "placedCurrency": "USD",
+                      "placedAt": "2026-02-07T17:29:32+00:00",
+                      "userRef": "bettor1234",
+                      "account": "pinnacle_main",
+                      "sentData": { "stake": 10.0, "price": 1.95 },
+                      "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.97 },
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                    },
+                    {
+                      "betId": 67889,
+                      "orderId": 12344,
+                      "bookmaker": "betfair-ex",
+                      "betStatus": "CONFIRMED",
+                      "settlementStatus": "WON",
+                      "clientName": "demo",
+                      "testBet": false,
+                      "requestUuid": "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d",
+                      "bookmakerBetId": "234567890",
+                      "placedPrice": 1.94,
+                      "placedStake": 50.0,
+                      "placedCurrency": "GBP",
+                      "placedAt": "2026-02-07T16:00:00+00:00",
+                      "settledAt": "2026-02-07T18:30:00+00:00",
+                      "userRef": "bettor1234",
+                      "account": "betfair_user",
+                      "currencyInfo": { "currency": "GBP", "currencyValue": 0.73 }
+                    }
+                  ],
+                  "count": 2,
+                  "hasMore": true,
+                  "nextCursor": 67889
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid filter parameters or missing required filter" },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "503": { "description": "Database unavailable" }
+        }
+      }
+    },
+    "/bets/{bet_id}": {
+      "get": {
+        "tags": ["Bets"],
+        "summary": "Get a single bet",
+        "description": "Retrieve a single bet by its ID. The bet must belong to the authenticated client.",
+        "operationId": "get_bet_by_id",
+        "parameters": [
+          {
+            "name": "bet_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Bet ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bet",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BetResponse" },
+                "example": {
+                  "betId": 67890,
+                  "orderId": 12345,
+                  "bookmaker": "pinnacle",
+                  "betStatus": "CONFIRMED",
+                  "settlementStatus": "UNSETTLED",
+                  "clientName": "demo",
+                  "testBet": false,
+                  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+                  "bookmakerBetId": "3332684214",
+                  "placedPrice": 1.97,
+                  "placedStake": 10.0,
+                  "placedCurrency": "USD",
+                  "placedAt": "2026-02-07T17:29:32+00:00",
+                  "userRef": "bettor1234",
+                  "account": "pinnacle_main",
+                  "sentData": { "stake": 10.0, "price": 1.95 },
+                  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.97 },
+                  "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "404": { "description": "Bet not found or not owned by client" },
+          "503": { "description": "Database unavailable" }
+        }
+      }
+    },
+    "/bookmakers": {
+      "get": {
+        "tags": ["Bookmakers"],
+        "summary": "List all bookmakers",
+        "description": "Returns all supported bookmakers with their stake limits. Results are cached for 60 seconds.",
+        "operationId": "get_bookmakers",
+        "responses": {
+          "200": {
+            "description": "List of supported bookmakers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/BookmakerResponse" }
+                },
+                "example": [
+                  { "bookmakerId": 1, "bookmaker": "pinnacle", "bookmakerName": "Pinnacle", "active": true, "maxStake": 10000.0, "minStake": 1.0 },
+                  { "bookmakerId": 2, "bookmaker": "betfair-ex", "bookmakerName": "Betfair Exchange", "active": true, "maxStake": null, "minStake": 2.0 },
+                  { "bookmakerId": 3, "bookmaker": "polymarket", "bookmakerName": "Polymarket", "active": true, "maxStake": null, "minStake": 1.0 }
+                ]
+              }
+            }
+          },
+          "404": { "description": "No bookmakers found" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/markets": {
+      "get": {
+        "tags": ["Markets"],
+        "summary": "Get all markets with odds types",
+        "description": "Returns all available markets and their outcome types. Optionally filter by sportId. Markets are sorted by sportId then marketId.",
+        "operationId": "get_markets",
+        "parameters": [
+          {
+            "name": "sportId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "nullable": true },
+            "description": "Filter markets by sport ID (e.g., 10 for Soccer)",
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of markets with odds types",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MarketResponse" } },
+                "example": [
+                  {
+                    "marketId": 101, "marketLength": 3, "sportId": 10, "playerProp": false, "handicap": 0,
+                    "marketName": "Full Time Result", "marketNameShort": "1X2", "marketType": "1x2", "period": "fulltime",
+                    "oddsTypes": [{ "outcomeId": 101, "outcomeName": "1" }, { "outcomeId": 102, "outcomeName": "X" }, { "outcomeId": 103, "outcomeName": "2" }]
+                  },
+                  {
+                    "marketId": 201, "marketLength": 2, "sportId": 10, "playerProp": false, "handicap": -1.5,
+                    "marketName": "Asian Handicap -1.5", "marketNameShort": "AH -1.5", "marketType": "asian_handicap", "period": "fulltime",
+                    "oddsTypes": [{ "outcomeId": 201, "outcomeName": "1" }, { "outcomeId": 202, "outcomeName": "2" }]
+                  }
+                ]
+              }
+            }
+          },
+          "401": { "description": "Unauthorized — missing or invalid API key" },
+          "500": { "description": "Internal server error or market cache not loaded" }
+        }
+      }
+    },
+    "/positions": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get open positions",
+        "description": "Retrieve aggregated open (unsettled) positions grouped by bookmaker, account, or userRef.\n\nReturns the number of open bets, total stake, and average price for each group.\nOnly includes bets with `betStatus` in (PLACED, CONFIRMED) and `settlementStatus` = UNSETTLED.\n\n**Group by options:**\n- `bookmaker` (default) — Group by bookmaker\n- `account` — Group by bookmaker account\n- `userRef` — Group by user reference\n\n**Filters:**\n- `bookmaker` — Filter to a specific bookmaker\n- `userRef` — Filter to a specific user reference\n- `account` — Filter to a specific account",
+        "operationId": "get_positions",
+        "parameters": [
+          { "name": "groupBy", "in": "query", "required": false, "schema": { "type": "string", "default": "bookmaker", "enum": ["bookmaker", "account", "userRef"] }, "description": "Group positions by: bookmaker, account, or userRef" },
+          { "name": "bookmaker", "in": "query", "required": false, "schema": { "type": "string", "nullable": true }, "description": "Filter by bookmaker slug" },
+          { "name": "userRef", "in": "query", "required": false, "schema": { "type": "string", "nullable": true }, "description": "Filter by user reference" },
+          { "name": "account", "in": "query", "required": false, "schema": { "type": "string", "nullable": true }, "description": "Filter by account username" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved positions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PositionsResponse" },
+                "example": {
+                  "status": "success", "groupBy": "bookmaker",
+                  "positions": [
+                    { "bookmaker": "pinnacle", "openBets": 5, "totalStake": 250.0, "avgPrice": 1.92, "fixtureIds": 3 },
+                    { "bookmaker": "sharpbet", "openBets": 2, "totalStake": 80.0, "avgPrice": 2.15, "fixtureIds": 2 }
+                  ],
+                  "count": 2, "totalStake": 330.0, "totalOpenBets": 7
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid parameters" },
+          "401": { "description": "Unauthorized" },
+          "503": { "description": "Database unavailable" }
+        }
+      }
+    },
+    "/pnl": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get profit and loss",
+        "description": "Retrieve aggregated PnL (profit and loss) grouped by bookmaker, account, or userRef.\n\nOnly includes settled bets (`settlementStatus` NOT in UNSETTLED).\n\n**Group by options:**\n- `bookmaker` (default) — Group by bookmaker\n- `account` — Group by bookmaker account\n- `userRef` — Group by user reference\n\n**Filters:**\n- `bookmaker` — Filter to a specific bookmaker\n- `userRef` — Filter to a specific user reference\n- `account` — Filter to a specific account",
+        "operationId": "get_pnl",
+        "parameters": [
+          { "name": "groupBy", "in": "query", "required": false, "schema": { "type": "string", "default": "bookmaker", "enum": ["bookmaker", "account", "userRef"] }, "description": "Group PnL by: bookmaker, account, or userRef" },
+          { "name": "bookmaker", "in": "query", "required": false, "schema": { "type": "string", "nullable": true }, "description": "Filter by bookmaker slug" },
+          { "name": "userRef", "in": "query", "required": false, "schema": { "type": "string", "nullable": true }, "description": "Filter by user reference" },
+          { "name": "account", "in": "query", "required": false, "schema": { "type": "string", "nullable": true }, "description": "Filter by account username" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved PnL",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PnlResponse" },
+                "example": {
+                  "status": "success", "groupBy": "bookmaker",
+                  "pnl": [
+                    { "bookmaker": "pinnacle", "settledBets": 42, "wins": 23, "losses": 17, "voids": 1, "pushes": 1, "totalStaked": 2100.0, "totalWon": 2350.0, "totalLost": 850.0, "netPnl": 250.0, "winRate": 54.8 },
+                    { "bookmaker": "sharpbet", "settledBets": 15, "wins": 9, "losses": 5, "voids": 1, "pushes": 0, "totalStaked": 750.0, "totalWon": 900.0, "totalLost": 250.0, "netPnl": 150.0, "winRate": 60.0 }
+                  ],
+                  "count": 2, "totalNetPnl": 400.0, "totalStaked": 2850.0, "totalSettledBets": 57
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid parameters" },
+          "401": { "description": "Unauthorized" },
+          "503": { "description": "Database unavailable" }
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "AccountCreateRequest": {
-        "properties": {
-          "bookmaker": {
-            "type": "string",
-            "title": "Bookmaker",
-            "description": "Bookmaker slug (e.g., 'pinnacle')"
-          },
-          "username": {
-            "type": "string",
-            "title": "Username",
-            "description": "Account username"
-          },
-          "password": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Password",
-            "description": "Account password"
-          },
-          "balance": {
-            "type": "number",
-            "title": "Balance",
-            "description": "Initial balance",
-            "default": 0.0
-          },
-          "active": {
-            "type": "boolean",
-            "title": "Active",
-            "description": "Whether account is active",
-            "default": true
-          },
-          "priority": {
-            "type": "integer",
-            "title": "Priority",
-            "description": "Priority for account selection (higher = preferred)",
-            "default": 0
-          },
-          "maxStake": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Maxstake",
-            "description": "Maximum stake override"
-          },
-          "minStake": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Minstake",
-            "description": "Minimum stake override"
-          },
-          "currencyId": {
-            "type": "string",
-            "title": "Currencyid",
-            "description": "Account's trading currency (e.g., 'USD', 'EUR')",
-            "default": "USD"
-          },
-          "meta": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Meta",
-            "description": "Additional metadata"
-          }
-        },
-        "type": "object",
-        "required": [
-          "bookmaker",
-          "username"
-        ],
-        "title": "AccountCreateRequest",
-        "description": "Request body for creating an account."
-      },
-      "AccountUpdateRequest": {
-        "properties": {
-          "password": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Password"
-          },
-          "balance": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Balance"
-          },
-          "active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Active"
-          },
-          "priority": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Priority"
-          },
-          "maxStake": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Maxstake"
-          },
-          "minStake": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Minstake"
-          },
-          "currencyId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Currencyid"
-          },
-          "meta": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta"
-          }
-        },
-        "type": "object",
-        "title": "AccountUpdateRequest",
-        "description": "Request body for updating an account."
-      },
-      "BetResponse": {
-        "properties": {
-          "betId": {
-            "type": "integer",
-            "title": "Betid"
-          },
-          "orderId": {
-            "type": "integer",
-            "title": "Orderid"
-          },
-          "bookmaker": {
-            "type": "string",
-            "title": "Bookmaker"
-          },
-          "betStatus": {
-            "type": "string",
-            "title": "Betstatus"
-          },
-          "settlementStatus": {
-            "type": "string",
-            "title": "Settlementstatus"
-          },
-          "clientName": {
-            "type": "string",
-            "title": "Clientname"
-          },
-          "testBet": {
-            "type": "boolean",
-            "title": "Testbet"
-          },
-          "requestUuid": {
-            "type": "string",
-            "title": "Requestuuid"
-          },
-          "bookmakerBetId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bookmakerbetid"
-          },
-          "betRequestId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Betrequestid"
-          },
-          "placedPrice": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Placedprice"
-          },
-          "placedStake": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Placedstake"
-          },
-          "placedCurrency": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Placedcurrency"
-          },
-          "placedAt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Placedat"
-          },
-          "declineReason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Declinereason"
-          },
-          "userRef": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Userref"
-          },
-          "account": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account"
-          },
-          "sentData": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sentdata"
-          },
-          "receivedData": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Receiveddata"
-          },
-          "currencyInfo": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Currencyinfo"
-          },
-          "settledAt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settledat"
-          },
-          "settlementAmount": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settlementamount"
-          },
-          "settlementReason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settlementreason"
-          },
-          "oddsInfo": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Oddsinfo"
-          }
-        },
-        "type": "object",
-        "required": [
-          "betId",
-          "orderId",
-          "bookmaker",
-          "betStatus",
-          "settlementStatus",
-          "clientName",
-          "testBet",
-          "requestUuid"
-        ],
-        "title": "BetResponse",
-        "description": "Response model for a single bet."
-      },
-      "BetsResponse": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "default": "success"
-          },
-          "bets": {
-            "items": {
-              "$ref": "#/components/schemas/BetResponse"
-            },
-            "type": "array",
-            "title": "Bets"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "hasMore": {
-            "type": "boolean",
-            "title": "Hasmore",
-            "default": false
-          },
-          "nextCursor": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nextcursor"
-          }
-        },
-        "type": "object",
-        "required": [
-          "bets",
-          "count"
-        ],
-        "title": "BetsResponse",
-        "description": "Response model for bets endpoint."
-      },
-      "CancelOrdersRequest": {
-        "properties": {
-          "orderIds": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array",
-                "minItems": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Orderids",
-            "description": "List of numeric order IDs to cancel",
-            "example": [
-              123,
-              456
-            ]
-          },
-          "requestUuids": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array",
-                "minItems": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Requestuuids",
-            "description": "List of request UUIDs to cancel",
-            "example": [
-              "eb45b192-317b-42d5-9f65-af497b9fa8c1"
-            ]
-          },
-          "userRef": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Userref",
-            "description": "Cancel all orders matching this user reference",
-            "example": "bettor1234"
-          }
-        },
-        "type": "object",
-        "title": "CancelOrdersRequest",
-        "description": "Request body for the POST /cancel-orders endpoint.\n\nCancel one or more pending orders. At least one filter must be provided.\nMultiple filters are combined with OR logic.\n\n## Behavior\n- Only orders in \"pending\" or \"partial-placed\" status can be cancelled\n- Orders with placed bets may not be fully cancellable (bookmaker-dependent)\n- Cancelled orders are marked in the database and signaled to stop retry loops\n\n## Response\nReturns cancelled orders and any that couldn't be cancelled with reasons."
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "PlaceOrderRequest": {
-        "properties": {
-          "requestUuid": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Requestuuid",
-            "description": "Unique idempotency key for this order. Duplicate UUIDs within 5 minutes are rejected.",
-            "example": "eb45b192-317b-42d5-9f65-af497b9fa8c1"
-          },
-          "fixtureId": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Fixtureid",
-            "description": "OddsPAPI fixture identifier (e.g., 'id1000004461512432')",
-            "example": "id1000004461512432"
-          },
-          "outcomeId": {
-            "type": "integer",
-            "title": "Outcomeid",
-            "description": "Outcome/market ID from OddsPAPI (e.g., 103 for Match Winner Home)",
-            "example": 103
-          },
-          "playerId": {
-            "type": "integer",
-            "title": "Playerid",
-            "description": "Player ID for player prop markets. Use 0 for non-player markets.",
-            "example": 0
-          },
-          "orderPrice": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Orderprice",
-            "description": "Minimum acceptable decimal odds. Bets will only be placed at this price or better.",
-            "example": 1.95
-          },
-          "orderStake": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Orderstake",
-            "description": "Stake amount in orderCurrency. Must be within bookmaker min/max limits.",
-            "example": 10.0
-          },
-          "userRef": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Userref",
-            "description": "Your reference string for grouping/filtering orders (e.g., user ID, session ID)",
-            "example": "bettor1234"
-          },
-          "testOrder": {
-            "type": "boolean",
-            "title": "Testorder",
-            "description": "If true, order is validated and persisted but NOT placed with bookmaker. Use for testing.",
-            "example": false
-          },
-          "bookmakers": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bookmakers",
-            "description": "Comma-separated bookmaker slugs to target (e.g., 'pinnacle,bet365'). Use '*' or omit for automatic selection among all allowed bookmakers.",
-            "example": "pinnacle,vertex"
-          },
-          "orderCurrency": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Ordercurrency",
-            "description": "ISO 4217 currency code for orderStake. Converted to bookmaker currency at placement.",
-            "default": "USD",
-            "example": "USD"
-          },
-          "back": {
-            "type": "boolean",
-            "title": "Back",
-            "description": "Bet direction. True = back bet (win if selection wins). False = lay bet (win if selection loses).",
-            "default": true,
-            "example": true
-          },
-          "expiresAt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expiresat",
-            "description": "ISO 8601 timestamp when order expires. Defaults to 5 seconds from now if not provided. Order stops trying to place after this time.",
-            "example": "2024-01-15T12:00:05Z"
-          },
-          "acceptBetterOdds": {
-            "type": "boolean",
-            "title": "Acceptbetterodds",
-            "description": "Accept odds better than orderPrice. If false, only exact price or worse is accepted.",
-            "default": true,
-            "example": true
-          },
-          "acceptPartialStake": {
-            "type": "boolean",
-            "title": "Acceptpartialstake",
-            "description": "Allow partial stake fills when full stake exceeds bookmaker limit.",
-            "default": true,
-            "example": true
-          },
-          "meta": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta",
-            "description": "Custom metadata object. Stored with order but not sent to bookmaker.",
-            "example": {
-              "source": "api",
-              "strategy": "value"
-            }
-          }
-        },
-        "type": "object",
-        "required": [
-          "requestUuid",
-          "fixtureId",
-          "outcomeId",
-          "playerId",
-          "orderPrice",
-          "orderStake",
-          "userRef",
-          "testOrder"
-        ],
-        "title": "PlaceOrderRequest",
-        "description": "Single order payload for the place-orders endpoint.\n\nThis model represents the shape of an incoming order before\nserver-side enrichment and bookmaker selection.\n\n## Required Fields\n- `requestUuid`: Idempotency key - prevents duplicate order placement\n- `fixtureId`: OddsPAPI fixture ID (e.g., \"id1000004461512432\")\n- `outcomeId`: Market outcome ID (e.g., 103 for Match Winner Home)\n- `playerId`: Player ID for player props (use 0 for non-player markets)\n- `orderPrice`: Minimum acceptable decimal odds (e.g., 1.95)\n- `orderStake`: Stake amount in orderCurrency\n- `userRef`: Your reference for grouping/tracking orders\n- `testOrder`: If true, order is validated but not placed with bookmaker\n\n## Optional Fields\n- `bookmakers`: Target specific bookmakers (comma-separated or \"*\" for all)\n- `orderCurrency`: Currency code (default: \"USD\")\n- `back`: True for back bets, false for lay bets (default: true)\n- `expiresAt`: ISO 8601 expiry timestamp (default: 5 seconds from now)\n- `acceptBetterOdds`: Accept odds better than orderPrice (default: true)\n- `acceptPartialStake`: Allow partial fills (default: true)\n- `meta`: Custom metadata object"
-      },
-      "PlaceOrdersRequest": {
-        "properties": {
-          "orders": {
-            "items": {
-              "$ref": "#/components/schemas/PlaceOrderRequest"
-            },
-            "type": "array",
-            "maxItems": 100,
-            "minItems": 1,
-            "title": "Orders",
-            "description": "List of orders to place. Each order is processed independently. Maximum 100 orders per request."
-          }
-        },
-        "type": "object",
-        "required": [
-          "orders"
-        ],
-        "title": "PlaceOrdersRequest",
-        "description": "Request body for the POST /place-orders endpoint.\n\nSubmit one or more betting orders for placement with bookmakers.\nEach order is independently validated and placed.\n\n## Response\nReturns a JSON object with:\n- `status`: \"success\" | \"partial-success\" | \"declined\"\n- `acceptedOrders`: List of successfully placed/pending orders with bets\n- `declinedOrders`: List of orders that failed validation with reasons\n\n## Idempotency\nEach order's `requestUuid` is used as an idempotency key. Duplicate\nUUIDs within 5 minutes are rejected to prevent double-placement."
-      },
-      "PnlEntry": {
-        "properties": {
-          "bookmaker": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bookmaker"
-          },
-          "account": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account"
-          },
-          "userRef": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Userref"
-          },
-          "settledBets": {
-            "type": "integer",
-            "title": "Settledbets"
-          },
-          "wins": {
-            "type": "integer",
-            "title": "Wins"
-          },
-          "losses": {
-            "type": "integer",
-            "title": "Losses"
-          },
-          "voids": {
-            "type": "integer",
-            "title": "Voids"
-          },
-          "pushes": {
-            "type": "integer",
-            "title": "Pushes"
-          },
-          "totalStaked": {
-            "type": "number",
-            "title": "Totalstaked"
-          },
-          "totalWon": {
-            "type": "number",
-            "title": "Totalwon"
-          },
-          "totalLost": {
-            "type": "number",
-            "title": "Totallost"
-          },
-          "netPnl": {
-            "type": "number",
-            "title": "Netpnl"
-          },
-          "winRate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Winrate"
-          }
-        },
-        "type": "object",
-        "required": [
-          "settledBets",
-          "wins",
-          "losses",
-          "voids",
-          "pushes",
-          "totalStaked",
-          "totalWon",
-          "totalLost",
-          "netPnl"
-        ],
-        "title": "PnlEntry",
-        "description": "A single aggregated PnL row."
-      },
-      "PnlResponse": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "default": "success"
-          },
-          "groupBy": {
-            "type": "string",
-            "title": "Groupby"
-          },
-          "pnl": {
-            "items": {
-              "$ref": "#/components/schemas/PnlEntry"
-            },
-            "type": "array",
-            "title": "Pnl"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "totalNetPnl": {
-            "type": "number",
-            "title": "Totalnetpnl"
-          },
-          "totalStaked": {
-            "type": "number",
-            "title": "Totalstaked"
-          },
-          "totalSettledBets": {
-            "type": "integer",
-            "title": "Totalsettledbets"
-          }
-        },
-        "type": "object",
-        "required": [
-          "groupBy",
-          "pnl",
-          "count",
-          "totalNetPnl",
-          "totalStaked",
-          "totalSettledBets"
-        ],
-        "title": "PnlResponse",
-        "description": "Response for the PnL endpoint."
-      },
-      "PositionEntry": {
-        "properties": {
-          "bookmaker": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bookmaker"
-          },
-          "account": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account"
-          },
-          "userRef": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Userref"
-          },
-          "openBets": {
-            "type": "integer",
-            "title": "Openbets"
-          },
-          "totalStake": {
-            "type": "number",
-            "title": "Totalstake"
-          },
-          "avgPrice": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Avgprice"
-          },
-          "fixtureIds": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fixtureids"
-          }
-        },
-        "type": "object",
-        "required": [
-          "openBets",
-          "totalStake"
-        ],
-        "title": "PositionEntry",
-        "description": "A single aggregated position row."
-      },
-      "PositionsResponse": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "default": "success"
-          },
-          "groupBy": {
-            "type": "string",
-            "title": "Groupby"
-          },
-          "positions": {
-            "items": {
-              "$ref": "#/components/schemas/PositionEntry"
-            },
-            "type": "array",
-            "title": "Positions"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "totalStake": {
-            "type": "number",
-            "title": "Totalstake"
-          },
-          "totalOpenBets": {
-            "type": "integer",
-            "title": "Totalopenbets"
-          }
-        },
-        "type": "object",
-        "required": [
-          "groupBy",
-          "positions",
-          "count",
-          "totalStake",
-          "totalOpenBets"
-        ],
-        "title": "PositionsResponse",
-        "description": "Response for the positions endpoint."
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
-      }
-    },
     "securitySchemes": {
       "apiKey": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-ABP-API-KEY",
-        "description": "API key for authentication. Contact admin to obtain a key."
+        "name": "x-api-key",
+        "description": "API key for authentication. Contact support@55-tech.com to obtain a key."
+      }
+    },
+    "schemas": {
+      "AccountCreateRequest": {
+        "type": "object",
+        "required": ["bookmaker", "username"],
+        "properties": {
+          "bookmaker": { "type": "string", "description": "Bookmaker slug (e.g., 'pinnacle')" },
+          "username": { "type": "string", "description": "Account username" },
+          "password": { "type": "string", "nullable": true, "description": "Account password" },
+          "balance": { "type": "number", "default": 0.0, "description": "Initial balance" },
+          "active": { "type": "boolean", "default": true, "description": "Whether account is active" },
+          "priority": { "type": "integer", "default": 0, "description": "Priority for account selection (higher = preferred)" },
+          "maxStake": { "type": "number", "nullable": true, "description": "Maximum stake override" },
+          "minStake": { "type": "number", "nullable": true, "description": "Minimum stake override" },
+          "currencyId": { "type": "string", "default": "USD", "description": "Account's trading currency (e.g., 'USD', 'EUR')" },
+          "meta": { "type": "object", "default": {}, "description": "Additional metadata" }
+        }
+      },
+      "AccountUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "password": { "type": "string", "nullable": true, "description": "New account password" },
+          "balance": { "type": "number", "nullable": true, "description": "Updated balance" },
+          "active": { "type": "boolean", "nullable": true, "description": "Enable or disable the account" },
+          "priority": { "type": "integer", "nullable": true, "description": "Priority for account selection (higher = preferred)" },
+          "maxStake": { "type": "number", "nullable": true, "description": "Maximum stake override" },
+          "minStake": { "type": "number", "nullable": true, "description": "Minimum stake override" },
+          "currencyId": { "type": "string", "nullable": true, "description": "Account's trading currency (e.g., 'USD', 'EUR')" },
+          "meta": { "type": "object", "nullable": true, "description": "Additional metadata (replaces existing meta)" }
+        }
+      },
+      "AccountResponse": {
+        "type": "object",
+        "properties": {
+          "bookmaker": { "type": "string", "description": "Bookmaker slug" },
+          "username": { "type": "string", "description": "Account username" },
+          "client": { "type": "string", "description": "Client name that owns this account" },
+          "password": { "type": "string", "nullable": true, "description": "Always masked as '***'" },
+          "balance": { "type": "number", "description": "Current balance" },
+          "active": { "type": "boolean", "description": "Whether account is active" },
+          "priority": { "type": "integer", "description": "Priority for account selection (higher = preferred)" },
+          "maxStake": { "type": "number", "nullable": true, "description": "Maximum stake override" },
+          "minStake": { "type": "number", "nullable": true, "description": "Minimum stake override" },
+          "currencyId": { "type": "string", "description": "Account's trading currency" },
+          "verifyBetslip": { "type": "boolean", "description": "Force live odds fetch from bookmaker API" },
+          "meta": { "type": "object", "description": "Additional metadata" },
+          "createdAt": { "type": "string", "nullable": true, "description": "Creation timestamp (ISO 8601)" },
+          "updatedAt": { "type": "string", "nullable": true, "description": "Last update timestamp (ISO 8601)" }
+        }
+      },
+      "PlaceOrderRequest": {
+        "type": "object",
+        "required": ["requestUuid", "fixtureId", "outcomeId", "playerId", "orderPrice", "orderStake", "userRef", "testOrder"],
+        "properties": {
+          "requestUuid": { "type": "string", "description": "Unique idempotency key (UUID format). Duplicates within 5 minutes are rejected with 409.", "example": "eb45b192-317b-42d5-9f65-af497b9fa8c1" },
+          "fixtureId": { "type": "string", "description": "OddsPAPI fixture identifier (e.g., 'id1000004461512432')", "example": "id1000004461512432" },
+          "outcomeId": { "type": "integer", "description": "Outcome/market ID from OddsPAPI (e.g., 103 for Match Winner Away)", "example": 103 },
+          "playerId": { "type": "integer", "description": "Player ID for player prop markets. Use 0 for non-player markets.", "example": 0 },
+          "orderPrice": { "type": "number", "exclusiveMinimum": 0, "description": "Minimum acceptable decimal odds. Bets will only be placed at this price or better.", "example": 1.95 },
+          "orderStake": { "type": "number", "exclusiveMinimum": 0, "description": "Stake amount in orderCurrency. Must be within bookmaker min/max limits.", "example": 10.0 },
+          "userRef": { "type": "string", "minLength": 1, "description": "Your reference string for grouping/filtering orders (e.g., user ID, session ID)", "example": "bettor1234" },
+          "testOrder": { "type": "boolean", "description": "If true, order is validated and persisted but NOT placed with bookmaker. Use for testing.", "example": false },
+          "bookmakers": { "type": "string", "nullable": true, "description": "Comma-separated bookmaker slugs to target (e.g., 'pinnacle,bet365'). Use '*' or omit for automatic selection.", "example": "pinnacle,vertex" },
+          "orderCurrency": { "type": "string", "default": "USD", "description": "ISO 4217 currency code for orderStake. Converted to bookmaker currency at placement.", "example": "USD" },
+          "back": { "type": "boolean", "default": true, "description": "Bet direction. true = back (win if selection wins), false = lay (win if selection loses).", "example": true },
+          "expiresAt": { "type": "string", "nullable": true, "description": "ISO 8601 timestamp when order expires. Defaults to 5 seconds from now.", "example": "2026-01-15T12:00:05Z" },
+          "acceptBetterOdds": { "type": "boolean", "default": true, "description": "Accept odds better than orderPrice.", "example": true },
+          "acceptPartialStake": { "type": "boolean", "default": true, "description": "Allow partial stake fills when full stake exceeds bookmaker limit.", "example": true },
+          "meta": { "type": "object", "nullable": true, "description": "Custom metadata object. Stored with order but not sent to bookmaker.", "example": { "strategy": "value" } }
+        }
+      },
+      "PlaceOrdersRequest": {
+        "type": "object",
+        "required": ["orders"],
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PlaceOrderRequest" },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "List of orders to place (max 100 per request)"
+          }
+        }
+      },
+      "PlaceOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["accepted", "partial-success", "declined"], "description": "Overall result: accepted (all OK), partial-success (some declined), declined (all failed)" },
+          "acceptedOrders": { "type": "array", "items": { "type": "object" }, "description": "Enriched orders that passed validation" },
+          "declinedOrders": { "type": "array", "items": { "type": "object" }, "description": "Orders that failed validation with declineReason" }
+        }
+      },
+      "CancelOrdersRequest": {
+        "type": "object",
+        "description": "At least one filter must be provided. Multiple filters are combined with OR logic.",
+        "properties": {
+          "orderIds": { "type": "array", "items": { "type": "integer" }, "nullable": true, "description": "List of numeric order IDs to cancel" },
+          "requestUuids": { "type": "array", "items": { "type": "string", "format": "uuid" }, "nullable": true, "description": "List of request UUIDs to cancel" },
+          "userRef": { "type": "string", "nullable": true, "description": "Cancel all orders matching this user reference" }
+        }
+      },
+      "CancelOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "description": "'cancelled'" },
+          "cancelledCount": { "type": "integer", "description": "Number of orders cancelled" },
+          "cancelled": { "type": "array", "items": { "type": "object" }, "description": "Cancelled orders with enriched details" },
+          "notCancelled": { "type": "object", "properties": { "reason": { "type": "string" }, "orders": { "type": "array", "items": { "type": "object" } } }, "description": "Orders that could not be cancelled" }
+        }
+      },
+      "GetOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "orders": { "type": "array", "items": { "type": "object" }, "description": "List of enriched orders with bets and metadata" },
+          "count": { "type": "integer", "description": "Number of orders in this response" },
+          "hasMore": { "type": "boolean", "description": "Whether more orders are available" },
+          "nextCursor": { "type": "integer", "nullable": true, "description": "Pass as afterOrderId to fetch the next page" }
+        }
+      },
+      "BetResponse": {
+        "type": "object",
+        "properties": {
+          "betId": { "type": "integer", "description": "Bet ID" },
+          "orderId": { "type": "integer", "description": "Parent order ID" },
+          "bookmaker": { "type": "string", "description": "Bookmaker slug" },
+          "betStatus": { "type": "string", "enum": ["PENDING", "CONFIRMED", "DECLINED", "CANCELLED"], "description": "Bet status" },
+          "settlementStatus": { "type": "string", "enum": ["UNSETTLED", "WON", "LOST", "VOID", "HALF_WON", "HALF_LOST", "PUSH", "CASHOUT"], "description": "Settlement status" },
+          "clientName": { "type": "string", "description": "Client name" },
+          "testBet": { "type": "boolean", "description": "Whether this is a test bet" },
+          "requestUuid": { "type": "string", "description": "UUID from parent order" },
+          "bookmakerBetId": { "type": "string", "nullable": true, "description": "Bet ID returned by the bookmaker" },
+          "betRequestId": { "type": "string", "nullable": true, "description": "Internal bet request tracking ID" },
+          "placedPrice": { "type": "number", "nullable": true, "description": "Actual odds the bet was placed at" },
+          "placedStake": { "type": "number", "nullable": true, "description": "Stake sent to bookmaker" },
+          "placedCurrency": { "type": "string", "nullable": true, "description": "Currency the bet was placed in" },
+          "placedAt": { "type": "string", "nullable": true, "description": "ISO 8601 placement timestamp" },
+          "declineReason": { "type": "string", "nullable": true, "description": "Reason if bet was declined" },
+          "userRef": { "type": "string", "nullable": true, "description": "User reference from parent order" },
+          "account": { "type": "string", "nullable": true, "description": "Account username used for this bet" },
+          "sentData": { "type": "object", "nullable": true, "description": "Full request payload sent to the bookmaker" },
+          "receivedData": { "type": "object", "nullable": true, "description": "Full response received from the bookmaker" },
+          "currencyInfo": { "type": "object", "nullable": true, "description": "Currency exchange rate details" },
+          "settledAt": { "type": "string", "nullable": true, "description": "ISO 8601 settlement timestamp" },
+          "settlementAmount": { "type": "number", "nullable": true, "description": "Settlement payout amount" },
+          "settlementReason": { "type": "string", "nullable": true, "description": "Reason for settlement" },
+          "oddsInfo": { "type": "object", "nullable": true, "description": "Odds snapshot at bet time" }
+        }
+      },
+      "BetsResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "description": "Always 'success'" },
+          "bets": { "type": "array", "items": { "$ref": "#/components/schemas/BetResponse" } },
+          "count": { "type": "integer", "description": "Number of bets in this response" },
+          "hasMore": { "type": "boolean", "description": "Whether more bets are available" },
+          "nextCursor": { "type": "integer", "nullable": true, "description": "Pass as afterBetId to fetch the next page" }
+        }
+      },
+      "BetslipResponse": {
+        "type": "object",
+        "properties": {
+          "fixtureId": { "type": "string" },
+          "outcomeId": { "type": "integer" },
+          "playerId": { "type": "integer" },
+          "client": { "type": "string" },
+          "userRef": { "type": "string", "nullable": true },
+          "fixtureInfo": { "type": "object", "nullable": true, "description": "Fixture details (teams, sport, tournament, start time, scores)" },
+          "outcomeInfo": { "type": "object", "nullable": true, "description": "Market and outcome details" },
+          "playerInfo": { "type": "object", "nullable": true, "description": "Player details for player prop markets" },
+          "odds": { "type": "object", "description": "Odds keyed by bookmaker slug, each containing odds entries keyed by oddsId (fixtureId:bookmaker:outcomeId:playerId)" }
+        }
+      },
+      "BookmakerResponse": {
+        "type": "object",
+        "properties": {
+          "bookmakerId": { "type": "integer", "description": "Numeric bookmaker identifier" },
+          "bookmaker": { "type": "string", "description": "Bookmaker slug (e.g., 'pinnacle')" },
+          "bookmakerName": { "type": "string", "nullable": true, "description": "Display name" },
+          "active": { "type": "boolean", "description": "Whether bookmaker is currently active" },
+          "maxStake": { "type": "number", "nullable": true, "description": "Global max stake for this bookmaker" },
+          "minStake": { "type": "number", "nullable": true, "description": "Global min stake for this bookmaker" }
+        }
+      },
+      "MarketResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": { "type": "integer", "description": "Market identifier" },
+          "marketLength": { "type": "integer", "description": "Number of outcomes" },
+          "sportId": { "type": "integer", "description": "Sport identifier" },
+          "playerProp": { "type": "boolean", "description": "Whether this is a player prop market" },
+          "handicap": { "type": "number", "description": "Handicap value (0 for non-handicap)" },
+          "marketName": { "type": "string", "description": "Full market name (e.g., 'Full Time Result')" },
+          "marketNameShort": { "type": "string", "description": "Short market name (e.g., '1X2')" },
+          "marketType": { "type": "string", "description": "Market type slug (e.g., '1x2', 'asian_handicap')" },
+          "period": { "type": "string", "description": "Period (e.g., 'fulltime', 'firsthalf')" },
+          "oddsTypes": { "type": "array", "items": { "$ref": "#/components/schemas/OddsTypeResponse" }, "description": "Outcomes in this market" }
+        }
+      },
+      "OddsTypeResponse": {
+        "type": "object",
+        "properties": {
+          "outcomeId": { "type": "integer", "description": "Outcome identifier" },
+          "outcomeName": { "type": "string", "description": "Outcome display name (e.g., '1', 'X', '2')" }
+        }
+      },
+      "PositionsResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "groupBy": { "type": "string" },
+          "positions": { "type": "array", "items": { "$ref": "#/components/schemas/PositionEntry" } },
+          "count": { "type": "integer" },
+          "totalStake": { "type": "number" },
+          "totalOpenBets": { "type": "integer" }
+        }
+      },
+      "PositionEntry": {
+        "type": "object",
+        "properties": {
+          "bookmaker": { "type": "string", "nullable": true },
+          "account": { "type": "string", "nullable": true },
+          "userRef": { "type": "string", "nullable": true },
+          "openBets": { "type": "integer", "description": "Number of open bets" },
+          "totalStake": { "type": "number", "description": "Total stake amount" },
+          "avgPrice": { "type": "number", "nullable": true, "description": "Average placed price" },
+          "fixtureIds": { "type": "integer", "nullable": true, "description": "Number of distinct orders" }
+        }
+      },
+      "PnlResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "groupBy": { "type": "string" },
+          "pnl": { "type": "array", "items": { "$ref": "#/components/schemas/PnlEntry" } },
+          "count": { "type": "integer" },
+          "totalNetPnl": { "type": "number" },
+          "totalStaked": { "type": "number" },
+          "totalSettledBets": { "type": "integer" }
+        }
+      },
+      "PnlEntry": {
+        "type": "object",
+        "properties": {
+          "bookmaker": { "type": "string", "nullable": true },
+          "account": { "type": "string", "nullable": true },
+          "userRef": { "type": "string", "nullable": true },
+          "settledBets": { "type": "integer" },
+          "wins": { "type": "integer" },
+          "losses": { "type": "integer" },
+          "voids": { "type": "integer" },
+          "pushes": { "type": "integer" },
+          "totalStaked": { "type": "number" },
+          "totalWon": { "type": "number" },
+          "totalLost": { "type": "number" },
+          "netPnl": { "type": "number", "description": "Net profit/loss" },
+          "winRate": { "type": "number", "nullable": true, "description": "Win rate percentage" }
+        }
       }
     }
   },
+  "security": [{ "apiKey": [] }],
   "tags": [
-    {
-      "name": "Orders",
-      "description": "Place, retrieve, and cancel betting orders"
-    },
-    {
-      "name": "Bets",
-      "description": "Query individual bets placed with bookmakers"
-    },
-    {
-      "name": "Betslip",
-      "description": "Get live odds and metadata for fixtures"
-    },
-    {
-      "name": "Accounts",
-      "description": "Manage bookmaker accounts"
-    },
-    {
-      "name": "Markets",
-      "description": "Get available markets and odds types"
-    },
-    {
-      "name": "Bookmakers",
-      "description": "List supported bookmakers"
-    }
-  ],
-  "security": [
-    {
-      "apiKey": []
-    }
+    { "name": "Orders", "description": "Place, retrieve, and cancel betting orders" },
+    { "name": "Bets", "description": "Query individual bets placed with bookmakers" },
+    { "name": "Betslip", "description": "Get live odds and metadata for fixtures" },
+    { "name": "Accounts", "description": "Manage bookmaker accounts" },
+    { "name": "Markets", "description": "Get available markets and odds types" },
+    { "name": "Bookmakers", "description": "List supported bookmakers" },
+    { "name": "Analytics", "description": "Positions and profit/loss analytics" }
   ]
 }

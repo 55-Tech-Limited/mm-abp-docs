@@ -6,25 +6,51 @@ description: "Download 55-Tech API documentation for AI tools, LLMs, and offline
 
 ## Download
 
-- **Docs index:** [`/llms.txt`](/llms.txt)
-- **Full docs bundle:** [`/llms-full.txt`](/llms-full.txt)
-- **ABP OpenAPI (REST reference):** [`/abp-api/openapi.json`](/abp-api/openapi.json)
-- **MM OpenAPI (REST reference):** [`/mm-api/openapi.json`](/mm-api/openapi.json)
+| Resource | Format | Description |
+|----------|--------|-------------|
+| [`/llms.txt`](/llms.txt) | TXT | Docs index — page titles and paths |
+| [`/llms-full.txt`](/llms-full.txt) | TXT | Full docs bundle — all guide pages concatenated |
+| [`/abp-api/openapi.json`](/abp-api/openapi.json) | JSON | ABP OpenAPI 3.1 spec — 13 endpoints, full schemas |
+| [`/mm-api/openapi.json`](/mm-api/openapi.json) | JSON | MM OpenAPI 3.1 spec — REST reference |
+
+## What's included
+
+The **ABP API** documentation covers:
+
+- **Account management** — Full CRUD for bookmaker accounts across 30+ integrations
+- **Betslip** — Real-time odds and limits from OddsPapi v5 with multi-bookmaker aggregation
+- **Order placement** — Smart routing with idempotency (`requestUuid`), partial fills, and configurable expiry
+- **Bet tracking** — Keyset-paginated queries with full lifecycle from PENDING through CONFIRMED/SETTLED
+- **Analytics** — Positions and PnL grouped by bookmaker, account, or user reference
+- **WebSocket** — Real-time push for orders, bets, settlements, balance, fixtures, currencies, status, emergency
+- **30+ bookmaker integrations** — pinnacle, betfair-ex, polymarket, kalshi, cloudbet, smarkets, and more
+
+The **MM API** documentation covers:
+
+- Market-making engine configuration and real-time spread management
+- WebSocket-driven pricing updates and order book interaction
 
 ## Recommended usage
 
-If your AI tool supports fetching URLs, give it:
+**For AI assistants that fetch URLs:**
 
-- `/llms-full.txt` (best for "read everything once")
-- `/abp-api/openapi.json` or `/mm-api/openapi.json` (best for endpoint + schema accuracy)
+- `/llms-full.txt` — best for "read everything once" (all guide pages + examples)
+- `/abp-api/openapi.json` — best for endpoint + schema accuracy (typed, with examples)
 
-If your tool only supports copy/paste, open `/llms-full.txt` in the browser and paste the contents.
+**For copy/paste workflows:**
+
+Open `/llms-full.txt` in the browser and paste the contents into your AI tool.
+
+**For code generation:**
+
+Feed the OpenAPI spec to tools like `openapi-generator`, `oapi-codegen`, or Cursor/Copilot for typed client SDK generation.
 
 ## Notes
 
-- `llms-full.txt` follows the same ordering as the site navigation.
-- WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs.
-- Both ABP and MM documentation are included in a single bundle.
+- `llms-full.txt` follows the same ordering as the site navigation
+- WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs
+- Both ABP and MM documentation are included in a single bundle
+- Authentication uses the `x-api-key` header for ABP and `x-api-key` for MM
 
 ---
 

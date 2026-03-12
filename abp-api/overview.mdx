@@ -10,11 +10,52 @@ The **Automated Bet Placing (ABP)** API lets you place bets across 30+ bookmaker
 
 **Core capabilities:**
 
-- **Account management** — Configure multiple bookmaker accounts per bookmaker with priority-based selection, per-account stake limits, and multi-currency support
+- **Account management** — Full CRUD for bookmaker accounts with priority-based selection, per-account stake limits, and multi-currency support
 - **Betslip retrieval** — Get real-time odds and limits for any fixture/outcome across all configured bookmakers before placing
-- **Smart order routing** — Place single or bulk orders with four placement modes: single strict, single fill, multi parallel, and multi sequential
+- **Smart order routing** — Place single or bulk orders; ABP automatically selects the best bookmaker by odds and limits
 - **Bet tracking** — Monitor every bet from placement through confirmation and settlement with full audit trail
-- **Position & PnL analytics** — Aggregated views of exposure and profit/loss across all bookmakers and fixtures
+- **Position & PnL analytics** — Aggregated views of exposure and profit/loss grouped by bookmaker, account, or user reference
+
+## Data flow
+
+```mermaid
+flowchart LR
+    Client["Your App"]
+    ABP["ABP v2 API"]
+    OddsPapi["OddsPapi v5"]
+    BM1["Pinnacle"]
+    BM2["Betfair"]
+    BM3["Polymarket"]
+    BMN["30+ Bookmakers"]
+    WS["WebSocket /ws"]
+
+    Client -->|"1. GET /betslip"| ABP
+    ABP -->|"Fetch odds"| OddsPapi
+    OddsPapi -->|"Live odds & limits"| ABP
+    ABP -->|"Betslip response"| Client
+
+    Client -->|"2. POST /place-orders"| ABP
+    ABP -->|"Route & place"| BM1
+    ABP -->|"Route & place"| BM2
+    ABP -->|"Route & place"| BM3
+    ABP -.->|"Route & place"| BMN
+
+    BM1 -->|"Confirm/decline"| ABP
+    BM2 -->|"Confirm/decline"| ABP
+    BM3 -->|"Confirm/decline"| ABP
+    BMN -.->|"Confirm/decline"| ABP
+
+    ABP -->|"3. Real-time updates"| WS
+    WS -->|"orders, bets, settlements"| Client
+
+    Client -->|"4. GET /orders, /bets"| ABP
+    Client -->|"5. GET /positions, /pnl"| ABP
+```
+
+1. **Betslip** — Your app fetches live odds from ABP, which queries OddsPapi v5 for real-time pricing
+2. **Place orders** — ABP routes orders to the best bookmaker(s) based on odds, limits, and account priority
+3. **Real-time updates** — WebSocket pushes order, bet, and settlement events as they happen
+4. **Query** — REST endpoints for order/bet history and analytics
 
 ## Base URL
 
@@ -28,14 +69,9 @@ https://v2.55-tech.com
 
 An **order** is your instruction to place a bet. A **bet** is the actual wager placed on a bookmaker. One order can result in multiple bets when using partial fills or multi-bookmaker routing.
 
-### Order placement modes
+### Request deduplication
 
-| Mode | Bookmakers | Partial Stake | Behavior |
-|------|------------|---|---|
-| **Single strict** | 1 | No | All-or-nothing at `orderPrice` or better |
-| **Single fill** | 1 | Yes | Fill via multiple bets, weighted average >= `orderPrice` |
-| **Multi parallel** | Many | No | One bet per bookmaker, placed in parallel |
-| **Multi sequential** | Many | Yes | Best price first, exhaust each bookmaker before next |
+Each order requires a unique `requestUuid` (UUID format). ABP uses server-side deduplication (5-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
 
 ### Order lifecycle
 
@@ -50,11 +86,12 @@ PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANC
 - **REJECTED** — Failed validation (bad odds, invalid fixture, etc.)
 - **EXPIRED** — Order `expiresAt` time reached (default: 5 seconds)
 - **CANCELLED** — Explicitly cancelled by client
+- **FAILED** — Internal error during placement
 
 ### Bet lifecycle
 
 ```
-PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
+PENDING → CONFIRMED / DECLINED / CANCELLED
 ```
 
 ### Settlement lifecycle
@@ -71,13 +108,15 @@ UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
 
 Each bookmaker account has a `priority` field (higher = preferred). When placing an order, ABP selects the highest-priority active account first for each bookmaker.
 
+### Limit cascade
+
+Stake limits are resolved in priority order: **account limits > bookmaker limits > odds limits**.
+
+For example, if an account has `minStake: 10`, the bookmaker default is `minStake: 1`, and the odds entry shows `limitMin: 5`, the effective minimum is `10` (from the account override).
+
 ### Bookmaker slugs
 
-Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair_ex`, `sbobet`, `polymarket`). Use `GET /bookmakers` to list all 30+ supported bookmakers.
-
-### Request deduplication
-
-Each order requires a unique `requestUuid`. ABP uses server-side deduplication (5-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
+Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `polymarket`). Use `GET /bookmakers` to list all 30+ supported bookmakers with their default stake limits.
 
 ## Endpoints at a glance
 
@@ -85,23 +124,22 @@ Each order requires a unique `requestUuid`. ABP uses server-side deduplication (
 |----------|-----------|-------------|
 | **Accounts** | `GET/POST/PATCH/DELETE /accounts` | Manage bookmaker accounts (credentials, balances, priority, limits) |
 | **Betslip** | `GET /betslip` | Get live odds & limits before placing |
-| **Orders** | `POST /place-orders`, `GET /orders` | Place and track orders |
-| **Bets** | `GET /bets` | View individual bet results |
-| **Settlements** | `GET /settlements` | View settlement history |
+| **Orders** | `POST /place-orders`, `POST /cancel-orders`, `POST /cancel-all-orders`, `GET /orders` | Place, cancel, and track orders |
+| **Bets** | `GET /bets`, `GET /bets/{bet_id}` | View individual bet results |
 | **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
 | **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
-| **Currencies** | `GET /currencies` | Available currencies and exchange rates |
+| **Markets** | `GET /markets` | Available markets and odds types |
 | **WebSocket** | `WS /ws` | Real-time updates |
 
 ## Supported bookmakers
 
-**Traditional sportsbooks:** pinnacle, pinnacleb2b, bet365, betcris, bookmaker_eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline_vip, novig_us, one98bet, paradisewager, sharpbet, singbet, sports411_ag, threeet, threeetpp
+**Traditional sportsbooks:** pinnacle, pinnacleb2b, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et
 
-**Betting exchanges:** betfair_ex, smarkets
+**Betting exchanges:** betfair-ex, smarkets
 
-**Prediction markets:** polymarket, polymarket_us, kalshi, predict_fun, prophetx, sx_bet, vertex, fourcasters
+**Prediction markets:** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, vertex, 4casters
 
-**Punter platforms:** punter_io, punter_iopp
+**Punter platforms:** punter.io
 
 ## Resilience
 

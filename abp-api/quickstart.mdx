@@ -9,7 +9,7 @@ description: "Step-by-step guide to placing your first bet through the ABP API. 
 Check which bookmaker accounts are configured for your API key:
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
@@ -18,48 +18,75 @@ Response includes each account's bookmaker, balance, priority, stake limits, and
 ```json
 [
   {
-    "client": "your-client",
     "bookmaker": "pinnacle",
-    "username": "your-username",
-    "balance": 5000.00,
+    "username": "pinnacle_main",
+    "client": "your-client",
+    "password": "***",
+    "balance": 5000.0,
     "active": true,
     "priority": 10,
-    "maxStake": 1000.00,
-    "minStake": 5.00,
-    "currencyId": "USD"
+    "maxStake": 1000.0,
+    "minStake": 5.0,
+    "currencyId": "USD",
+    "verifyBetslip": false,
+    "meta": {},
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-02-01T12:00:00Z"
   }
 ]
 ```
 
 ## Step 2: Get a betslip
 
-Before placing a bet, retrieve current odds and limits:
+Before placing a bet, retrieve current odds and limits. You need a `fixtureId`, `outcomeId`, and `playerId`:
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
-  "https://v2.55-tech.com/betslip?fixtureId=YOUR_FIXTURE_ID&outcomeId=161&playerId=0"
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=id1000002361061419&outcomeId=101&playerId=0"
 ```
 
-The betslip returns live odds from every bookmaker that has this market:
+The betslip returns live odds from every bookmaker that has this market, with fixture and outcome metadata:
 
 ```json
 {
-  "pinnacle": {
-    "price": 1.85,
-    "limit": 5000.00,
-    "limitMin": 5.00,
-    "limitCurrency": "USD",
-    "active": true,
-    "bookmakerFixtureId": "123456",
-    "bookmakerMarketId": "789",
-    "bookmakerOutcomeId": "1"
+  "fixtureId": "id1000002361061419",
+  "outcomeId": 101,
+  "playerId": 0,
+  "client": "your-client",
+  "fixtureInfo": {
+    "sport": { "sportId": 10, "sportName": "Soccer" },
+    "tournament": { "tournamentName": "Serie A", "categoryName": "Italy" },
+    "participants": {
+      "participant1Name": "AS Roma",
+      "participant2Name": "Cagliari Calcio"
+    }
   },
-  "betfair_ex": {
-    "price": 1.88,
-    "limit": 2000.00,
-    "limitMin": 2.00,
-    "limitCurrency": "GBP",
-    "active": true
+  "outcomeInfo": {
+    "marketName": "Full Time Result",
+    "outcomeName": "1"
+  },
+  "odds": {
+    "pinnacle": {
+      "id1000002361061419:pinnacle:101:0": {
+        "price": 1.5,
+        "limit": 15000,
+        "limitMin": 5,
+        "limitCurrency": "USD",
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    },
+    "sharpbet": {
+      "id1000002361061419:sharpbet:101:0": {
+        "price": 1.52,
+        "limit": 751.34,
+        "limitMin": 1,
+        "limitCurrency": "EUR",
+        "limitUsd": 886.13,
+        "active": true,
+        "account": "sharpbet_user"
+      }
+    }
   }
 }
 ```
@@ -70,25 +97,22 @@ Use the [OddsPapi API](https://docs.oddspapi.io/) to discover fixture IDs and ou
 
 ## Step 3: Place an order
 
-Place a bet order with minimum price protection:
+Place a bet order with minimum price protection. Each order needs a unique `requestUuid` for idempotency:
 
 ```bash
 curl -X POST \
-  -H "X-ABP-API-KEY: YOUR_API_KEY" \
+  -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "orders": [
       {
-        "fixtureId": "id1000000861624412",
-        "outcomeId": 161,
+        "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+        "fixtureId": "id1000004461512432",
+        "outcomeId": 103,
         "playerId": 0,
-        "orderStake": 50,
-        "orderPrice": 1.80,
-        "orderCurrency": "USD",
+        "orderStake": 10.0,
+        "orderPrice": 1.95,
         "userRef": "my-strategy-1",
-        "acceptBetterOdds": true,
-        "acceptPartialStake": true,
-        "back": true,
         "testOrder": false
       }
     ]
@@ -100,34 +124,46 @@ curl -X POST \
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `requestUuid` | Yes | Unique UUID for idempotency (duplicates within 5 min return 409) |
 | `fixtureId` | Yes | OddsPapi fixture ID |
-| `outcomeId` | Yes | Market outcome (e.g., 161 = home win) |
+| `outcomeId` | Yes | Market outcome (e.g., 103 = away win) |
 | `playerId` | Yes | Set to `0` for non-player-prop markets |
 | `orderStake` | Yes | Total amount to wager |
 | `orderPrice` | Yes | Minimum acceptable decimal odds |
-| `orderCurrency` | Yes | Currency code (e.g., `USD`) |
-| `userRef` | No | Your reference for grouping related orders |
-| `acceptBetterOdds` | No | Accept odds better than `orderPrice` (default: true) |
-| `acceptPartialStake` | No | Allow partial fills across multiple bets (default: true) |
-| `back` | No | Back bet (true) or lay bet (false) (default: true) |
-| `testOrder` | No | Validate only, don't actually place (default: false) |
+| `userRef` | Yes | Your reference for grouping related orders |
+| `testOrder` | Yes | Validate only, don't actually place (`false` for real bets) |
+| `bookmakers` | No | Comma-separated slugs to target (omit for automatic selection) |
+| `orderCurrency` | No | Currency code (default: `USD`) |
+| `acceptBetterOdds` | No | Accept odds better than `orderPrice` (default: `true`) |
+| `acceptPartialStake` | No | Allow partial fills (default: `true`) |
+| `back` | No | Back bet (`true`) or lay bet (`false`) (default: `true`) |
 | `expiresAt` | No | ISO 8601 expiry time (default: 5 seconds from now) |
+| `meta` | No | Custom metadata object (stored but not sent to bookmaker) |
 
 **Response:**
 
 ```json
 {
-  "orders": [
+  "status": "accepted",
+  "acceptedOrders": [
     {
-      "orderId": 12345,
-      "requestUuid": "eb45b192-358b-32d5-9f65-af497b9fa8c1",
-      "orderStatus": "PENDING",
-      "fixtureId": "id1000000861624412",
-      "outcomeId": 161,
-      "orderStake": 50,
-      "orderPrice": 1.80,
-      "filledStake": 0,
-      "bets": []
+      "orderId": 327,
+      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+      "orderStatus": "FILLED",
+      "fixtureId": "id1000004461512432",
+      "outcomeId": 103,
+      "orderStake": 10.0,
+      "orderPrice": 1.95,
+      "filledStake": 10.0,
+      "bets": [
+        {
+          "betId": 73,
+          "bookmaker": "pinnacle",
+          "placedPrice": 1.98,
+          "placedStake": 10.0,
+          "betStatus": "CONFIRMED"
+        }
+      ]
     }
   ],
   "declinedOrders": []
@@ -138,11 +174,14 @@ Orders that fail validation appear in `declinedOrders` with a `declineReason`:
 
 ```json
 {
+  "status": "declined",
+  "acceptedOrders": [],
   "declinedOrders": [
     {
-      "fixtureId": "...",
-      "outcomeId": 161,
-      "declineReason": "Order stake 150.00 USD exceeds available limit 100.00 USD"
+      "requestUuid": "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d",
+      "fixtureId": "id1000004461512432",
+      "outcomeId": 103,
+      "declineReason": "Order stake 100.00 USD exceeds available limit 50.00 USD"
     }
   ]
 }
@@ -150,52 +189,87 @@ Orders that fail validation appear in `declinedOrders` with a `declineReason`:
 
 ## Step 4: Track your order
 
-Check order status:
+Query orders by `userRef`, `orderIds`, or `requestUuids` (at least one filter required):
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
-  https://v2.55-tech.com/orders
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/orders?userRef=my-strategy-1"
 ```
 
-View individual bets placed for your orders:
+View individual bets for specific orders:
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
-  https://v2.55-tech.com/bets
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/bets?orderIds=327"
 ```
 
 Each bet includes the bookmaker, placed price, placed stake, bet status, and settlement status:
 
 ```json
 {
-  "betId": 1,
-  "orderId": 12345,
-  "bookmaker": "pinnacle",
-  "bookmakerBetId": "3587791057",
-  "placedStake": 50.00,
-  "placedPrice": 1.85,
-  "placedCurrency": "USD",
-  "betStatus": "CONFIRMED",
-  "settlementStatus": "UNSETTLED",
-  "account": "your-username",
-  "userRef": "my-strategy-1"
+  "status": "success",
+  "bets": [
+    {
+      "betId": 73,
+      "orderId": 327,
+      "bookmaker": "pinnacle",
+      "bookmakerBetId": "3332684214",
+      "placedStake": 10.0,
+      "placedPrice": 1.98,
+      "placedCurrency": "USD",
+      "betStatus": "CONFIRMED",
+      "settlementStatus": "UNSETTLED",
+      "account": "pinnacle_main",
+      "userRef": "my-strategy-1"
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "nextCursor": null
 }
 ```
 
 ## Step 5: Check positions & PnL
 
-View your aggregated exposure:
+View your aggregated open positions (grouped by bookmaker by default):
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/positions
+```
+
+```json
+{
+  "status": "success",
+  "groupBy": "bookmaker",
+  "positions": [
+    { "bookmaker": "pinnacle", "openBets": 5, "totalStake": 250.0, "avgPrice": 1.92 }
+  ],
+  "count": 1,
+  "totalStake": 250.0,
+  "totalOpenBets": 5
+}
 ```
 
 View profit and loss:
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/pnl
+```
+
+```json
+{
+  "status": "success",
+  "groupBy": "bookmaker",
+  "pnl": [
+    { "bookmaker": "pinnacle", "settledBets": 42, "wins": 23, "losses": 17, "netPnl": 250.0, "winRate": 54.8 }
+  ],
+  "count": 1,
+  "totalNetPnl": 250.0,
+  "totalStaked": 2100.0,
+  "totalSettledBets": 42
+}
 ```
 
 ## Next steps

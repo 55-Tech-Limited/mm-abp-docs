@@ -6,25 +6,51 @@ description: "为AI工具、LLM和离线使用下载55-Tech API文档。提供TX
 
 ## 下载
 
-- **文档索引:** [`/llms.txt`](/llms.txt)
-- **完整文档包:** [`/llms-full.txt`](/llms-full.txt)
-- **ABP OpenAPI (REST参考):** [`/abp-api/openapi.json`](/abp-api/openapi.json)
-- **MM OpenAPI (REST参考):** [`/mm-api/openapi.json`](/mm-api/openapi.json)
+| 资源 | 格式 | 描述 |
+|------|------|------|
+| [`/llms.txt`](/llms.txt) | TXT | 文档索引 — 页面标题和路径 |
+| [`/llms-full.txt`](/llms-full.txt) | TXT | 完整文档包 — 所有指南页面合并 |
+| [`/abp-api/openapi.json`](/abp-api/openapi.json) | JSON | ABP OpenAPI 3.1 规范 — 13个端点，完整模式 |
+| [`/mm-api/openapi.json`](/mm-api/openapi.json) | JSON | MM OpenAPI 3.1 规范 — REST 参考 |
+
+## 包含内容
+
+**ABP API** 文档涵盖：
+
+- **账户管理** — 跨30多家集成的博彩公司账户完整CRUD操作
+- **投注单** — 通过 OddsPapi v5 获取实时赔率和限额，支持多博彩公司聚合
+- **下单** — 智能路由，支持幂等性（`requestUuid`）、部分成交和可配置过期时间
+- **投注跟踪** — 基于游标的分页查询，从 PENDING 到 CONFIRMED/SETTLED 的完整生命周期
+- **分析** — 按博彩公司、账户或用户引用分组的持仓和盈亏
+- **WebSocket** — 订单、投注、结算、余额、赛事、货币、状态、紧急事件的实时推送
+- **30+博彩公司集成** — pinnacle、betfair-ex、polymarket、kalshi、cloudbet、smarkets 等
+
+**MM API** 文档涵盖：
+
+- 做市引擎配置和实时价差管理
+- WebSocket驱动的定价更新和订单簿交互
 
 ## 推荐用法
 
-如果您的AI工具支持获取URL，请提供：
+**支持获取URL的AI助手：**
 
-- `/llms-full.txt`（最适合"一次性阅读全部内容"）
-- `/abp-api/openapi.json` 或 `/mm-api/openapi.json`（最适合端点和模式准确性）
+- `/llms-full.txt` — 最适合"一次性阅读全部内容"（所有指南页面+示例）
+- `/abp-api/openapi.json` — 最适合端点和模式准确性（带类型和示例）
 
-如果您的工具仅支持复制/粘贴，请在浏览器中打开 `/llms-full.txt` 并粘贴内容。
+**复制/粘贴工作流：**
+
+在浏览器中打开 `/llms-full.txt` 并粘贴内容到您的AI工具中。
+
+**代码生成：**
+
+将 OpenAPI 规范提供给 `openapi-generator`、`oapi-codegen` 或 Cursor/Copilot 等工具，用于生成类型化客户端SDK。
 
 ## 说明
 
-- `llms-full.txt` 遵循与网站导航相同的顺序。
-- WebSocket协议在指南页面中记录；REST端点在OpenAPI规范中。
-- ABP 和 MM 文档包含在同一个文件包中。
+- `llms-full.txt` 遵循与网站导航相同的顺序
+- WebSocket协议在指南页面中记录；REST端点在OpenAPI规范中
+- ABP 和 MM 文档包含在同一个文件包中
+- 身份验证使用 `x-api-key` 头
 
 ---
 

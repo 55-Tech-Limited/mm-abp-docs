@@ -10,7 +10,7 @@ You need an API key for the platform you want to use. Contact [support@55-tech.c
 
 | Platform | Auth Header | Base URL |
 |----------|------------|----------|
-| ABP (Automated Bet Placing) | `X-ABP-API-KEY` | `https://v2.55-tech.com` |
+| ABP (Automated Bet Placing) | `x-api-key` | `https://v2.55-tech.com` |
 | MM (Market Making) | `X-API-Key` | `https://mmapi.55-tech.com` |
 
 ---
@@ -20,21 +20,21 @@ You need an API key for the platform you want to use. Contact [support@55-tech.c
 ### 1. List your accounts
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
 ### 2. Get a betslip (live odds)
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   "https://v2.55-tech.com/betslip?fixtureId=ID&outcomeId=161&playerId=0"
 ```
 
 ### 3. Place an order
 
 ```bash
-curl -X POST -H "X-ABP-API-KEY: YOUR_API_KEY" \
+curl -X POST -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"orders": [{"fixtureId": "...", "outcomeId": 161, "playerId": 0, "stake": 10, "minPrice": 1.5}]}' \
   https://v2.55-tech.com/place-orders
@@ -43,7 +43,7 @@ curl -X POST -H "X-ABP-API-KEY: YOUR_API_KEY" \
 ### 4. Track results
 
 ```bash
-curl -H "X-ABP-API-KEY: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/orders
 ```
 

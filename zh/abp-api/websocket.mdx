@@ -23,7 +23,7 @@ wss://v2.55-tech.com/ws
 ```json
 {
   "type": "login",
-  "apiKey": "your-api-key",
+  "apiKey": "YOUR_API_KEY",
   "channels": []
 }
 ```
@@ -33,8 +33,19 @@ wss://v2.55-tech.com/ws
 ```json
 {
   "type": "login",
-  "apiKey": "your-api-key",
+  "apiKey": "YOUR_API_KEY",
   "channels": ["orders", "bets", "settlements"]
+}
+```
+
+可选启用可靠传递和消息确认：
+
+```json
+{
+  "type": "login",
+  "apiKey": "YOUR_API_KEY",
+  "channels": ["orders", "bets"],
+  "reliableDelivery": true
 }
 ```
 
@@ -52,6 +63,7 @@ wss://v2.55-tech.com/ws
     "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance"],
     "global": ["fixtures", "currencies", "status", "emergency"]
   },
+  "reliableDelivery": false,
   "features": {
     "messageOrdering": true,
     "acknowledgments": false,
@@ -79,30 +91,27 @@ wss://v2.55-tech.com/ws
 |------|------|
 | `type` | 数据消息始终为 `"data"` |
 | `channel` | 此消息所属频道 |
-| `event` | 事件类型：`INSERT`、`UPDATE`、`DELETE`、`STATUS_CHANGE`、`SETTLED` |
-| `payload` | 完整的更新对象 |
+| `event` | 事件类型：`INSERT`、`UPDATE`、`DELETE`、`SETTLED`、`STATUS` |
+| `payload` | 完整的更新对象（见下方各频道负载格式） |
 | `ts` | 服务器时间戳（自纪元以来的毫秒数） |
-| `seq` | 用于消息排序的序列号 |
+| `seq` | 每订阅的单调递增序列号 |
+| `requireAck` | 仅在启用可靠传递时存在且为 `true` |
 
 ### 5. 保持活跃
 
-每 **30秒** 发送一次心跳：
+服务器每 **30秒** 发送一次 ping：
 
 ```json
 {"type": "ping"}
 ```
 
-服务器响应：
+在 **120秒** 内回复 pong，否则连接将被关闭：
 
 ```json
 {"type": "pong"}
 ```
 
-服务器也会每 **60秒** 发送心跳：
-
-```json
-{"type": "heartbeat", "ts": 1771183909789}
-```
+您也可以从客户端发送 ping — 服务器会回复 pong。
 
 ## 频道
 
@@ -112,10 +121,10 @@ wss://v2.55-tech.com/ws
 
 | 频道 | 事件 | 描述 |
 |------|------|------|
-| `orders` | INSERT, UPDATE, STATUS_CHANGE | 订单下达、成交、状态变更 |
-| `bets` | INSERT, UPDATE, SETTLED | 投注下达、确认、结算 |
-| `settlements` | UPDATE | 结算状态更新 |
-| `accounts` | UPDATE | 账户余额和状态变更 |
+| `orders` | INSERT, UPDATE, DELETE | 订单下达、成交、状态变更 |
+| `bets` | INSERT, UPDATE | 投注下达和确认 |
+| `settlements` | SETTLED | 结算状态更新（负载与 bets 相同） |
+| `accounts` | UPDATE | 账户状态变更 |
 | `balance` | UPDATE | 余额变动通知 |
 
 ### 全局频道
@@ -126,89 +135,98 @@ wss://v2.55-tech.com/ws
 |------|------|------|
 | `fixtures` | UPDATE | 赛事元数据和比分变更 |
 | `currencies` | UPDATE | 货币汇率更新 |
-| `status` | UPDATE | 系统状态变更 |
-| `emergency` | UPDATE | 紧急模式激活/停用 |
+| `status` | STATUS | 系统状态变更 |
+| `emergency` | STATUS | 紧急模式激活/停用 |
 
-## 消息示例
+## 负载格式
 
-### 订单更新
+### 订单负载
+
+`orders` 表的完整数据行：
 
 ```json
 {
-  "type": "data",
-  "channel": "orders",
-  "event": "STATUS_CHANGE",
-  "payload": {
-    "orderId": 12345,
-    "requestUuid": "eb45b192-358b-32d5-9f65-af497b9fa8c1",
-    "clientName": "your-client",
-    "fixtureId": "id1000000861624412",
-    "outcomeId": 161,
-    "playerId": 0,
-    "orderPrice": 1.80,
-    "orderStake": 50,
-    "filledStake": 50,
-    "remainingStake": 0,
-    "orderStatus": "FILLED",
-    "userRef": "my-strategy-1",
-    "testOrder": false,
-    "acceptBetterOdds": true,
-    "acceptPartialStake": true,
-    "orderCurrency": "USD",
-    "back": true,
-    "createdAt": "2026-02-15T19:31:49.778Z",
-    "expiresAt": "2026-02-15T19:31:54.759Z"
-  },
-  "ts": 1771183909789,
-  "seq": 42
+  "orderId": 327,
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "client": "demo",
+  "clientName": "demo",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "orderPrice": 1.95,
+  "orderStake": 10.0,
+  "filledStake": 10.0,
+  "remainingStake": 0.0,
+  "orderStatus": "FILLED",
+  "statusReason": null,
+  "userRef": "bettor1234",
+  "testOrder": false,
+  "acceptBetterOdds": true,
+  "acceptPartialStake": true,
+  "orderCurrency": "USD",
+  "back": true,
+  "allowedBookmakers": "*",
+  "meta": {},
+  "expiresAt": "2026-02-07T17:29:37+00:00",
+  "filledAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
 }
 ```
 
-### 投注确认
+### 投注 / 结算负载
+
+`bets` 表的完整数据行：
 
 ```json
 {
-  "type": "data",
-  "channel": "bets",
-  "event": "UPDATE",
-  "payload": {
-    "betId": 1,
-    "orderId": 12345,
-    "bookmaker": "pinnacle",
-    "bookmakerBetId": "3587791057",
-    "placedStake": 50,
-    "placedPrice": 1.85,
-    "placedCurrency": "USD",
-    "betStatus": "CONFIRMED",
-    "settlementStatus": "UNSETTLED",
-    "account": "your-username",
-    "userRef": "my-strategy-1",
-    "testBet": false,
-    "placedAt": "2026-02-15T19:31:50+00:00"
-  },
-  "ts": 1771183910123,
-  "seq": 43
+  "betId": 73,
+  "orderId": 327,
+  "bookmaker": "pinnacle",
+  "bookmakerBetId": "3332684214",
+  "betStatus": "CONFIRMED",
+  "settlementStatus": "UNSETTLED",
+  "placedStake": 10.0,
+  "placedPrice": 1.98,
+  "placedCurrency": "USD",
+  "account": "pinnacle_main",
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "userRef": "bettor1234",
+  "testBet": false,
+  "client": "demo",
+  "clientName": "demo",
+  "sentData": { "stake": 10.0, "price": 1.95 },
+  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
+  "settlementAmount": null,
+  "settlementReason": null,
+  "settledAt": null,
+  "declineReason": null,
+  "placedAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
 }
 ```
 
-### 投注结算
+### 余额负载
 
 ```json
 {
-  "type": "data",
-  "channel": "bets",
-  "event": "SETTLED",
-  "payload": {
-    "betId": 1,
-    "orderId": 12345,
-    "bookmaker": "pinnacle",
-    "betStatus": "CONFIRMED",
-    "settlementStatus": "WON",
-    "settlementAmount": 92.50,
-    "settledAt": "2026-02-15T21:45:00+00:00"
-  },
-  "ts": 1771191900456,
-  "seq": 89
+  "clientName": "demo",
+  "bookmaker": "pinnacle",
+  "username": "pinnacle_main",
+  "balance": 4990.0,
+  "currency": "USD",
+  "ts": 1771183910123
+}
+```
+
+### 紧急负载
+
+```json
+{
+  "active": true,
+  "reason": "Upstream provider maintenance",
+  "ts": 1771183910123
 }
 ```
 
@@ -218,9 +236,10 @@ wss://v2.55-tech.com/ws
 |------|-----|
 | 每API密钥最大连接数 | 5 |
 | 认证超时 | 30秒 |
-| 服务器心跳间隔 | 60秒 |
-| 客户端心跳间隔 | 30秒（推荐） |
-| 消息缓冲区大小 | 每订阅100条 |
+| 服务器 ping 间隔 | 30秒 |
+| Pong 超时（断开连接） | 120秒 |
+| 消息缓冲区（可靠传递） | 100条消息 |
+| 每客户端输出队列 | 2000条消息 |
 
 ## 示例：Python 客户端
 
@@ -243,18 +262,12 @@ async def connect():
         login_resp = json.loads(await ws.recv())
         print(f"已登录为 {login_resp.get('clientName')}")
 
-        # 保活任务
-        async def keep_alive():
-            while True:
-                await asyncio.sleep(30)
-                await ws.send(json.dumps({"type": "ping"}))
-
-        asyncio.create_task(keep_alive())
-
-        # 监听更新
+        # 监听更新（自动回复 ping）
         async for message in ws:
             data = json.loads(message)
-            if data["type"] == "data":
+            if data["type"] == "ping":
+                await ws.send(json.dumps({"type": "pong"}))
+            elif data["type"] == "data":
                 print(f"[{data['channel']}:{data['event']}] {data['payload']}")
 
 asyncio.run(connect())
@@ -282,15 +295,12 @@ ws.on('message', (raw) => {
     console.log(`已登录为 ${msg.clientName}`);
   }
 
+  if (msg.type === 'ping') {
+    ws.send(JSON.stringify({ type: 'pong' }));
+  }
+
   if (msg.type === 'data') {
     console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
   }
 });
-
-// 保持活跃
-setInterval(() => {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'ping' }));
-  }
-}, 30000);
 ```

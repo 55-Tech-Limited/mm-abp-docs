@@ -63,14 +63,13 @@ When placing orders via `POST /place-orders`, orders that fail business validati
 
 ```json
 {
-  "orders": [],
+  "status": "declined",
+  "acceptedOrders": [],
   "declinedOrders": [
     {
+      "requestUuid": "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d",
       "fixtureId": "id1000000861624412",
       "outcomeId": 161,
-      "playerId": 0,
-      "orderStake": 15000,
-      "orderPrice": 1.80,
       "declineReason": "Order stake 15000.00 USD exceeds available limit 5000.00 USD"
     }
   ]
@@ -89,7 +88,7 @@ curl https://v2.55-tech.com/accounts
 # Returns: 401 {"detail": "Unauthorized - missing or invalid API key"}
 
 # Include the header
-curl -H "X-ABP-API-KEY: your-key" https://v2.55-tech.com/accounts
+curl -H "x-api-key: your-key" https://v2.55-tech.com/accounts
 # Returns: 200
 ```
 
