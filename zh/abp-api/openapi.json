@@ -874,7 +874,7 @@
       "get": {
         "tags": ["Bets"],
         "summary": "Get bets",
-        "description": "Retrieve bets by various filters with keyset pagination. At least one filter must be provided.\n\n**Filters (OR logic):**\n- `betIds` — Comma-separated list of bet IDs\n- `orderIds` — Comma-separated list of order IDs\n- `userRef` — User reference string\n\n**Pagination:**\n- Results are ordered by betId descending (newest first)\n- Use `afterBetId` from `nextCursor` in the response to fetch the next page\n- `hasMore` indicates if more results are available\n\n**Bet Status Values:** PENDING, CONFIRMED, DECLINED, CANCELLED\n\n**Settlement Status Values:** UNSETTLED, WON, LOST, VOID, HALF_WON, HALF_LOST, PUSH, CASHOUT",
+        "description": "Retrieve bets by various filters with keyset pagination. At least one filter must be provided.\n\n**Filters (OR logic):**\n- `betIds` — Comma-separated list of bet IDs\n- `orderIds` — Comma-separated list of order IDs\n- `userRef` — User reference string\n\n**Pagination:**\n- Results are ordered by betId descending (newest first)\n- Use `afterBetId` from `nextCursor` in the response to fetch the next page\n- `hasMore` indicates if more results are available\n\n**Bet Status Values:** PENDING, PLACED, CONFIRMED, REJECTED, CANCELLED, FAILED, VOID\n\n**Settlement Status Values:** UNSETTLED, WON, LOST, VOID, HALF_WON, HALF_LOST, PUSH, CASHOUT",
         "operationId": "get_bets",
         "parameters": [
           {
@@ -1303,7 +1303,7 @@
           "betId": { "type": "integer", "description": "Bet ID" },
           "orderId": { "type": "integer", "description": "Parent order ID" },
           "bookmaker": { "type": "string", "description": "Bookmaker slug" },
-          "betStatus": { "type": "string", "enum": ["PENDING", "CONFIRMED", "DECLINED", "CANCELLED"], "description": "Bet status" },
+          "betStatus": { "type": "string", "enum": ["PENDING", "PLACED", "CONFIRMED", "REJECTED", "CANCELLED", "FAILED", "VOID"], "description": "Bet status" },
           "settlementStatus": { "type": "string", "enum": ["UNSETTLED", "WON", "LOST", "VOID", "HALF_WON", "HALF_LOST", "PUSH", "CASHOUT"], "description": "Settlement status" },
           "clientName": { "type": "string", "description": "Client name" },
           "testBet": { "type": "boolean", "description": "Whether this is a test bet" },

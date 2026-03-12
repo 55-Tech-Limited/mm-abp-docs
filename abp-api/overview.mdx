@@ -18,44 +18,23 @@ The **Automated Bet Placing (ABP)** API lets you place bets across 30+ bookmaker
 
 ## Data flow
 
-```mermaid
-flowchart LR
-    Client["Your App"]
-    ABP["ABP v2 API"]
-    OddsPapi["OddsPapi v5"]
-    BM1["Pinnacle"]
-    BM2["Betfair"]
-    BM3["Polymarket"]
-    BMN["30+ Bookmakers"]
-    WS["WebSocket /ws"]
-
-    Client -->|"1. GET /betslip"| ABP
-    ABP -->|"Fetch odds"| OddsPapi
-    OddsPapi -->|"Live odds & limits"| ABP
-    ABP -->|"Betslip response"| Client
-
-    Client -->|"2. POST /place-orders"| ABP
-    ABP -->|"Route & place"| BM1
-    ABP -->|"Route & place"| BM2
-    ABP -->|"Route & place"| BM3
-    ABP -.->|"Route & place"| BMN
-
-    BM1 -->|"Confirm/decline"| ABP
-    BM2 -->|"Confirm/decline"| ABP
-    BM3 -->|"Confirm/decline"| ABP
-    BMN -.->|"Confirm/decline"| ABP
-
-    ABP -->|"3. Real-time updates"| WS
-    WS -->|"orders, bets, settlements"| Client
-
-    Client -->|"4. GET /orders, /bets"| ABP
-    Client -->|"5. GET /positions, /pnl"| ABP
-```
-
-1. **Betslip** — Your app fetches live odds from ABP, which queries OddsPapi v5 for real-time pricing
-2. **Place orders** — ABP routes orders to the best bookmaker(s) based on odds, limits, and account priority
-3. **Real-time updates** — WebSocket pushes order, bet, and settlement events as they happen
-4. **Query** — REST endpoints for order/bet history and analytics
+<Steps>
+  <Step title="Discover fixtures & odds via OddsPapi v5">
+    Your app consumes the [OddsPapi v5 API](https://docs.oddspapi.io/) to discover fixtures, markets, outcomes, and real-time odds across all supported bookmakers. OddsPapi is the data layer — ABP is the execution layer built on top of it. Fixture IDs and outcome IDs are shared between both APIs.
+  </Step>
+  <Step title="Fetch betslip from ABP">
+    Before placing, call `GET /betslip?fixtureId=...&outcomeId=...&playerId=...` to get aggregated odds and limits from all your configured bookmaker accounts. ABP resolves stake limits (account > bookmaker > odds) and returns the effective min/max per bookmaker.
+  </Step>
+  <Step title="Place orders through ABP">
+    Send `POST /place-orders` with one or more orders. ABP routes each order to the best bookmaker(s) based on price, available limits, and account priority. Each bookmaker integration places the bet and reports back confirmation or decline.
+  </Step>
+  <Step title="Receive real-time updates via WebSocket">
+    Connect to `WS /ws` to receive real-time pushes for order status changes, bet confirmations, settlements, balance updates, and system events. No polling needed.
+  </Step>
+  <Step title="Query history & analytics">
+    Use `GET /orders`, `GET /bets` for order/bet history with keyset pagination, and `GET /positions`, `GET /pnl` for aggregated exposure and profit/loss analytics.
+  </Step>
+</Steps>
 
 ## Base URL
 
@@ -91,8 +70,16 @@ PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANC
 ### Bet lifecycle
 
 ```
-PENDING → CONFIRMED / DECLINED / CANCELLED
+PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
 ```
+
+- **PENDING** — Bet created, awaiting bookmaker response
+- **PLACED** — Sent to bookmaker, awaiting confirmation
+- **CONFIRMED** — Bookmaker accepted the bet
+- **REJECTED** — Bookmaker rejected the bet
+- **CANCELLED** — Bet cancelled before confirmation
+- **FAILED** — Internal error during placement
+- **VOID** — Bet voided by bookmaker
 
 ### Settlement lifecycle
 
@@ -100,9 +87,14 @@ PENDING → CONFIRMED / DECLINED / CANCELLED
 UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
 ```
 
-- **Half won / Half lost** — Asian handicap partial results
-- **Push** — Stake returned (tie on the line)
-- **Cashout** — Early withdrawal at negotiated price
+- **UNSETTLED** — Bet is live, awaiting result
+- **WON** — Full win
+- **LOST** — Full loss
+- **VOID** — Bet voided (stake returned)
+- **HALF_WON** — Asian handicap partial win
+- **HALF_LOST** — Asian handicap partial loss
+- **PUSH** — Stake returned (tie on the line)
+- **CASHOUT** — Early withdrawal at negotiated price
 
 ### Account priority
 
@@ -133,11 +125,11 @@ Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `poly
 
 ## Supported bookmakers
 
-**Traditional sportsbooks:** pinnacle, pinnacleb2b, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et
+**Traditional sportsbooks:** pinnacle, pinnacleb2b, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, vertex
 
-**Betting exchanges:** betfair-ex, smarkets
+**Betting exchanges:** betfair-ex, smarkets, matchbook
 
-**Prediction markets:** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, vertex, 4casters
+**Prediction markets:** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, 4casters
 
 **Punter platforms:** punter.io
 
@@ -152,7 +144,7 @@ ABP includes production-grade reliability features:
 
 ## Data source
 
-ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). Fixture IDs and outcome IDs in ABP correspond directly to OddsPapi identifiers.
+ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). Fixture IDs and outcome IDs in ABP correspond directly to OddsPapi identifiers. Your app should use OddsPapi to discover fixtures and markets, then use ABP to execute bets.
 
 ## Next steps
 
