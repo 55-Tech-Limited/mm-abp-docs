@@ -6,7 +6,7 @@ description: "Relay WebSocket connections and consume AMQP/RabbitMQ streams thro
 
 ## WebSocket relay
 
-The Scraping API can relay bidirectional WebSocket connections through the agent network. The agent connects to the target using `curl_cffi AsyncWebSocket` with TLS fingerprinting on the upgrade request, so the target sees a real browser handshake. All WS sub-protocols are relayed transparently — Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WebSocket, etc.
+The Scraping API can relay bidirectional WebSocket connections through the agent network. All WS sub-protocols are relayed transparently — Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WebSocket, etc.
 
 ### Endpoint
 
@@ -46,7 +46,7 @@ wss://scraping-api.55-tech.com/ws
 | `idle_timeout` | float | No | `0` | Seconds to wait for a target message before disconnect. `0` = no timeout |
   </Step>
   <Step title="Receive connected confirmation">
-    The gateway picks an agent via the scheduler, the agent connects to the target WebSocket with TLS fingerprinting, and the gateway responds with:
+    The gateway picks an agent, the agent connects to the target WebSocket, and the gateway responds with:
 
 ```json
 {
@@ -168,7 +168,7 @@ All sub-protocols are relayed transparently — no special configuration needed:
 
 ## AMQP consumer (SSE)
 
-Stream messages from a RabbitMQ broker through the agent network, delivered as Server-Sent Events. The agent connects to the broker using `aio-pika`, creates a temporary auto-delete queue, binds it to the specified exchange, and streams messages back.
+Stream messages from a RabbitMQ broker through the agent network, delivered as Server-Sent Events. The agent connects to the broker, creates a temporary auto-delete queue, binds it to the specified exchange, and streams messages back.
 
 ### Endpoint
 

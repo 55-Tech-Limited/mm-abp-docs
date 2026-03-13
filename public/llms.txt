@@ -14,7 +14,7 @@
 - /mm-api/quickstart — MM Quickstart - First API Calls
 - /mm-api/websocket — MM WebSocket - Real-Time Updates
 - /mm-api/errors — MM Error Handling
-- /scraping-api/overview — Scraping API Overview - Distributed Fetch Network
+- /scraping-api/overview — Scraping API Overview
 - /scraping-api/authentication — Scraping API Authentication
 - /scraping-api/quickstart — Scraping API Quickstart
 - /scraping-api/websocket — Scraping API WebSocket & AMQP

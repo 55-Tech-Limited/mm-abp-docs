@@ -6,7 +6,7 @@ description: "通过 55 Tech Scraping API 代理网络中继 WebSocket 连接和
 
 ## WebSocket 中继
 
-Scraping API 可以通过代理网络中继双向 WebSocket 连接。代理节点使用 `curl_cffi AsyncWebSocket` 配合 TLS 指纹模拟连接到目标，因此目标看到的是真实的浏览器握手。所有 WS 子协议均透明中继 — Socket.IO、SignalR、Centrifugo、GraphQL-WS、原生 WebSocket 等。
+Scraping API 可以通过代理网络中继双向 WebSocket 连接。所有 WS 子协议均透明中继 — Socket.IO、SignalR、Centrifugo、GraphQL-WS、原生 WebSocket 等。
 
 ### 端点
 
@@ -46,7 +46,7 @@ wss://scraping-api.55-tech.com/ws
 | `idle_timeout` | float | No | `0` | 等待目标消息的超时时间（秒）。`0` = 不超时 |
   </Step>
   <Step title="接收连接确认">
-    网关通过调度器选择代理节点，代理节点使用 TLS 指纹模拟连接到目标 WebSocket，然后网关响应：
+    网关选择代理节点，代理节点连接到目标 WebSocket，然后网关响应：
 
 ```json
 {
@@ -168,7 +168,7 @@ ws.on('message', (raw) => {
 
 ## AMQP 消费者 (SSE)
 
-通过代理网络从 RabbitMQ 代理流式传输消息，以 Server-Sent Events 形式交付。代理节点使用 `aio-pika` 连接到消息代理，创建临时自动删除队列，将其绑定到指定的交换机，并将消息流式传回。
+通过代理网络从 RabbitMQ 代理流式传输消息，以 Server-Sent Events 形式交付。代理节点连接到消息代理，创建临时自动删除队列，将其绑定到指定的交换机，并将消息流式传回。
 
 ### 端点
 

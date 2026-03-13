@@ -6,10 +6,10 @@ description: "Complete reference for the Scraping API WebSocket relay protocol. 
 
 ## Protocol overview
 
-The WebSocket relay at `wss://scraping-api.55-tech.com/ws` provides a bidirectional proxy. You connect to the gateway, send a JSON connect message, and the gateway relays all frames between you and the target through a TLS-fingerprinted agent.
+The WebSocket relay at `wss://scraping-api.55-tech.com/ws` provides a bidirectional proxy. You connect to the gateway, send a JSON connect message, and the gateway relays all frames between you and the target through a geo-distributed agent.
 
 ```
-Client ←→ Gateway (wss://.../ws) ←→ Agent (gRPC WsRelay) ←→ Target WebSocket
+Client ←→ Gateway (wss://.../ws) ←→ Agent ←→ Target WebSocket
 ```
 
 ## Interactive playground
@@ -152,7 +152,7 @@ Client                 Gateway                Agent                  Target
   │◀── accept ───────────│                      │                      │
   │                      │                      │                      │
   │──── {"apiKey":...} ─▶│                      │                      │
-  │                      │── gRPC WsRelay ─────▶│                      │
+  │                      │── pick agent ────────▶│                      │
   │                      │                      │── WS upgrade ───────▶│
   │                      │                      │◀── 101 Switching ────│
   │                      │◀── connected ────────│                      │
