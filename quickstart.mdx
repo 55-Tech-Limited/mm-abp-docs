@@ -1,7 +1,7 @@
 ---
 title: "Quickstart - Connect to 55-Tech APIs"
 sidebarTitle: "Quickstart"
-description: "Get started with the 55-Tech ABP and MM APIs. Check connectivity, authenticate, and make your first API calls."
+description: "Get started with the 55-Tech ABP, MM, and Scraping APIs. Check connectivity, authenticate, and make your first API calls."
 ---
 
 ## Prerequisites
@@ -12,6 +12,7 @@ You need an API key for the platform you want to use. Contact [support@55-tech.c
 |----------|------------|----------|
 | ABP (Automated Bet Placing) | `x-api-key` | `https://v2.55-tech.com` |
 | MM (Market Making) | `X-API-Key` | `https://mmapi.55-tech.com` |
+| Scraping API | `X-API-Key` | `https://scraping-api.55-tech.com` |
 
 ---
 
@@ -81,16 +82,54 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 ---
 
+## Scraping API
+
+### 1. Check network status
+
+```bash
+curl https://scraping-api.55-tech.com/network/status
+```
+
+### 2. Fetch a page
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+### 3. Fetch with geo targeting
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Geo: DE" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+### 4. Check usage
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+---
+
 ## Real-time updates
 
-Both APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
+All APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
 
-<Columns cols={2}>
+<Columns cols={3}>
   <Card title="ABP WebSocket" icon="bolt" href="/abp-api/websocket">
     Real-time order, bet, and settlement updates.
   </Card>
 
   <Card title="MM WebSocket" icon="bolt" href="/mm-api/websocket">
     Live order fills, bets, and score updates.
+  </Card>
+
+  <Card title="Scraping WebSocket" icon="bolt" href="/scraping-api/websocket">
+    Real-time fetch results via WebSocket relay.
   </Card>
 </Columns>

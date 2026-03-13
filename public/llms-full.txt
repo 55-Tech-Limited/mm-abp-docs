@@ -1,7 +1,7 @@
 # 55-Tech API Docs — Full Bundle
 # Generated from docs.json navigation
 # Source: MDX files
-# APIs: ABP (Automated Bet Placing) and MM (Market Making)
+# APIs: ABP (Automated Bet Placing), MM (Market Making), and Scraping API
 
 
 
@@ -59,6 +59,7 @@ You need an API key for the platform you want to use. Contact [support@55-tech.c
 |----------|------------|----------|
 | ABP (Automated Bet Placing) | `x-api-key` | `https://v2.55-tech.com` |
 | MM (Market Making) | `X-API-Key` | `https://mmapi.55-tech.com` |
+| Scraping API | `X-API-Key` | `https://scraping-api.55-tech.com` |
 
 ---
 
@@ -128,17 +129,55 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 ---
 
+## Scraping API
+
+### 1. Check network status
+
+```bash
+curl https://scraping-api.55-tech.com/network/status
+```
+
+### 2. Fetch a page
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+### 3. Fetch with geo targeting
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Geo: DE" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+### 4. Check usage
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+---
+
 ## Real-time updates
 
-Both APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
+All APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
 
-<Columns cols={2}>
+<Columns cols={3}>
   <Card title="ABP WebSocket" icon="bolt" href="/abp-api/websocket">
     Real-time order, bet, and settlement updates.
   </Card>
 
   <Card title="MM WebSocket" icon="bolt" href="/mm-api/websocket">
     Live order fills, bets, and score updates.
+  </Card>
+
+  <Card title="Scraping WebSocket" icon="bolt" href="/scraping-api/websocket">
+    Real-time fetch results via WebSocket relay.
   </Card>
 </Columns>
 
@@ -217,7 +256,7 @@ Source: /abp-api/overview
 
 ## What is ABP?
 
-The **Automated Bet Placing (ABP)** API lets you place bets across 30+ bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
+The **Automated Bet Placing (ABP)** API by [55 Tech](https://55-tech.com/) lets you place bets across 30+ bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
 
 **Core capabilities:**
 
@@ -1978,6 +2017,1169 @@ When subscribing to the WebSocket, these error messages may be returned:
 | `Invalid api_key format` | Not a valid UUID |
 | `Invalid API key` | Key not found or client inactive |
 | `Connection limit exceeded` | Already at 5 active connections for this key |
+
+
+---
+## Scraping API Overview - Distributed Fetch Network
+Source: /scraping-api/overview
+---
+
+## What is the Scraping API?
+
+The **Scraping API** by [55 Tech](https://55-tech.com/) routes your HTTP, WebSocket, and AMQP requests through a network of 60+ geo-distributed agents. Each agent uses real browser TLS fingerprints (Chrome, Firefox, Safari) to make requests on your behalf, with intelligent routing that avoids blocked or rate-limited nodes automatically.
+
+**Core capabilities:**
+
+- **HTTP fetch** — GET/POST/PUT/PATCH/DELETE through any agent with full header, body, and cookie control
+- **WebSocket relay** — Bidirectional frame relay supporting Socket.IO, SignalR, Centrifugo, GraphQL-WS, and raw WebSocket
+- **AMQP consumer** — Stream RabbitMQ messages via Server-Sent Events (SSE)
+- **Geo targeting** — Pin requests to specific countries (DE, US, UK, AT, etc.) or individual agents
+- **Block detection** — Automatic content-based and status-based detection (captcha, Akamai, DataDome) with agent cooldown
+- **Network intelligence** — Query agent health, availability, and per-domain block status
+
+## Architecture
+
+<Steps>
+  <Step title="Client sends request to the API Gateway">
+    Your app calls the FastAPI gateway (HTTP `/fetch`, WebSocket `/ws`, or SSE `/amqp`). Authentication is via `X-API-Key` header, `apiKey` query param, or `apiKey` body field.
+  </Step>
+  <Step title="Gateway authenticates and rate-limits">
+    The gateway validates the API key and checks the per-key token bucket (default 10 RPS, configurable per key).
+  </Step>
+  <Step title="Scheduler picks the best agent">
+    The gateway calls the scheduler via gRPC. The scheduler uses a 4-stage picking algorithm based on RTT, health state, geo constraints, token bucket availability, and 20% softmax exploration.
+  </Step>
+  <Step title="Agent executes the request">
+    The selected agent makes the request using `curl_cffi` with a real browser TLS fingerprint. Per-host sticky sessions reuse the same fingerprint, cookies, and TLS session for 30 minutes.
+  </Step>
+  <Step title="Response streamed back through gateway">
+    The response (HTTP JSON, WebSocket frames, or SSE events) is returned to the client. The gateway reports the outcome to the scheduler for health tracking.
+  </Step>
+</Steps>
+
+## Base URL
+
+```
+https://scraping-api.55-tech.com
+```
+
+## Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/fetch` | GET, POST, PUT, PATCH, DELETE | Required | Proxy HTTP requests through the agent network |
+| `/ws` | WebSocket | In connect message | Bidirectional WebSocket relay through an agent |
+| `/amqp` | POST | In body or header | AMQP/RabbitMQ consumer relay (SSE stream) |
+| `/usage` | GET | Required | Per-key usage metrics (requests, bytes, top domains) |
+| `/network/agents` | GET | No | List all agents with slug, name, country |
+| `/network/status` | GET | No | Network summary (total agents, agents per country) |
+| `/network/geo` | GET | No | Agents grouped by country |
+| `/network/health/{domain}` | GET | Required | Per-agent health state for a domain |
+| `/debug/pick` | GET | No | Preview which agent would be selected |
+| `/healthz` | GET | No | Liveness probe |
+| `/docs` | GET | No | Swagger UI (interactive playground) |
+| `/redoc` | GET | No | ReDoc API documentation |
+
+## Control headers
+
+These headers control agent selection and are stripped before forwarding to the origin:
+
+| Header | Aliases | Description | Example |
+|--------|---------|-------------|---------|
+| `X-Target-URL` | — | Target URL (no encoding needed, recommended) | `https://example.com/?foo=bar` |
+| `X-Geo` | `X-Geo-CC`, `X-Geo-Strict`, `X-CC`, `X-Country` | Restrict to specific countries (comma-separated ISO codes) | `US,DE,AT` |
+| `X-Expect-JSON` | — | Hint that origin response should be JSON | `1` |
+| `X-Agent` | `?agent=` query param | Route through specific agent(s) by slug, full name, ip:port, or comma-separated for random pick | `de1`, `de1,at5,us3` |
+
+## Key concepts
+
+### Agent network
+
+60+ agents distributed across 15+ countries:
+
+| Region | Agents | Countries |
+|--------|--------|-----------|
+| Germany | de1–de20 | DE |
+| Austria | at1–at20 | AT |
+| United States | us1–us7 | US |
+| United Kingdom | uk1–uk5 | GB |
+| Italy | it1–it5 | IT |
+| France | fr1–fr2 | FR |
+| Spain | es1–es2 | ES |
+| Greece | gr1–gr3 | GR |
+| Other | pl1, bg1, au1–au3, br1 | PL, BG, AU, BR |
+
+### Health states
+
+Each agent tracks health **per domain**:
+
+| State | Trigger | Cooldown | Description |
+|-------|---------|----------|-------------|
+| `healthy` | 200–399 responses | — | Agent can fetch this domain |
+| `soft_block` | 429, 503, 5xx | 60 seconds | Rate limited or temporary error |
+| `hard_block` | 401, 403, 405, timeout | 20 minutes | Auth failure or blocked |
+
+Cooldowns are shared across all gateway workers via Redis.
+
+### TLS fingerprinting
+
+Agents rotate browser TLS fingerprints auto-discovered from `curl_cffi.requests.BrowserType` at startup. Newest versions are weighted heaviest (~42% chrome136, ~21% chrome131, etc.). Per-host sticky sessions ensure the same fingerprint and cookies are reused for 30 minutes, maintaining session state across requests.
+
+Extra TLS tuning applied to every request:
+- `tls_permute_extensions: True` — randomizes TLS extension order
+- `tls_grease: True` — injects random GREASE values
+- `tls_cert_compression: "brotli"` — advertises brotli certificate compression
+
+### Agent selection algorithm
+
+The scheduler uses a 4-stage picking algorithm:
+
+1. **Recent fast (top 50)** — Top 50 recently healthy agents for this host, weighted by RTT using softmax with 20% exploration
+2. **Recent rest** — Remaining recently healthy agents (51+)
+3. **All known (top 200)** — Expand to all known agents for this host
+4. **Exploration** — Random sampling from full agent pool to discover new paths
+
+Selection formula: `score = RTT × provider_penalty × freshness_penalty / success_probability`
+
+### Rate limiting
+
+Rate limits are **per API key** using a token bucket:
+
+- Default: 10 requests/second with burst of 10
+- Configurable per key (e.g., `yourkey:50` for 50 RPS)
+- WebSocket connections consume 1 token on connect (not per frame)
+
+When rate limited, the API returns `429` with headers:
+```
+Retry-After: 1
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+```
+
+## Fetch response format
+
+All HTTP fetch responses follow this structure:
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://example.com/",
+    "http_version": "HTTP/2",
+    "elapsed_ms": 245,
+    "blocked": false,
+    "headers": { "content-type": "text/html" },
+    "agent": { "id": "scraping-de1" },
+    "bytes": 4521
+  },
+  "raw": "<!DOCTYPE html>...",
+  "raw_json": null
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `meta.status` | HTTP status code from the origin |
+| `meta.final_url` | Final URL after redirects |
+| `meta.http_version` | HTTP version used (e.g. HTTP/2) |
+| `meta.elapsed_ms` | Round-trip time in milliseconds |
+| `meta.blocked` | `true` if block patterns detected in response |
+| `meta.agent.id` | Node ID (e.g. `scraping-de1`) |
+| `meta.bytes` | Response body size in bytes |
+| `raw` | Response body as text (when not JSON) |
+| `raw_json` | Parsed JSON object (when response is valid JSON, otherwise `null`) |
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/scraping-api/authentication">
+    Set up your API key.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/scraping-api/quickstart">
+    Make your first proxied request.
+  </Card>
+</Columns>
+
+
+---
+## Scraping API Authentication
+Source: /scraping-api/authentication
+---
+
+All Scraping API endpoints (except public ones listed below) require authentication.
+
+## Passing your API key
+
+Pass your API key using one of these methods:
+
+**HTTP header (recommended):**
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+**Query parameter:**
+
+```bash
+curl "https://scraping-api.55-tech.com/fetch?apiKey=YOUR_API_KEY&url=https://example.com"
+```
+
+The `key` query parameter is also accepted as a fallback alias for `apiKey`.
+
+**JSON body field (for POST `/fetch`, WebSocket `/ws`, AMQP `/amqp`):**
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "https://example.com"
+}
+```
+
+### Priority order
+
+For HTTP `/fetch`, the API key is resolved in this order:
+1. `apiKey` query parameter
+2. `X-API-Key` header
+3. `key` query parameter (fallback)
+
+For WebSocket `/ws` and AMQP `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
+
+## Rate limits
+
+Each API key has a configurable rate limit using a token bucket algorithm:
+
+| Setting | Default |
+|---------|---------|
+| Requests per second (RPS) | 10 |
+| Burst capacity | Equal to RPS |
+
+When rate limited, the API returns `429 Too Many Requests` with these headers:
+
+```
+Retry-After: 1
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+```
+
+Implement exponential backoff: wait 1s, 2s, 4s, etc.
+
+Check your current rate limit and usage:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+The response includes your remaining tokens:
+
+```json
+{
+  "rate_limit": {
+    "rps": 10.0,
+    "burst": 10,
+    "remaining": 9.3
+  }
+}
+```
+
+## Public endpoints
+
+These endpoints do **not** require authentication:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | API overview and usage info |
+| `GET /healthz` | Liveness probe (`{"ok": true}`) |
+| `GET /network/agents` | List all agents |
+| `GET /network/status` | Network summary |
+| `GET /network/geo` | Agents grouped by country |
+| `GET /docs` | Swagger UI (interactive playground) |
+| `GET /redoc` | ReDoc API documentation |
+
+## Obtaining a key
+
+Contact [support@55-tech.com](mailto:support@55-tech.com) to obtain an API key with a rate limit configured for your use case.
+
+
+---
+## Scraping API Quickstart
+Source: /scraping-api/quickstart
+---
+
+## Step 1: Check the network
+
+See which agents are available (no auth required):
+
+```bash
+curl https://scraping-api.55-tech.com/network/status
+```
+
+```json
+{
+  "total_agents": 62,
+  "total_countries": 15,
+  "agents_by_country": {
+    "DE": 20,
+    "AT": 22,
+    "US": 7,
+    "UK": 5,
+    "IT": 5,
+    "AU": 3,
+    "GR": 3,
+    "FR": 2,
+    "ES": 2,
+    "BR": 1
+  }
+}
+```
+
+## Step 2: Make an HTTP GET request
+
+Fetch a URL through the agent network using the `X-Target-URL` header (recommended for URLs with query parameters — no encoding needed):
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+Or using the `url` query parameter:
+
+```bash
+curl "https://scraping-api.55-tech.com/fetch?url=https://httpbin.org/ip&apiKey=YOUR_API_KEY"
+```
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://httpbin.org/ip",
+    "http_version": "HTTP/2",
+    "elapsed_ms": 312,
+    "blocked": false,
+    "headers": { "content-type": "application/json" },
+    "agent": { "id": "scraping-de5" },
+    "bytes": 32
+  },
+  "raw": null,
+  "raw_json": {
+    "origin": "188.68.36.26"
+  }
+}
+```
+
+The `origin` IP is the agent's IP, not yours. JSON responses are automatically parsed into `raw_json`.
+
+## Step 3: POST with a custom body and headers
+
+Use `POST /fetch` with a JSON body to send custom headers, body, and method to the target:
+
+```bash
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://httpbin.org/post",
+    "headers": {
+      "Authorization": "Bearer my-token",
+      "Accept": "application/json"
+    },
+    "body": "{\"key\": \"value\"}",
+    "timeout": 30
+  }' \
+  https://scraping-api.55-tech.com/fetch
+```
+
+**POST body fields:**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `url` | Yes (or use `X-Target-URL` header) | — | Target URL |
+| `method` | No | Matches request method | Override HTTP method |
+| `headers` | No | `{}` | Custom headers sent to the target origin |
+| `body` | No | `""` | Request body sent to the target |
+| `timeout` | No | `30` | Request timeout in seconds |
+| `allow_redirects` | No | `true` | Follow redirects |
+
+## Step 4: Target a specific country
+
+Use `X-Geo` to route through agents in specific countries:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Geo: US" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+Pin to a specific agent with `X-Agent`:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Agent: de1" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+Or pick randomly from a set of agents:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Agent: de1,at5,us3" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+## Step 5: Check domain health
+
+See which agents can reach a specific domain:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/network/health/example.com
+```
+
+```json
+{
+  "domain": "example.com",
+  "agents_checked": 62,
+  "healthy": 58,
+  "soft_blocked": 2,
+  "hard_blocked": 2,
+  "details": [
+    {
+      "agent_id": "scraping-de1",
+      "slug": "de1",
+      "state": "healthy",
+      "rtt_ms": 145,
+      "last_check": "2026-03-13T22:15:00Z"
+    }
+  ]
+}
+```
+
+## Step 6: Preview agent selection
+
+Debug which agent would be picked without making the actual request:
+
+```bash
+curl "https://scraping-api.55-tech.com/debug/pick?url=https://example.com" \
+  -H "X-Geo: US"
+```
+
+```json
+{
+  "node_id": "scraping-us3",
+  "node_slug": "us3",
+  "country": "US",
+  "valid_until_epoch_ms": 1710374100000
+}
+```
+
+## Step 7: Check your usage
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+```json
+{
+  "api_key": "YOUR_KEY",
+  "total": 15243,
+  "success": 14821,
+  "fail": 422,
+  "success_rate": 97.2,
+  "bytes_transferred": 1847362541,
+  "rate_limit": {
+    "rps": 10.0,
+    "burst": 10,
+    "remaining": 9.3
+  },
+  "by_protocol": {
+    "fetch": 14200,
+    "ws": 923,
+    "amqp": 120
+  },
+  "top_domains": [
+    { "domain": "example.com", "requests": 4521 }
+  ]
+}
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket & AMQP" icon="bolt" href="/scraping-api/websocket">
+    Relay WebSocket connections and consume AMQP streams.
+  </Card>
+
+  <Card title="Error handling" icon="triangle-exclamation" href="/scraping-api/errors">
+    Status codes, block detection, and retry strategies.
+  </Card>
+</Columns>
+
+
+---
+## Scraping API WebSocket & AMQP
+Source: /scraping-api/websocket
+---
+
+## WebSocket relay
+
+The Scraping API can relay bidirectional WebSocket connections through the agent network. The agent connects to the target using `curl_cffi AsyncWebSocket` with TLS fingerprinting on the upgrade request, so the target sees a real browser handshake. All WS sub-protocols are relayed transparently — Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WebSocket, etc.
+
+### Endpoint
+
+```
+wss://scraping-api.55-tech.com/ws
+```
+
+### Connection flow
+
+<Steps>
+  <Step title="Connect to the gateway">
+    Open a WebSocket connection to `wss://scraping-api.55-tech.com/ws`. No authentication happens at connection time — the gateway accepts immediately.
+  </Step>
+  <Step title="Send connect message (within 10 seconds)">
+    Send a JSON message specifying the target URL and your API key. You have **10 seconds** to send this message before the connection is closed with code `1008`.
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "wss://target.example.com/stream",
+  "headers": { "Authorization": "Bearer token" },
+  "cookies": { "session": "abc123" },
+  "geo": "US,DE",
+  "agent": "de1",
+  "idle_timeout": 0
+}
+```
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | Yes | — | Your API key (also accepts `key`) |
+| `url` | string | Yes | — | Target WebSocket URL (`wss://...` or `ws://...`) |
+| `headers` | object | No | `{}` | Custom headers for the WS upgrade request |
+| `cookies` | object | No | `{}` | Cookies to send with the WS upgrade request |
+| `geo` | string | No | — | Country filter for agent selection (e.g., `US,DE`) |
+| `agent` | string | No | — | Pin to specific agent(s) by slug (e.g., `de1` or `de1,at5`) |
+| `idle_timeout` | float | No | `0` | Seconds to wait for a target message before disconnect. `0` = no timeout |
+  </Step>
+  <Step title="Receive connected confirmation">
+    The gateway picks an agent via the scheduler, the agent connects to the target WebSocket with TLS fingerprinting, and the gateway responds with:
+
+```json
+{
+  "type": "connected",
+  "status": 101,
+  "node_id": "scraping-de1"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Always `"connected"` |
+| `status` | HTTP status of the WS upgrade (101) |
+| `node_id` | Proxy node handling the connection |
+  </Step>
+  <Step title="Relay frames bidirectionally">
+    After connection, all text and binary frames are relayed transparently:
+    - **Client → target**: Your messages are forwarded to the target as-is
+    - **Target → client**: Target messages are forwarded to you as-is
+    - **Close frame**: Triggers graceful shutdown on both sides
+    - **PONG frames**: From target are forwarded to client
+  </Step>
+</Steps>
+
+### Error responses
+
+If something goes wrong, the gateway sends:
+
+```json
+{
+  "type": "error",
+  "message": "description of what went wrong"
+}
+```
+
+Common errors:
+- Invalid or missing API key (close code `1008`)
+- Rate limit exceeded (close code `1008`)
+- Connect message not received within 10 seconds (close code `1008`)
+- Target connection failed
+- Agent unavailable
+
+### Example: Python
+
+```python
+import asyncio
+import json
+import websockets
+
+async def relay():
+    async with websockets.connect("wss://scraping-api.55-tech.com/ws") as ws:
+        # 1. Send connect message
+        await ws.send(json.dumps({
+            "apiKey": "YOUR_API_KEY",
+            "url": "wss://echo.websocket.events",
+            "geo": "DE"
+        }))
+
+        # 2. Wait for connected confirmation
+        resp = json.loads(await ws.recv())
+        if resp.get("type") == "error":
+            print(f"Error: {resp['message']}")
+            return
+        assert resp["type"] == "connected"
+        print(f"Connected via {resp['node_id']}")
+
+        # 3. Send and receive frames
+        await ws.send("hello from scraping api")
+        async for msg in ws:
+            print(f"Received: {msg}")
+
+asyncio.run(relay())
+```
+
+### Example: JavaScript
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://scraping-api.55-tech.com/ws');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    apiKey: 'YOUR_API_KEY',
+    url: 'wss://echo.websocket.events',
+    geo: 'DE'
+  }));
+});
+
+let connected = false;
+ws.on('message', (raw) => {
+  if (!connected) {
+    const msg = JSON.parse(raw.toString());
+    if (msg.type === 'connected') {
+      console.log(`Connected via ${msg.node_id}`);
+      connected = true;
+      ws.send('hello from scraping api');
+    } else if (msg.type === 'error') {
+      console.error(`Error: ${msg.message}`);
+    }
+    return;
+  }
+  // After connected, frames are relayed transparently
+  console.log('Received:', raw.toString());
+});
+```
+
+### Supported sub-protocols
+
+All sub-protocols are relayed transparently — no special configuration needed:
+
+- Raw WebSocket (text/binary)
+- Socket.IO (engine.io transport)
+- SignalR (JSON + `\x1e` delimiter)
+- Centrifugo (JSON-RPC)
+- GraphQL-WS subscriptions
+
+---
+
+## AMQP consumer (SSE)
+
+Stream messages from a RabbitMQ broker through the agent network, delivered as Server-Sent Events. The agent connects to the broker using `aio-pika`, creates a temporary auto-delete queue, binds it to the specified exchange, and streams messages back.
+
+### Endpoint
+
+```
+POST https://scraping-api.55-tech.com/amqp
+```
+
+### Request body
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "host": "broker.example.com",
+  "port": 5671,
+  "virtual_host": "/",
+  "username": "user",
+  "password": "pass",
+  "exchange": "my_exchange",
+  "routing_key": "#",
+  "queue_prefix": "scrape",
+  "ssl": true,
+  "heartbeat": 60,
+  "geo": "DE",
+  "agent": "de1"
+}
+```
+
+Authentication can also be provided via the `X-API-Key` header instead of the `apiKey` body field.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | Yes | — | Your API key (or use `X-API-Key` header) |
+| `host` | string | Yes | — | AMQP broker hostname |
+| `port` | int | No | `5672` | Broker port (use `5671` for SSL) |
+| `virtual_host` | string | No | `/` | AMQP virtual host |
+| `username` | string | No | `""` | Broker username |
+| `password` | string | No | `""` | Broker password |
+| `exchange` | string | No | `""` | Exchange to bind to |
+| `routing_key` | string | No | `#` | Routing key pattern (`#` = all messages) |
+| `queue_prefix` | string | No | `scrape` | Prefix for the auto-delete queue name (e.g., `scrape_de1_4821`) |
+| `ssl` | bool | No | `false` | Use AMQPS (TLS) connection |
+| `heartbeat` | int | No | `60` | AMQP heartbeat interval in seconds |
+| `geo` | string | No | — | Country filter for agent selection |
+| `agent` | string | No | — | Pin to specific agent by slug |
+
+### SSE events
+
+**`connected`** — Agent connected to broker, queue created and bound:
+
+```
+event: connected
+data: {"agent_id": "scraping-de1", "queue_name": "scrape_de1_4821"}
+```
+
+**`message`** — Message received from queue:
+
+```
+event: message
+data: {"body": "{\"odds\": 1.95}", "routing_key": "19454.match.123", "exchange": "19454.all", "delivery_tag": 1, "content_type": "application/json"}
+```
+
+**`error`** — Connection or consumption error (stream ends):
+
+```
+event: error
+data: {"message": "agent error: connection refused", "code": 1011}
+```
+
+### Example: curl
+
+```bash
+curl -N -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{
+    "host": "broker.example.com",
+    "port": 5671,
+    "ssl": true,
+    "username": "user",
+    "password": "pass",
+    "exchange": "my_exchange",
+    "routing_key": "#"
+  }' \
+  https://scraping-api.55-tech.com/amqp
+```
+
+### Example: Python
+
+```python
+import requests
+import json
+
+resp = requests.post(
+    "https://scraping-api.55-tech.com/amqp",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={
+        "host": "broker.example.com",
+        "port": 5671,
+        "ssl": True,
+        "username": "user",
+        "password": "pass",
+        "exchange": "my_exchange",
+        "routing_key": "#",
+    },
+    stream=True,
+)
+
+for line in resp.iter_lines():
+    if line.startswith(b"data: "):
+        event = json.loads(line[6:])
+        print(event)
+```
+
+
+---
+## WebSocket Protocol Reference
+Source: /scraping-api/ws-reference
+---
+
+## Protocol overview
+
+The WebSocket relay at `wss://scraping-api.55-tech.com/ws` provides a bidirectional proxy. You connect to the gateway, send a JSON connect message, and the gateway relays all frames between you and the target through a TLS-fingerprinted agent.
+
+```
+Client ←→ Gateway (wss://.../ws) ←→ Agent (gRPC WsRelay) ←→ Target WebSocket
+```
+
+## Interactive playground
+
+The API includes a built-in Swagger UI with WebSocket documentation:
+
+```
+https://scraping-api.55-tech.com/docs
+```
+
+The `/ws/docs` endpoint returns the protocol schema:
+
+```bash
+curl https://scraping-api.55-tech.com/ws/docs
+```
+
+```json
+{
+  "type": "connected",
+  "status": 101,
+  "node_id": "scraping-de1",
+  "message": "This is a documentation endpoint. Connect via WebSocket at wss://scraping-api.55-tech.com/ws"
+}
+```
+
+For interactive WebSocket testing, use `wscat`:
+
+```bash
+npm install -g wscat
+wscat -c wss://scraping-api.55-tech.com/ws
+```
+
+Then paste:
+```json
+{"apiKey":"YOUR_API_KEY","url":"wss://echo.websocket.events"}
+```
+
+## Connect message (client → gateway)
+
+Must be sent as JSON text within **10 seconds** of connecting.
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "wss://target.example.com/stream",
+  "headers": {
+    "Authorization": "Bearer token",
+    "Origin": "https://target.example.com"
+  },
+  "cookies": {
+    "session": "abc123"
+  },
+  "geo": "US,DE",
+  "agent": "de1",
+  "idle_timeout": 0
+}
+```
+
+### Fields
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | **Yes** | — | API key for authentication. `key` is also accepted. |
+| `url` | string | **Yes** | — | Target WebSocket URL (`wss://...` or `ws://...`) |
+| `headers` | object | No | `{}` | Custom headers sent with the WS upgrade request to the target. Useful for `Authorization`, `Origin`, `Cookie` headers that the target expects. |
+| `cookies` | object | No | `{}` | Cookies sent with the WS upgrade request. Merged into the `Cookie` header. |
+| `geo` | string | No | — | Restrict agent selection to specific countries. Comma-separated ISO codes (e.g. `US,DE,AT`). |
+| `agent` | string | No | — | Pin to specific agent(s) by slug (e.g. `de1`) or comma-separated for random pick (`de1,at5,us3`). |
+| `idle_timeout` | float | No | `0` | If > 0, disconnect after this many seconds without receiving a message from the target. `0` = no idle timeout. |
+
+## Response messages (gateway → client)
+
+### Connected
+
+Sent once after the agent successfully connects to the target WebSocket.
+
+```json
+{
+  "type": "connected",
+  "status": 101,
+  "node_id": "scraping-de1"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Always `"connected"` |
+| `status` | int | HTTP status code of the WS upgrade. `101` = success. |
+| `node_id` | string | Proxy node handling the relay (e.g. `scraping-de1`) |
+
+### Error
+
+Sent when connection fails or an error occurs. The WebSocket is closed after this message.
+
+```json
+{
+  "type": "error",
+  "message": "Invalid or missing API key"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Always `"error"` |
+| `message` | string | Human-readable error description |
+
+### Relayed frames
+
+After the `connected` message, all subsequent frames are raw relay — no JSON wrapping. Text frames stay text, binary frames stay binary.
+
+## Close codes
+
+| Code | Meaning |
+|------|---------|
+| `1000` | Normal closure (you or target closed) |
+| `1008` | Policy violation — invalid API key, rate limited, or connect timeout |
+| `1011` | Internal error — agent failure or target unreachable |
+
+## Error scenarios
+
+| Scenario | What happens |
+|----------|-------------|
+| No connect message within 10s | Gateway closes with code `1008` |
+| Invalid API key | Gateway sends error JSON, closes with `1008` |
+| Rate limit exceeded | Gateway sends error JSON, closes with `1008` |
+| Target connection refused | Gateway sends error JSON, closes with `1011` |
+| No agent available | Gateway sends error JSON, closes with `1011` |
+| Target closes connection | Gateway forwards the close frame with target's code and reason |
+| Client closes connection | Gateway forwards close to target, cleans up |
+| Agent crashes mid-relay | Gateway closes with `1011` |
+
+## Frame flow diagram
+
+```
+Time →
+
+Client                 Gateway                Agent                  Target
+  │                      │                      │                      │
+  │──── WS connect ─────▶│                      │                      │
+  │◀── accept ───────────│                      │                      │
+  │                      │                      │                      │
+  │──── {"apiKey":...} ─▶│                      │                      │
+  │                      │── gRPC WsRelay ─────▶│                      │
+  │                      │                      │── WS upgrade ───────▶│
+  │                      │                      │◀── 101 Switching ────│
+  │                      │◀── connected ────────│                      │
+  │◀── {"type":"connected"}│                    │                      │
+  │                      │                      │                      │
+  │──── text frame ─────▶│── relay ────────────▶│── relay ────────────▶│
+  │◀── text frame ───────│◀── relay ────────────│◀── relay ────────────│
+  │                      │                      │                      │
+  │──── close ──────────▶│── close ────────────▶│── close ────────────▶│
+  │◀── close ────────────│◀── close ────────────│◀── close ────────────│
+```
+
+## Rate limiting
+
+WebSocket connections consume **1 token** from your rate limit bucket on connect (when the connect message is validated). Subsequent frames do not consume tokens. If your bucket is empty, the gateway sends an error and closes with `1008`.
+
+## Testing with wscat
+
+```bash
+# Install
+npm install -g wscat
+
+# Connect
+wscat -c wss://scraping-api.55-tech.com/ws
+
+# Paste connect message:
+{"apiKey":"YOUR_KEY","url":"wss://echo.websocket.events"}
+
+# After "connected" response, type messages to relay:
+hello world
+
+# The echo server will send back your message
+```
+
+## Testing with Python
+
+```python
+import asyncio
+import json
+import websockets
+
+async def test():
+    async with websockets.connect("wss://scraping-api.55-tech.com/ws") as ws:
+        await ws.send(json.dumps({
+            "apiKey": "YOUR_API_KEY",
+            "url": "wss://echo.websocket.events",
+        }))
+
+        resp = json.loads(await ws.recv())
+        print(f"Status: {resp}")
+
+        if resp["type"] == "connected":
+            await ws.send("test message")
+            reply = await ws.recv()
+            print(f"Echo: {reply}")
+
+asyncio.run(test())
+```
+
+
+---
+## Scraping API Error Handling
+Source: /scraping-api/errors
+---
+
+## Error response format
+
+All API errors return JSON:
+
+```json
+{
+  "detail": "Invalid or missing API key"
+}
+```
+
+## HTTP status codes
+
+| Status | Description |
+|--------|-------------|
+| `200` | Success — origin response proxied (check `meta.blocked` for block detection) |
+| `401` | Unauthorized — missing or invalid API key |
+| `429` | Rate limited — token bucket exhausted. Headers include `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` |
+| `502` | Bad gateway — scheduler or agent error (e.g. all agents blocked for this domain) |
+| `504` | Gateway timeout — agent did not respond within timeout (default 30s) |
+
+## Block detection
+
+The Scraping API detects blocking at two levels:
+
+### Status-based detection
+
+| Origin status | Classification | Cooldown |
+|---------------|----------------|----------|
+| 429, 503, 5xx | `soft_block` | 60 seconds |
+| 401, 403, 405, timeout | `hard_block` | 20 minutes |
+| 200–399 | `healthy` | — |
+
+### Content-based detection
+
+The response body is scanned for patterns indicating bot detection:
+
+- `captcha`, `recaptcha`, `hcaptcha`
+- `access denied`, `forbidden`
+- `verify you are human`
+- `datadome`, `akamai`, `cloudflare`
+- `bot detect`, `no service`
+
+When patterns match, the response's `meta.blocked` field is `true` and the agent enters cooldown for that domain.
+
+## meta.blocked field
+
+Every fetch response includes `meta.blocked`:
+
+```json
+{
+  "meta": {
+    "status": 403,
+    "blocked": true,
+    "agent": { "id": "scraping-de5" }
+  },
+  "raw": "<html>Access Denied...</html>"
+}
+```
+
+When `blocked` is `true`:
+- The agent is placed in cooldown for this domain
+- Subsequent requests will route to a different agent automatically
+- The response still contains the full origin body for inspection
+
+## Agent health states
+
+Each agent tracks health **per domain**:
+
+| State | Meaning | Cooldown | Auto-recovery |
+|-------|---------|----------|---------------|
+| `healthy` | Agent can fetch this domain | — | — |
+| `soft_block` | Rate limited (429/503/5xx) | 60 seconds | Automatic after cooldown |
+| `hard_block` | Blocked (403/captcha/timeout) | 20 minutes | Automatic after cooldown |
+
+Cooldowns are shared across all gateway workers via Redis, so when one worker cools an agent, all other workers see it immediately.
+
+Check domain health:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/network/health/example.com
+```
+
+## Retry strategies
+
+### Rate limit (429)
+
+Use exponential backoff: wait 1s, 2s, 4s, etc. Check `GET /usage` for your current token count and rate limit configuration.
+
+### Blocked (meta.blocked = true)
+
+No client-side retry logic needed. The scheduler automatically routes your next request to a different, healthy agent. Just keep making requests normally.
+
+### Timeout (504)
+
+- Increase the `timeout` field in your POST body (default: 30 seconds)
+- If the target is consistently slow, pin to agents with lower RTT using `X-Geo` to pick agents closer to the target
+- Use `GET /debug/pick?url=...` to see which agent would be selected
+
+### All agents blocked (502)
+
+If all agents for a domain are in cooldown, the scheduler returns `502`. Wait for cooldowns to expire (60s for soft, 20min for hard) or use `GET /network/health/{domain}` to check which agents have recovered.
+
+## WebSocket errors
+
+| Error | Cause | Close code |
+|-------|-------|------------|
+| Invalid API key | Missing or unrecognized key in connect message | `1008` |
+| Rate limit exceeded | Token bucket exhausted | `1008` |
+| Connect timeout | No JSON connect message within 10 seconds | `1008` |
+| Target connection failed | Agent could not connect to target WS | `1011` |
+| Agent unavailable | No agent available for the request | `1011` |
+
+## AMQP errors
+
+AMQP errors are delivered as SSE events:
+
+```
+event: error
+data: {"message": "agent error: connection refused", "code": 1011}
+```
+
+After an error event, the SSE stream closes.
+
+## Common errors
+
+### Missing target URL
+
+```bash
+# Wrong: no URL specified
+curl -H "X-API-Key: YOUR_KEY" https://scraping-api.55-tech.com/fetch
+
+# Right: URL in header (recommended)
+curl -H "X-API-Key: YOUR_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+
+# Right: URL in query param
+curl "https://scraping-api.55-tech.com/fetch?url=https://example.com&apiKey=YOUR_KEY"
+```
+
+### Invalid geo code
+
+```bash
+# Wrong: full country name
+-H "X-Geo: Germany"
+
+# Right: ISO 2-char code
+-H "X-Geo: DE"
+```
+
+### WebSocket connect timeout
+
+The first JSON message with `apiKey` and `url` must be sent within **10 seconds** of opening the WebSocket connection, or it will be closed with code `1008`.
 
 
 ---
@@ -5418,6 +6620,764 @@ Source: /mm-api/openapi.json
       "name": "WebSocket",
       "description": "Real-time data subscriptions for orders, bets, accounts, and scores."
     }
+  ]
+}
+```
+
+
+---
+## OpenAPI (REST Reference)
+Source: /scraping-api/openapi.json
+---
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "55 Tech Scraping API",
+    "description": "Distributed fetch network. Route HTTP, WebSocket, and AMQP requests through 60+ geo-distributed agents with TLS fingerprinting and health-aware routing.",
+    "version": "2.1.0",
+    "contact": {
+      "name": "55 Tech Support",
+      "email": "support@55-tech.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://scraping-api.55-tech.com",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyHeader": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key passed in the X-API-Key header."
+      },
+      "ApiKeyQuery": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "apiKey",
+        "description": "API key passed as the apiKey query parameter."
+      }
+    },
+    "schemas": {
+      "MetaInfo": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code from the origin."
+          },
+          "final_url": {
+            "type": "string",
+            "description": "Final URL after any redirects."
+          },
+          "http_version": {
+            "type": "string",
+            "description": "HTTP version used (e.g. HTTP/2)."
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "description": "Round-trip time in milliseconds."
+          },
+          "blocked": {
+            "type": "boolean",
+            "description": "true if bot detection patterns were found in the response."
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Response headers from the origin."
+          },
+          "agent": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Node ID that served the request, e.g. scraping-de1."
+              }
+            }
+          },
+          "bytes": {
+            "type": "integer",
+            "description": "Response body size in bytes."
+          }
+        }
+      },
+      "FetchResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaInfo"
+          },
+          "raw": {
+            "type": "string",
+            "nullable": true,
+            "description": "Response body as text (when not JSON)."
+          },
+          "raw_json": {
+            "nullable": true,
+            "description": "Parsed JSON body (when response is valid JSON, otherwise null)."
+          }
+        }
+      },
+      "FetchPostBody": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Target URL. Alternative to X-Target-URL header or url query param."
+          },
+          "method": {
+            "type": "string",
+            "description": "Override HTTP method (e.g. POST, PUT). Defaults to the request's own method."
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Custom headers to send to the target origin."
+          },
+          "body": {
+            "type": "string",
+            "description": "Request body to send to the target origin."
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Request timeout in seconds. Default: 30."
+          },
+          "allow_redirects": {
+            "type": "boolean",
+            "description": "Follow redirects. Default: true."
+          }
+        }
+      },
+      "AmqpConsumeBody": {
+        "type": "object",
+        "required": ["apiKey", "host"],
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "description": "API key for authentication."
+          },
+          "host": {
+            "type": "string",
+            "description": "AMQP broker hostname."
+          },
+          "port": {
+            "type": "integer",
+            "default": 5672,
+            "description": "Broker port. Use 5671 for SSL."
+          },
+          "virtual_host": {
+            "type": "string",
+            "default": "/",
+            "description": "AMQP virtual host."
+          },
+          "username": {
+            "type": "string",
+            "default": "",
+            "description": "AMQP username."
+          },
+          "password": {
+            "type": "string",
+            "default": "",
+            "description": "AMQP password."
+          },
+          "exchange": {
+            "type": "string",
+            "default": "",
+            "description": "Exchange to bind to."
+          },
+          "routing_key": {
+            "type": "string",
+            "default": "#",
+            "description": "Routing key pattern (# = all messages)."
+          },
+          "queue_prefix": {
+            "type": "string",
+            "default": "scrape",
+            "description": "Prefix for the auto-delete queue name."
+          },
+          "ssl": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use AMQPS (TLS) connection."
+          },
+          "heartbeat": {
+            "type": "integer",
+            "default": 60,
+            "description": "AMQP heartbeat interval in seconds."
+          },
+          "geo": {
+            "type": "string",
+            "description": "Country filter for agent selection (e.g. DE)."
+          },
+          "agent": {
+            "type": "string",
+            "description": "Pin to specific agent by slug (e.g. de1)."
+          }
+        }
+      },
+      "UsageResponse": {
+        "type": "object",
+        "properties": {
+          "api_key": { "type": "string" },
+          "total": { "type": "integer", "description": "Total requests across all protocols." },
+          "success": { "type": "integer", "description": "Successful requests." },
+          "fail": { "type": "integer", "description": "Failed requests." },
+          "success_rate": { "type": "number", "description": "Success percentage (0-100)." },
+          "bytes_transferred": { "type": "integer", "description": "Total response bytes (HTTP fetch only)." },
+          "rate_limit": {
+            "type": "object",
+            "properties": {
+              "rps": { "type": "number", "description": "Allowed requests per second." },
+              "burst": { "type": "integer", "description": "Burst capacity." },
+              "remaining": { "type": "number", "description": "Available tokens now." }
+            }
+          },
+          "by_protocol": {
+            "type": "object",
+            "properties": {
+              "fetch": { "type": "integer" },
+              "ws": { "type": "integer" },
+              "amqp": { "type": "integer" }
+            }
+          },
+          "top_domains": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "domain": { "type": "string" },
+                "requests": { "type": "integer" }
+              }
+            },
+            "description": "Top 20 domains by request count."
+          }
+        }
+      },
+      "AgentListResponse": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "agents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "slug": { "type": "string", "description": "Agent slug, e.g. de1." },
+                "name": { "type": "string", "description": "Full agent name, e.g. scraping-de1." },
+                "country": { "type": "string", "description": "ISO country code." }
+              }
+            }
+          }
+        }
+      },
+      "NetworkStatusResponse": {
+        "type": "object",
+        "properties": {
+          "total_agents": { "type": "integer" },
+          "total_countries": { "type": "integer" },
+          "agents_by_country": {
+            "type": "object",
+            "additionalProperties": { "type": "integer" },
+            "description": "Agent count per ISO country code."
+          }
+        }
+      },
+      "NetworkGeoResponse": {
+        "type": "object",
+        "properties": {
+          "total_agents": { "type": "integer" },
+          "total_countries": { "type": "integer" },
+          "countries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "country": { "type": "string" },
+                "count": { "type": "integer" },
+                "agents": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DomainHealthResponse": {
+        "type": "object",
+        "properties": {
+          "domain": { "type": "string" },
+          "agents_checked": { "type": "integer" },
+          "healthy": { "type": "integer" },
+          "soft_blocked": { "type": "integer" },
+          "hard_blocked": { "type": "integer" },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "agent_id": { "type": "string" },
+                "slug": { "type": "string" },
+                "state": { "type": "string", "enum": ["healthy", "soft_block", "hard_block"] },
+                "rtt_ms": { "type": "integer" },
+                "last_check": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      },
+      "DebugPickResponse": {
+        "type": "object",
+        "properties": {
+          "node_id": { "type": "string", "description": "Selected proxy node name." },
+          "node_slug": { "type": "string", "description": "Short node slug (e.g. de1)." },
+          "country": { "type": "string", "description": "Node country code." },
+          "valid_until_epoch_ms": { "type": "integer", "description": "How long this selection is cached (epoch ms)." }
+        }
+      },
+      "HealthzResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "parameters": {
+      "XTargetURL": {
+        "name": "X-Target-URL",
+        "in": "header",
+        "description": "Target URL (no encoding needed). Recommended for URLs with query parameters.",
+        "schema": { "type": "string" }
+      },
+      "XGeo": {
+        "name": "X-Geo",
+        "in": "header",
+        "description": "Target countries as comma-separated ISO codes (e.g. US,DE,AT). Aliases: X-Geo-CC, X-CC, X-Country, X-Geo-Strict.",
+        "schema": { "type": "string" }
+      },
+      "XExpectJSON": {
+        "name": "X-Expect-JSON",
+        "in": "header",
+        "description": "Set to 1 if expecting a JSON response from the origin.",
+        "schema": { "type": "string" }
+      },
+      "XAgent": {
+        "name": "X-Agent",
+        "in": "header",
+        "description": "Route through specific agent(s) by slug (e.g. de1), full name (scraping-de1), ip:port, or comma-separated list for random pick.",
+        "schema": { "type": "string" }
+      }
+    }
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "healthz",
+        "summary": "Health check",
+        "description": "Liveness probe. Returns {\"ok\": true}.",
+        "tags": ["System"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthzResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fetch": {
+      "get": {
+        "operationId": "fetch_get",
+        "summary": "Fetch a URL (GET)",
+        "description": "Send a GET request to the target URL through the agent network. The target URL can be passed via the X-Target-URL header (recommended), the url query parameter, or the u query parameter.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XExpectJSON" },
+          { "$ref": "#/components/parameters/XAgent" },
+          {
+            "name": "url",
+            "in": "query",
+            "description": "Target URL (must be URL-encoded if it contains query parameters).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "description": "Request timeout in seconds. Default: 30.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "agent",
+            "in": "query",
+            "description": "Pin to specific agent by slug (e.g. de1).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": { "schema": { "type": "string" }, "description": "Seconds to wait." },
+              "X-RateLimit-Limit": { "schema": { "type": "string" }, "description": "Allowed RPS." },
+              "X-RateLimit-Remaining": { "schema": { "type": "string" }, "description": "Remaining tokens." }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "502": {
+            "description": "Scheduler or agent error.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "504": {
+            "description": "Agent timeout.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "fetch_post",
+        "summary": "Fetch a URL (POST)",
+        "description": "Send a request to the target URL through the agent network. Pass a JSON body with url, method, headers, body, timeout, and allow_redirects fields. The target URL can also be set via the X-Target-URL header.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XExpectJSON" },
+          { "$ref": "#/components/parameters/XAgent" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FetchPostBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." },
+          "502": { "description": "Scheduler or agent error." },
+          "504": { "description": "Agent timeout." }
+        }
+      },
+      "put": {
+        "operationId": "fetch_put",
+        "summary": "Fetch a URL (PUT)",
+        "description": "Send a PUT request to the target URL through the agent network.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FetchPostBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." }
+        }
+      },
+      "patch": {
+        "operationId": "fetch_patch",
+        "summary": "Fetch a URL (PATCH)",
+        "description": "Send a PATCH request to the target URL through the agent network.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FetchPostBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." }
+        }
+      },
+      "delete": {
+        "operationId": "fetch_delete",
+        "summary": "Fetch a URL (DELETE)",
+        "description": "Send a DELETE request to the target URL through the agent network.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" },
+          {
+            "name": "url",
+            "in": "query",
+            "description": "Target URL.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." }
+        }
+      }
+    },
+    "/amqp": {
+      "post": {
+        "operationId": "amqp_consume",
+        "summary": "AMQP consumer relay (SSE)",
+        "description": "Connect to an AMQP/RabbitMQ broker through an agent and stream messages as Server-Sent Events. The agent creates a temporary auto-delete queue, binds it to the specified exchange, and streams messages back as SSE events (connected, message, error).",
+        "tags": ["AMQP"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AmqpConsumeBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of AMQP messages. Events: connected, message, error.",
+            "content": {
+              "text/event-stream": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." },
+          "502": { "description": "Scheduler or agent error." }
+        }
+      }
+    },
+    "/usage": {
+      "get": {
+        "operationId": "get_usage",
+        "summary": "Usage metrics",
+        "description": "Per-key usage metrics: request counts, success/fail rates, bytes transferred, protocol breakdown, and top domains.",
+        "tags": ["Usage"],
+        "responses": {
+          "200": {
+            "description": "Usage metrics for the authenticated API key.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsageResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." }
+        }
+      }
+    },
+    "/network/agents": {
+      "get": {
+        "operationId": "list_agents",
+        "summary": "List all agents",
+        "description": "Returns the full agent registry with slug, name, and country for each agent.",
+        "tags": ["Network"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Agent list.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AgentListResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/status": {
+      "get": {
+        "operationId": "network_status",
+        "summary": "Network status",
+        "description": "Summary of total agents and agents per country.",
+        "tags": ["Network"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Network summary.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NetworkStatusResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/geo": {
+      "get": {
+        "operationId": "network_geo",
+        "summary": "Agents by country",
+        "description": "Agents grouped by country with slugs listed for each.",
+        "tags": ["Network"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Agents grouped by country.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NetworkGeoResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/health/{domain}": {
+      "get": {
+        "operationId": "domain_health",
+        "summary": "Domain health",
+        "description": "Per-agent health state for a specific domain. Shows which agents are healthy, soft-blocked, or hard-blocked.",
+        "tags": ["Network"],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "description": "Domain to check (e.g. example.com).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain health report.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DomainHealthResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." }
+        }
+      }
+    },
+    "/debug/pick": {
+      "get": {
+        "operationId": "debug_pick",
+        "summary": "Debug agent selection",
+        "description": "Preview which agent would be selected for a given URL without making the actual request.",
+        "tags": ["Debug"],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "Target URL to simulate agent selection for.",
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XExpectJSON" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Selected agent info.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DebugPickResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Fetch", "description": "Proxy HTTP requests through the agent network." },
+    { "name": "Network", "description": "Agent registry, network status, and domain health." },
+    { "name": "AMQP", "description": "AMQP/RabbitMQ consumer relay via SSE." },
+    { "name": "Usage", "description": "Per-key usage metrics." },
+    { "name": "Debug", "description": "Debug and diagnostic endpoints." },
+    { "name": "System", "description": "Health checks and system endpoints." }
   ]
 }
 ```

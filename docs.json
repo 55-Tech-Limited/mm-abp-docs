@@ -80,6 +80,26 @@
             ]
           },
           {
+            "tab": "Scraping API",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": [
+                  "scraping-api/overview",
+                  "scraping-api/authentication",
+                  "scraping-api/quickstart",
+                  "scraping-api/websocket",
+                  "scraping-api/ws-reference",
+                  "scraping-api/errors"
+                ]
+              },
+              {
+                "group": "Reference",
+                "openapi": "scraping-api/openapi.json"
+              }
+            ]
+          },
+          {
             "tab": "OddsPapi+",
             "href": "https://docs.oddspapi.io/"
           }
@@ -136,6 +156,26 @@
               {
                 "group": "API 参考",
                 "openapi": "zh/mm-api/openapi.json"
+              }
+            ]
+          },
+          {
+            "tab": "Scraping API",
+            "groups": [
+              {
+                "group": "入门",
+                "pages": [
+                  "zh/scraping-api/overview",
+                  "zh/scraping-api/authentication",
+                  "zh/scraping-api/quickstart",
+                  "zh/scraping-api/websocket",
+                  "zh/scraping-api/ws-reference",
+                  "zh/scraping-api/errors"
+                ]
+              },
+              {
+                "group": "API 参考",
+                "openapi": "zh/scraping-api/openapi.json"
               }
             ]
           },

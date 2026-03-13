@@ -113,7 +113,7 @@ function main() {
     `# 55-Tech API Docs — Full Bundle\n` +
     `# Generated from docs.json navigation\n` +
     `# Source: MDX files\n` +
-    `# APIs: ABP (Automated Bet Placing) and MM (Market Making)\n\n`;
+    `# APIs: ABP (Automated Bet Placing), MM (Market Making), and Scraping API\n\n`;
 
   const missing = [];
   let includedCount = 0;
