@@ -12,6 +12,7 @@ description: "为AI工具、LLM和离线使用下载55-Tech API文档。提供TX
 | [`/llms-full.txt`](/llms-full.txt) | TXT | 完整文档包 — 所有指南页面合并 |
 | [`/abp-api/openapi.json`](/abp-api/openapi.json) | JSON | ABP OpenAPI 3.1 规范 — 13个端点，完整模式 |
 | [`/mm-api/openapi.json`](/mm-api/openapi.json) | JSON | MM OpenAPI 3.1 规范 — REST 参考 |
+| [`/scraping-api/openapi.json`](/scraping-api/openapi.json) | JSON | Scraping OpenAPI 3.1 规范 — fetch、WebSocket、AMQP、网络端点 |
 
 ## 包含内容
 
@@ -30,12 +31,22 @@ description: "为AI工具、LLM和离线使用下载55-Tech API文档。提供TX
 - 做市引擎配置和实时价差管理
 - WebSocket驱动的定价更新和订单簿交互
 
+**Scraping API** 文档涵盖：
+
+- **HTTP 抓取** — 通过 60 多个地理分布式代理节点进行 GET/POST/PUT/PATCH/DELETE 请求
+- **WebSocket 中继** — 支持 Socket.IO、SignalR、Centrifugo、GraphQL-WS、原生 WS 的双向帧中继
+- **AMQP 消费者** — 通过 SSE 流式传输 RabbitMQ 消息
+- **网络情报** — 代理节点列表、地理分布、按域名健康检查
+- **使用量与速率限制** — 按密钥的指标、请求分析、热门域名
+
 ## 推荐用法
 
 **支持获取URL的AI助手：**
 
 - `/llms-full.txt` — 最适合"一次性阅读全部内容"（所有指南页面+示例）
-- `/abp-api/openapi.json` — 最适合端点和模式准确性（带类型和示例）
+- `/abp-api/openapi.json` — ABP 端点和模式准确性（带类型和示例）
+- `/mm-api/openapi.json` — MM 端点和模式参考
+- `/scraping-api/openapi.json` — Scraping 端点和模式参考
 
 **复制/粘贴工作流：**
 
@@ -48,9 +59,9 @@ description: "为AI工具、LLM和离线使用下载55-Tech API文档。提供TX
 ## 说明
 
 - `llms-full.txt` 遵循与网站导航相同的顺序
-- WebSocket协议在指南页面中记录；REST端点在OpenAPI规范中
-- ABP 和 MM 文档包含在同一个文件包中
-- 身份验证使用 `x-api-key` 头
+- WebSocket 协议在指南页面中记录；REST 端点在 OpenAPI 规范中
+- 所有三个 API（ABP、MM、Scraping）包含在同一个文件包中
+- 所有 API 通过 `X-API-Key` 请求头进行身份验证
 
 ---
 

@@ -12,6 +12,7 @@ description: "Download 55-Tech API documentation for AI tools, LLMs, and offline
 | [`/llms-full.txt`](/llms-full.txt) | TXT | Full docs bundle — all guide pages concatenated |
 | [`/abp-api/openapi.json`](/abp-api/openapi.json) | JSON | ABP OpenAPI 3.1 spec — 13 endpoints, full schemas |
 | [`/mm-api/openapi.json`](/mm-api/openapi.json) | JSON | MM OpenAPI 3.1 spec — REST reference |
+| [`/scraping-api/openapi.json`](/scraping-api/openapi.json) | JSON | Scraping OpenAPI 3.1 spec — fetch, WebSocket, AMQP, network endpoints |
 
 ## What's included
 
@@ -30,12 +31,22 @@ The **MM API** documentation covers:
 - Market-making engine configuration and real-time spread management
 - WebSocket-driven pricing updates and order book interaction
 
+The **Scraping API** documentation covers:
+
+- **HTTP fetch** — GET/POST/PUT/PATCH/DELETE through 60+ geo-distributed agents
+- **WebSocket relay** — Bidirectional frame relay for Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WS
+- **AMQP consumer** — Stream RabbitMQ messages via SSE
+- **Network intelligence** — Agent listing, geo distribution, per-domain health checks
+- **Usage & rate limits** — Per-key metrics, request analytics, top domains
+
 ## Recommended usage
 
 **For AI assistants that fetch URLs:**
 
 - `/llms-full.txt` — best for "read everything once" (all guide pages + examples)
-- `/abp-api/openapi.json` — best for endpoint + schema accuracy (typed, with examples)
+- `/abp-api/openapi.json` — ABP endpoint + schema accuracy (typed, with examples)
+- `/mm-api/openapi.json` — MM endpoint + schema reference
+- `/scraping-api/openapi.json` — Scraping endpoint + schema reference
 
 **For copy/paste workflows:**
 
@@ -43,14 +54,14 @@ Open `/llms-full.txt` in the browser and paste the contents into your AI tool.
 
 **For code generation:**
 
-Feed the OpenAPI spec to tools like `openapi-generator`, `oapi-codegen`, or Cursor/Copilot for typed client SDK generation.
+Feed the OpenAPI specs to tools like `openapi-generator`, `oapi-codegen`, or Cursor/Copilot for typed client SDK generation.
 
 ## Notes
 
 - `llms-full.txt` follows the same ordering as the site navigation
 - WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs
-- Both ABP and MM documentation are included in a single bundle
-- Authentication uses the `x-api-key` header for ABP and `x-api-key` for MM
+- All three APIs (ABP, MM, Scraping) are included in a single bundle
+- All APIs authenticate via the `X-API-Key` header
 
 ---
 
