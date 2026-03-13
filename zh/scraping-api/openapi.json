@@ -1,0 +1,750 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "55 Tech Scraping API",
+    "description": "Distributed fetch network. Route HTTP, WebSocket, and AMQP requests through 60+ geo-distributed agents with TLS fingerprinting and health-aware routing.",
+    "version": "2.1.0",
+    "contact": {
+      "name": "55 Tech Support",
+      "email": "support@55-tech.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://scraping-api.55-tech.com",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "healthz",
+        "summary": "Health check",
+        "description": "Liveness probe. Returns {\"ok\": true}.",
+        "tags": ["System"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthzResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fetch": {
+      "get": {
+        "operationId": "fetch_get",
+        "summary": "Fetch a URL (GET)",
+        "description": "Send a GET request to the target URL through the agent network. The target URL can be passed via the X-Target-URL header (recommended), the url query parameter, or the u query parameter.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XExpectJSON" },
+          { "$ref": "#/components/parameters/XAgent" },
+          {
+            "name": "url",
+            "in": "query",
+            "description": "Target URL (must be URL-encoded if it contains query parameters).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "description": "Request timeout in seconds. Default: 30.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "agent",
+            "in": "query",
+            "description": "Pin to specific agent by slug (e.g. de1).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": { "schema": { "type": "string" }, "description": "Seconds to wait." },
+              "X-RateLimit-Limit": { "schema": { "type": "string" }, "description": "Allowed RPS." },
+              "X-RateLimit-Remaining": { "schema": { "type": "string" }, "description": "Remaining tokens." }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "502": {
+            "description": "Scheduler or agent error.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "504": {
+            "description": "Agent timeout.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "fetch_post",
+        "summary": "Fetch a URL (POST)",
+        "description": "Send a request to the target URL through the agent network. Pass a JSON body with url, method, headers, body, timeout, and allow_redirects fields. The target URL can also be set via the X-Target-URL header.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XExpectJSON" },
+          { "$ref": "#/components/parameters/XAgent" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FetchPostBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." },
+          "502": { "description": "Scheduler or agent error." },
+          "504": { "description": "Agent timeout." }
+        }
+      },
+      "put": {
+        "operationId": "fetch_put",
+        "summary": "Fetch a URL (PUT)",
+        "description": "Send a PUT request to the target URL through the agent network.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FetchPostBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." }
+        }
+      },
+      "patch": {
+        "operationId": "fetch_patch",
+        "summary": "Fetch a URL (PATCH)",
+        "description": "Send a PATCH request to the target URL through the agent network.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FetchPostBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." }
+        }
+      },
+      "delete": {
+        "operationId": "fetch_delete",
+        "summary": "Fetch a URL (DELETE)",
+        "description": "Send a DELETE request to the target URL through the agent network.",
+        "tags": ["Fetch"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" },
+          {
+            "name": "url",
+            "in": "query",
+            "description": "Target URL.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proxied response from origin.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." }
+        }
+      }
+    },
+    "/amqp": {
+      "post": {
+        "operationId": "amqp_consume",
+        "summary": "AMQP consumer relay (SSE)",
+        "description": "Connect to an AMQP/RabbitMQ broker through an agent and stream messages as Server-Sent Events. The agent creates a temporary auto-delete queue, binds it to the specified exchange, and streams messages back as SSE events (connected, message, error).",
+        "tags": ["AMQP"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AmqpConsumeBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of AMQP messages. Events: connected, message, error.",
+            "content": {
+              "text/event-stream": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." },
+          "429": { "description": "Rate limit exceeded." },
+          "502": { "description": "Scheduler or agent error." }
+        }
+      }
+    },
+    "/usage": {
+      "get": {
+        "operationId": "get_usage",
+        "summary": "Usage metrics",
+        "description": "Per-key usage metrics: request counts, success/fail rates, bytes transferred, protocol breakdown, and top domains.",
+        "tags": ["Usage"],
+        "responses": {
+          "200": {
+            "description": "Usage metrics for the authenticated API key.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsageResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." }
+        }
+      }
+    },
+    "/network/agents": {
+      "get": {
+        "operationId": "list_agents",
+        "summary": "List all agents",
+        "description": "Returns the full agent registry with slug, name, and country for each agent.",
+        "tags": ["Network"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Agent list.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AgentListResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/status": {
+      "get": {
+        "operationId": "network_status",
+        "summary": "Network status",
+        "description": "Summary of total agents and agents per country.",
+        "tags": ["Network"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Network summary.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NetworkStatusResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/geo": {
+      "get": {
+        "operationId": "network_geo",
+        "summary": "Agents by country",
+        "description": "Agents grouped by country with slugs listed for each.",
+        "tags": ["Network"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Agents grouped by country.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NetworkGeoResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/health/{domain}": {
+      "get": {
+        "operationId": "domain_health",
+        "summary": "Domain health",
+        "description": "Per-agent health state for a specific domain. Shows which agents are healthy, soft-blocked, or hard-blocked.",
+        "tags": ["Network"],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "description": "Domain to check (e.g. example.com).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain health report.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DomainHealthResponse" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key." }
+        }
+      }
+    },
+    "/debug/pick": {
+      "get": {
+        "operationId": "debug_pick",
+        "summary": "Debug agent selection",
+        "description": "Preview which agent would be selected for a given URL without making the actual request.",
+        "tags": ["Debug"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "Target URL to simulate agent selection for.",
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XExpectJSON" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Selected agent info.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DebugPickResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key passed in the X-API-Key header."
+      },
+      "ApiKeyQuery": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "apiKey",
+        "description": "API key passed as the apiKey query parameter."
+      }
+    },
+    "schemas": {
+      "MetaInfo": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code from the origin."
+          },
+          "final_url": {
+            "type": "string",
+            "description": "Final URL after any redirects."
+          },
+          "http_version": {
+            "type": "string",
+            "description": "HTTP version used (e.g. HTTP/2)."
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "description": "Round-trip time in milliseconds."
+          },
+          "blocked": {
+            "type": "boolean",
+            "description": "true if bot detection patterns were found in the response."
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Response headers from the origin."
+          },
+          "agent": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Node ID that served the request, e.g. scraping-de1."
+              }
+            }
+          },
+          "bytes": {
+            "type": "integer",
+            "description": "Response body size in bytes."
+          }
+        }
+      },
+      "FetchResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaInfo"
+          },
+          "raw": {
+            "type": "string",
+            "nullable": true,
+            "description": "Response body as text (when not JSON)."
+          },
+          "raw_json": {
+            "nullable": true,
+            "description": "Parsed JSON body (when response is valid JSON, otherwise null)."
+          }
+        }
+      },
+      "FetchPostBody": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Target URL. Alternative to X-Target-URL header or url query param."
+          },
+          "method": {
+            "type": "string",
+            "description": "Override HTTP method (e.g. POST, PUT). Defaults to the request's own method."
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Custom headers to send to the target origin."
+          },
+          "body": {
+            "type": "string",
+            "description": "Request body to send to the target origin."
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Request timeout in seconds. Default: 30."
+          },
+          "allow_redirects": {
+            "type": "boolean",
+            "description": "Follow redirects. Default: true."
+          }
+        }
+      },
+      "AmqpConsumeBody": {
+        "type": "object",
+        "required": ["apiKey", "host"],
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "description": "API key for authentication."
+          },
+          "host": {
+            "type": "string",
+            "description": "AMQP broker hostname."
+          },
+          "port": {
+            "type": "integer",
+            "default": 5672,
+            "description": "Broker port. Use 5671 for SSL."
+          },
+          "virtual_host": {
+            "type": "string",
+            "default": "/",
+            "description": "AMQP virtual host."
+          },
+          "username": {
+            "type": "string",
+            "default": "",
+            "description": "AMQP username."
+          },
+          "password": {
+            "type": "string",
+            "default": "",
+            "description": "AMQP password."
+          },
+          "exchange": {
+            "type": "string",
+            "default": "",
+            "description": "Exchange to bind to."
+          },
+          "routing_key": {
+            "type": "string",
+            "default": "#",
+            "description": "Routing key pattern (# = all messages)."
+          },
+          "queue_prefix": {
+            "type": "string",
+            "default": "scrape",
+            "description": "Prefix for the auto-delete queue name."
+          },
+          "ssl": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use AMQPS (TLS) connection."
+          },
+          "heartbeat": {
+            "type": "integer",
+            "default": 60,
+            "description": "AMQP heartbeat interval in seconds."
+          },
+          "geo": {
+            "type": "string",
+            "description": "Country filter for agent selection (e.g. DE)."
+          },
+          "agent": {
+            "type": "string",
+            "description": "Pin to specific agent by slug (e.g. de1)."
+          }
+        }
+      },
+      "UsageResponse": {
+        "type": "object",
+        "properties": {
+          "api_key": { "type": "string" },
+          "total": { "type": "integer", "description": "Total requests across all protocols." },
+          "success": { "type": "integer", "description": "Successful requests." },
+          "fail": { "type": "integer", "description": "Failed requests." },
+          "success_rate": { "type": "number", "description": "Success percentage (0-100)." },
+          "bytes_transferred": { "type": "integer", "description": "Total response bytes (HTTP fetch only)." },
+          "rate_limit": {
+            "type": "object",
+            "properties": {
+              "rps": { "type": "number", "description": "Allowed requests per second." },
+              "burst": { "type": "integer", "description": "Burst capacity." },
+              "remaining": { "type": "number", "description": "Available tokens now." }
+            }
+          },
+          "by_protocol": {
+            "type": "object",
+            "properties": {
+              "fetch": { "type": "integer" },
+              "ws": { "type": "integer" },
+              "amqp": { "type": "integer" }
+            }
+          },
+          "top_domains": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "domain": { "type": "string" },
+                "requests": { "type": "integer" }
+              }
+            },
+            "description": "Top 20 domains by request count."
+          }
+        }
+      },
+      "AgentListResponse": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "agents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "slug": { "type": "string", "description": "Agent slug, e.g. de1." },
+                "name": { "type": "string", "description": "Full agent name, e.g. scraping-de1." },
+                "country": { "type": "string", "description": "ISO country code." }
+              }
+            }
+          }
+        }
+      },
+      "NetworkStatusResponse": {
+        "type": "object",
+        "properties": {
+          "total_agents": { "type": "integer" },
+          "total_countries": { "type": "integer" },
+          "agents_by_country": {
+            "type": "object",
+            "additionalProperties": { "type": "integer" },
+            "description": "Agent count per ISO country code."
+          }
+        }
+      },
+      "NetworkGeoResponse": {
+        "type": "object",
+        "properties": {
+          "total_agents": { "type": "integer" },
+          "total_countries": { "type": "integer" },
+          "countries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "country": { "type": "string" },
+                "count": { "type": "integer" },
+                "agents": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DomainHealthResponse": {
+        "type": "object",
+        "properties": {
+          "domain": { "type": "string" },
+          "agents_checked": { "type": "integer" },
+          "healthy": { "type": "integer" },
+          "soft_blocked": { "type": "integer" },
+          "hard_blocked": { "type": "integer" },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "agent_id": { "type": "string" },
+                "slug": { "type": "string" },
+                "state": { "type": "string", "enum": ["healthy", "soft_block", "hard_block"] },
+                "rtt_ms": { "type": "integer" },
+                "last_check": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      },
+      "DebugPickResponse": {
+        "type": "object",
+        "properties": {
+          "node_id": { "type": "string", "description": "Selected proxy node name." },
+          "node_slug": { "type": "string", "description": "Short node slug (e.g. de1)." },
+          "country": { "type": "string", "description": "Node country code." },
+          "valid_until_epoch_ms": { "type": "integer", "description": "How long this selection is cached (epoch ms)." }
+        }
+      },
+      "HealthzResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "parameters": {
+      "XTargetURL": {
+        "name": "X-Target-URL",
+        "in": "header",
+        "description": "Target URL (no encoding needed). Recommended for URLs with query parameters.",
+        "schema": { "type": "string" }
+      },
+      "XGeo": {
+        "name": "X-Geo",
+        "in": "header",
+        "description": "Target countries as comma-separated ISO codes (e.g. US,DE,AT). Aliases: X-Geo-CC, X-CC, X-Country, X-Geo-Strict.",
+        "schema": { "type": "string" }
+      },
+      "XExpectJSON": {
+        "name": "X-Expect-JSON",
+        "in": "header",
+        "description": "Set to 1 if expecting a JSON response from the origin.",
+        "schema": { "type": "string" }
+      },
+      "XAgent": {
+        "name": "X-Agent",
+        "in": "header",
+        "description": "Route through specific agent(s) by slug (e.g. de1), full name (scraping-de1), ip:port, or comma-separated list for random pick.",
+        "schema": { "type": "string" }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyHeader": []
+    }
+  ],
+  "tags": [
+    { "name": "Fetch", "description": "Proxy HTTP requests through the agent network." },
+    { "name": "Network", "description": "Agent registry, network status, and domain health." },
+    { "name": "AMQP", "description": "AMQP/RabbitMQ consumer relay via SSE." },
+    { "name": "Usage", "description": "Per-key usage metrics." },
+    { "name": "Debug", "description": "Debug and diagnostic endpoints." },
+    { "name": "System", "description": "Health checks and system endpoints." }
+  ]
+}

@@ -1,0 +1,182 @@
+---
+title: "Scraping API Overview - Distributed Fetch Network"
+sidebarTitle: "Overview"
+description: "55 Tech Scraping API overview. Route HTTP, WebSocket, and AMQP requests through 60+ geo-distributed agents with automatic TLS fingerprinting, health-aware routing, and block detection."
+---
+
+## What is the Scraping API?
+
+The **Scraping API** by [55 Tech](https://55-tech.com/) routes your HTTP, WebSocket, and AMQP requests through a network of 60+ geo-distributed agents. Each agent uses real browser TLS fingerprints (Chrome, Firefox, Safari) to make requests on your behalf, with intelligent routing that avoids blocked or rate-limited nodes automatically.
+
+**Core capabilities:**
+
+- **HTTP fetch** — GET/POST/PUT/PATCH/DELETE through any agent with full header, body, and cookie control
+- **WebSocket relay** — Bidirectional frame relay supporting Socket.IO, SignalR, Centrifugo, GraphQL-WS, and raw WebSocket
+- **AMQP consumer** — Stream RabbitMQ messages via Server-Sent Events (SSE)
+- **Geo targeting** — Pin requests to specific countries (DE, US, UK, AT, etc.) or individual agents
+- **Block detection** — Automatic content-based and status-based detection (captcha, Akamai, DataDome) with agent cooldown
+- **Network intelligence** — Query agent health, availability, and per-domain block status
+
+## Architecture
+
+<Steps>
+  <Step title="Client sends request to the API Gateway">
+    Your app calls the FastAPI gateway (HTTP `/fetch`, WebSocket `/ws`, or SSE `/amqp`). Authentication is via `X-API-Key` header, `apiKey` query param, or `apiKey` body field.
+  </Step>
+  <Step title="Gateway authenticates and rate-limits">
+    The gateway validates the API key and checks the per-key token bucket (default 10 RPS, configurable per key).
+  </Step>
+  <Step title="Scheduler picks the best agent">
+    The gateway calls the scheduler via gRPC. The scheduler uses a 4-stage picking algorithm based on RTT, health state, geo constraints, token bucket availability, and 20% softmax exploration.
+  </Step>
+  <Step title="Agent executes the request">
+    The selected agent makes the request using `curl_cffi` with a real browser TLS fingerprint. Per-host sticky sessions reuse the same fingerprint, cookies, and TLS session for 30 minutes.
+  </Step>
+  <Step title="Response streamed back through gateway">
+    The response (HTTP JSON, WebSocket frames, or SSE events) is returned to the client. The gateway reports the outcome to the scheduler for health tracking.
+  </Step>
+</Steps>
+
+## Base URL
+
+```
+https://scraping-api.55-tech.com
+```
+
+## Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/fetch` | GET, POST, PUT, PATCH, DELETE | Required | Proxy HTTP requests through the agent network |
+| `/ws` | WebSocket | In connect message | Bidirectional WebSocket relay through an agent |
+| `/amqp` | POST | In body or header | AMQP/RabbitMQ consumer relay (SSE stream) |
+| `/usage` | GET | Required | Per-key usage metrics (requests, bytes, top domains) |
+| `/network/agents` | GET | No | List all agents with slug, name, country |
+| `/network/status` | GET | No | Network summary (total agents, agents per country) |
+| `/network/geo` | GET | No | Agents grouped by country |
+| `/network/health/{domain}` | GET | Required | Per-agent health state for a domain |
+| `/debug/pick` | GET | No | Preview which agent would be selected |
+| `/healthz` | GET | No | Liveness probe |
+| `/docs` | GET | No | Swagger UI (interactive playground) |
+| `/redoc` | GET | No | ReDoc API documentation |
+
+## Control headers
+
+These headers control agent selection and are stripped before forwarding to the origin:
+
+| Header | Aliases | Description | Example |
+|--------|---------|-------------|---------|
+| `X-Target-URL` | — | Target URL (no encoding needed, recommended) | `https://example.com/?foo=bar` |
+| `X-Geo` | `X-Geo-CC`, `X-Geo-Strict`, `X-CC`, `X-Country` | Restrict to specific countries (comma-separated ISO codes) | `US,DE,AT` |
+| `X-Expect-JSON` | — | Hint that origin response should be JSON | `1` |
+| `X-Agent` | `?agent=` query param | Route through specific agent(s) by slug, full name, ip:port, or comma-separated for random pick | `de1`, `de1,at5,us3` |
+
+## Key concepts
+
+### Agent network
+
+60+ agents distributed across 15+ countries:
+
+| Region | Agents | Countries |
+|--------|--------|-----------|
+| Germany | de1–de20 | DE |
+| Austria | at1–at20 | AT |
+| United States | us1–us7 | US |
+| United Kingdom | uk1–uk5 | GB |
+| Italy | it1–it5 | IT |
+| France | fr1–fr2 | FR |
+| Spain | es1–es2 | ES |
+| Greece | gr1–gr3 | GR |
+| Other | pl1, bg1, au1–au3, br1 | PL, BG, AU, BR |
+
+### Health states
+
+Each agent tracks health **per domain**:
+
+| State | Trigger | Cooldown | Description |
+|-------|---------|----------|-------------|
+| `healthy` | 200–399 responses | — | Agent can fetch this domain |
+| `soft_block` | 429, 503, 5xx | 60 seconds | Rate limited or temporary error |
+| `hard_block` | 401, 403, 405, timeout | 20 minutes | Auth failure or blocked |
+
+Cooldowns are shared across all gateway workers via Redis.
+
+### TLS fingerprinting
+
+Agents rotate browser TLS fingerprints auto-discovered from `curl_cffi.requests.BrowserType` at startup. Newest versions are weighted heaviest (~42% chrome136, ~21% chrome131, etc.). Per-host sticky sessions ensure the same fingerprint and cookies are reused for 30 minutes, maintaining session state across requests.
+
+Extra TLS tuning applied to every request:
+- `tls_permute_extensions: True` — randomizes TLS extension order
+- `tls_grease: True` — injects random GREASE values
+- `tls_cert_compression: "brotli"` — advertises brotli certificate compression
+
+### Agent selection algorithm
+
+The scheduler uses a 4-stage picking algorithm:
+
+1. **Recent fast (top 50)** — Top 50 recently healthy agents for this host, weighted by RTT using softmax with 20% exploration
+2. **Recent rest** — Remaining recently healthy agents (51+)
+3. **All known (top 200)** — Expand to all known agents for this host
+4. **Exploration** — Random sampling from full agent pool to discover new paths
+
+Selection formula: `score = RTT × provider_penalty × freshness_penalty / success_probability`
+
+### Rate limiting
+
+Rate limits are **per API key** using a token bucket:
+
+- Default: 10 requests/second with burst of 10
+- Configurable per key (e.g., `yourkey:50` for 50 RPS)
+- WebSocket connections consume 1 token on connect (not per frame)
+
+When rate limited, the API returns `429` with headers:
+```
+Retry-After: 1
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+```
+
+## Fetch response format
+
+All HTTP fetch responses follow this structure:
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://example.com/",
+    "http_version": "HTTP/2",
+    "elapsed_ms": 245,
+    "blocked": false,
+    "headers": { "content-type": "text/html" },
+    "agent": { "id": "scraping-de1" },
+    "bytes": 4521
+  },
+  "raw": "<!DOCTYPE html>...",
+  "raw_json": null
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `meta.status` | HTTP status code from the origin |
+| `meta.final_url` | Final URL after redirects |
+| `meta.http_version` | HTTP version used (e.g. HTTP/2) |
+| `meta.elapsed_ms` | Round-trip time in milliseconds |
+| `meta.blocked` | `true` if block patterns detected in response |
+| `meta.agent.id` | Node ID (e.g. `scraping-de1`) |
+| `meta.bytes` | Response body size in bytes |
+| `raw` | Response body as text (when not JSON) |
+| `raw_json` | Parsed JSON object (when response is valid JSON, otherwise `null`) |
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/scraping-api/authentication">
+    Set up your API key.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/scraping-api/quickstart">
+    Make your first proxied request.
+  </Card>
+</Columns>

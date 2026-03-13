@@ -1,0 +1,101 @@
+---
+title: "Scraping API Authentication"
+sidebarTitle: "Authentication"
+description: "Authenticate Scraping API requests using the X-API-Key header. Rate limits, key formats, and per-key configuration."
+---
+
+All Scraping API endpoints (except public ones listed below) require authentication.
+
+## Passing your API key
+
+Pass your API key using one of these methods:
+
+**HTTP header (recommended):**
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+**Query parameter:**
+
+```bash
+curl "https://scraping-api.55-tech.com/fetch?apiKey=YOUR_API_KEY&url=https://example.com"
+```
+
+The `key` query parameter is also accepted as a fallback alias for `apiKey`.
+
+**JSON body field (for POST `/fetch`, WebSocket `/ws`, AMQP `/amqp`):**
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "https://example.com"
+}
+```
+
+### Priority order
+
+For HTTP `/fetch`, the API key is resolved in this order:
+1. `apiKey` query parameter
+2. `X-API-Key` header
+3. `key` query parameter (fallback)
+
+For WebSocket `/ws` and AMQP `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
+
+## Rate limits
+
+Each API key has a configurable rate limit using a token bucket algorithm:
+
+| Setting | Default |
+|---------|---------|
+| Requests per second (RPS) | 10 |
+| Burst capacity | Equal to RPS |
+
+When rate limited, the API returns `429 Too Many Requests` with these headers:
+
+```
+Retry-After: 1
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+```
+
+Implement exponential backoff: wait 1s, 2s, 4s, etc.
+
+Check your current rate limit and usage:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+The response includes your remaining tokens:
+
+```json
+{
+  "rate_limit": {
+    "rps": 10.0,
+    "burst": 10,
+    "remaining": 9.3
+  }
+}
+```
+
+## Public endpoints
+
+These endpoints do **not** require authentication:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | API overview and usage info |
+| `GET /healthz` | Liveness probe (`{"ok": true}`) |
+| `GET /network/agents` | List all agents |
+| `GET /network/status` | Network summary |
+| `GET /network/geo` | Agents grouped by country |
+| `GET /docs` | Swagger UI (interactive playground) |
+| `GET /redoc` | ReDoc API documentation |
+
+## Obtaining a key
+
+Contact [support@55-tech.com](mailto:support@55-tech.com) to obtain an API key with a rate limit configured for your use case.

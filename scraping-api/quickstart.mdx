@@ -1,0 +1,218 @@
+---
+title: "Scraping API Quickstart"
+sidebarTitle: "Quickstart"
+description: "Make your first proxied HTTP request, WebSocket connection, and AMQP stream through the 55 Tech Scraping API."
+---
+
+## Step 1: Check the network
+
+See which agents are available (no auth required):
+
+```bash
+curl https://scraping-api.55-tech.com/network/status
+```
+
+```json
+{
+  "total_agents": 62,
+  "total_countries": 15,
+  "agents_by_country": {
+    "DE": 20,
+    "AT": 22,
+    "US": 7,
+    "UK": 5,
+    "IT": 5,
+    "AU": 3,
+    "GR": 3,
+    "FR": 2,
+    "ES": 2,
+    "BR": 1
+  }
+}
+```
+
+## Step 2: Make an HTTP GET request
+
+Fetch a URL through the agent network using the `X-Target-URL` header (recommended for URLs with query parameters — no encoding needed):
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+Or using the `url` query parameter:
+
+```bash
+curl "https://scraping-api.55-tech.com/fetch?url=https://httpbin.org/ip&apiKey=YOUR_API_KEY"
+```
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://httpbin.org/ip",
+    "http_version": "HTTP/2",
+    "elapsed_ms": 312,
+    "blocked": false,
+    "headers": { "content-type": "application/json" },
+    "agent": { "id": "scraping-de5" },
+    "bytes": 32
+  },
+  "raw": null,
+  "raw_json": {
+    "origin": "188.68.36.26"
+  }
+}
+```
+
+The `origin` IP is the agent's IP, not yours. JSON responses are automatically parsed into `raw_json`.
+
+## Step 3: POST with a custom body and headers
+
+Use `POST /fetch` with a JSON body to send custom headers, body, and method to the target:
+
+```bash
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://httpbin.org/post",
+    "headers": {
+      "Authorization": "Bearer my-token",
+      "Accept": "application/json"
+    },
+    "body": "{\"key\": \"value\"}",
+    "timeout": 30
+  }' \
+  https://scraping-api.55-tech.com/fetch
+```
+
+**POST body fields:**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `url` | Yes (or use `X-Target-URL` header) | — | Target URL |
+| `method` | No | Matches request method | Override HTTP method |
+| `headers` | No | `{}` | Custom headers sent to the target origin |
+| `body` | No | `""` | Request body sent to the target |
+| `timeout` | No | `30` | Request timeout in seconds |
+| `allow_redirects` | No | `true` | Follow redirects |
+
+## Step 4: Target a specific country
+
+Use `X-Geo` to route through agents in specific countries:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Geo: US" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+Pin to a specific agent with `X-Agent`:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Agent: de1" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+Or pick randomly from a set of agents:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Agent: de1,at5,us3" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+## Step 5: Check domain health
+
+See which agents can reach a specific domain:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/network/health/example.com
+```
+
+```json
+{
+  "domain": "example.com",
+  "agents_checked": 62,
+  "healthy": 58,
+  "soft_blocked": 2,
+  "hard_blocked": 2,
+  "details": [
+    {
+      "agent_id": "scraping-de1",
+      "slug": "de1",
+      "state": "healthy",
+      "rtt_ms": 145,
+      "last_check": "2026-03-13T22:15:00Z"
+    }
+  ]
+}
+```
+
+## Step 6: Preview agent selection
+
+Debug which agent would be picked without making the actual request:
+
+```bash
+curl "https://scraping-api.55-tech.com/debug/pick?url=https://example.com" \
+  -H "X-Geo: US"
+```
+
+```json
+{
+  "node_id": "scraping-us3",
+  "node_slug": "us3",
+  "country": "US",
+  "valid_until_epoch_ms": 1710374100000
+}
+```
+
+## Step 7: Check your usage
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+```json
+{
+  "api_key": "YOUR_KEY",
+  "total": 15243,
+  "success": 14821,
+  "fail": 422,
+  "success_rate": 97.2,
+  "bytes_transferred": 1847362541,
+  "rate_limit": {
+    "rps": 10.0,
+    "burst": 10,
+    "remaining": 9.3
+  },
+  "by_protocol": {
+    "fetch": 14200,
+    "ws": 923,
+    "amqp": 120
+  },
+  "top_domains": [
+    { "domain": "example.com", "requests": 4521 }
+  ]
+}
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket & AMQP" icon="bolt" href="/scraping-api/websocket">
+    Relay WebSocket connections and consume AMQP streams.
+  </Card>
+
+  <Card title="Error handling" icon="triangle-exclamation" href="/scraping-api/errors">
+    Status codes, block detection, and retry strategies.
+  </Card>
+</Columns>

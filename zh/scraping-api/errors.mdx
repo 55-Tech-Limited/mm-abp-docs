@@ -1,0 +1,160 @@
+---
+title: "Scraping API Error Handling"
+sidebarTitle: "Errors"
+description: "Scraping API 错误码、封锁检测、健康状态和重试策略。"
+---
+
+## 错误响应格式
+
+所有 API 错误返回 JSON：
+
+```json
+{
+  "detail": "Invalid or missing API key"
+}
+```
+
+## HTTP 状态码
+
+| Status | Description |
+|--------|-------------|
+| `200` | 成功 — 源站响应已代理（检查 `meta.blocked` 以确认是否被封锁） |
+| `401` | 未授权 — API 密钥缺失或无效 |
+| `429` | 速率限制 — 令牌桶已耗尽。响应头包含 `Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining` |
+| `502` | 网关错误 — 调度器或代理节点错误（例如该域名的所有代理节点都被封锁） |
+| `504` | 网关超时 — 代理节点未在超时时间内响应（默认 30 秒） |
+
+## 封锁检测
+
+Scraping API 在两个层面检测封锁：
+
+### 基于状态码的检测
+
+| Origin status | Classification | Cooldown |
+|---------------|----------------|----------|
+| 429, 503, 5xx | `soft_block` | 60 秒 |
+| 401, 403, 405, timeout | `hard_block` | 20 分钟 |
+| 200–399 | `healthy` | — |
+
+### 基于内容的检测
+
+响应体会被扫描以检测表示机器人检测的模式：
+
+- `captcha`、`recaptcha`、`hcaptcha`
+- `access denied`、`forbidden`
+- `verify you are human`
+- `datadome`、`akamai`、`cloudflare`
+- `bot detect`、`no service`
+
+当模式匹配时，响应中的 `meta.blocked` 字段为 `true`，代理节点进入该域名的冷却状态。
+
+## meta.blocked 字段
+
+每个抓取响应都包含 `meta.blocked`：
+
+```json
+{
+  "meta": {
+    "status": 403,
+    "blocked": true,
+    "agent": { "id": "scraping-de5" }
+  },
+  "raw": "<html>Access Denied...</html>"
+}
+```
+
+当 `blocked` 为 `true` 时：
+- 代理节点进入该域名的冷却状态
+- 后续请求将自动路由到其他代理节点
+- 响应仍然包含完整的源站响应体供检查
+
+## 代理节点健康状态
+
+每个代理节点**按域名**跟踪健康状态：
+
+| State | Meaning | Cooldown | Auto-recovery |
+|-------|---------|----------|---------------|
+| `healthy` | 代理节点可以抓取此域名 | — | — |
+| `soft_block` | 被限流（429/503/5xx） | 60 秒 | 冷却后自动恢复 |
+| `hard_block` | 被封锁（403/验证码/超时） | 20 分钟 | 冷却后自动恢复 |
+
+冷却状态通过 Redis 在所有网关工作进程之间共享，因此当一个工作进程冷却某个代理节点时，所有其他工作进程会立即看到。
+
+检查域名健康状态：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/network/health/example.com
+```
+
+## 重试策略
+
+### 速率限制 (429)
+
+使用指数退避策略：等待 1 秒、2 秒、4 秒，依此类推。通过 `GET /usage` 查看当前令牌数量和速率限制配置。
+
+### 被封锁 (meta.blocked = true)
+
+无需客户端重试逻辑。调度器会自动将您的下一个请求路由到其他健康的代理节点。正常继续发送请求即可。
+
+### 超时 (504)
+
+- 增加 POST 请求体中的 `timeout` 字段值（默认：30 秒）
+- 如果目标持续响应缓慢，可使用 `X-Geo` 选择距离目标更近的代理节点以降低 RTT
+- 使用 `GET /debug/pick?url=...` 查看将选择哪个代理节点
+
+### 所有代理节点被封锁 (502)
+
+如果某个域名的所有代理节点都处于冷却状态，调度器返回 `502`。等待冷却时间过期（soft_block 60 秒，hard_block 20 分钟），或使用 `GET /network/health/{domain}` 检查哪些代理节点已恢复。
+
+## WebSocket 错误
+
+| Error | Cause | Close code |
+|-------|-------|------------|
+| Invalid API key | 连接消息中密钥缺失或无法识别 | `1008` |
+| Rate limit exceeded | 令牌桶已耗尽 | `1008` |
+| Connect timeout | 10 秒内未收到 JSON 连接消息 | `1008` |
+| Target connection failed | 代理节点无法连接到目标 WS | `1011` |
+| Agent unavailable | 没有可用的代理节点处理该请求 | `1011` |
+
+## AMQP 错误
+
+AMQP 错误以 SSE 事件形式交付：
+
+```
+event: error
+data: {"message": "agent error: connection refused", "code": 1011}
+```
+
+错误事件发送后，SSE 流将关闭。
+
+## 常见错误
+
+### 缺少目标 URL
+
+```bash
+# Wrong: no URL specified
+curl -H "X-API-Key: YOUR_KEY" https://scraping-api.55-tech.com/fetch
+
+# Right: URL in header (recommended)
+curl -H "X-API-Key: YOUR_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+
+# Right: URL in query param
+curl "https://scraping-api.55-tech.com/fetch?url=https://example.com&apiKey=YOUR_KEY"
+```
+
+### 无效的地理代码
+
+```bash
+# Wrong: full country name
+-H "X-Geo: Germany"
+
+# Right: ISO 2-char code
+-H "X-Geo: DE"
+```
+
+### WebSocket 连接超时
+
+包含 `apiKey` 和 `url` 的第一条 JSON 消息必须在打开 WebSocket 连接后 **10 秒**内发送，否则连接将以关闭代码 `1008` 断开。

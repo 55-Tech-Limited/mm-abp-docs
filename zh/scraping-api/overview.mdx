@@ -1,0 +1,182 @@
+---
+title: "Scraping API Overview - Distributed Fetch Network"
+sidebarTitle: "Overview"
+description: "55 Tech Scraping API 概述。通过 60 多个地理分布式代理节点路由 HTTP、WebSocket 和 AMQP 请求，支持自动 TLS 指纹模拟、健康感知路由和封锁检测。"
+---
+
+## 什么是 Scraping API？
+
+**Scraping API** 由 [55 Tech](https://55-tech.com/) 提供，可将您的 HTTP、WebSocket 和 AMQP 请求通过由 60 多个地理分布式代理节点组成的网络进行路由。每个代理节点使用真实的浏览器 TLS 指纹（Chrome、Firefox、Safari）代替您发送请求，并通过智能路由自动避开被封锁或限流的节点。
+
+**核心功能：**
+
+- **HTTP 抓取** — 通过任意代理节点发送 GET/POST/PUT/PATCH/DELETE 请求，完全控制请求头、请求体和 Cookie
+- **WebSocket 中继** — 双向帧中继，支持 Socket.IO、SignalR、Centrifugo、GraphQL-WS 和原生 WebSocket
+- **AMQP 消费者** — 通过 Server-Sent Events (SSE) 流式传输 RabbitMQ 消息
+- **地理定向** — 将请求固定到特定国家（DE、US、UK、AT 等）或单个代理节点
+- **封锁检测** — 基于内容和状态码的自动检测（验证码、Akamai、DataDome），并自动冷却代理节点
+- **网络情报** — 查询代理节点健康状态、可用性和按域名的封锁状态
+
+## 架构
+
+<Steps>
+  <Step title="客户端向 API 网关发送请求">
+    您的应用调用 FastAPI 网关（HTTP `/fetch`、WebSocket `/ws` 或 SSE `/amqp`）。身份验证通过 `X-API-Key` 请求头、`apiKey` 查询参数或 `apiKey` 请求体字段进行。
+  </Step>
+  <Step title="网关进行身份验证和速率限制">
+    网关验证 API 密钥并检查按密钥的令牌桶（默认 10 RPS，可按密钥配置）。
+  </Step>
+  <Step title="调度器选择最佳代理节点">
+    网关通过 gRPC 调用调度器。调度器使用基于 RTT、健康状态、地理约束、令牌桶可用性和 20% softmax 探索的 4 阶段选择算法。
+  </Step>
+  <Step title="代理节点执行请求">
+    被选中的代理节点使用 `curl_cffi` 配合真实的浏览器 TLS 指纹发送请求。按域名的粘性会话在 30 分钟内复用相同的指纹、Cookie 和 TLS 会话。
+  </Step>
+  <Step title="响应通过网关流式返回">
+    响应（HTTP JSON、WebSocket 帧或 SSE 事件）返回给客户端。网关将结果报告给调度器用于健康追踪。
+  </Step>
+</Steps>
+
+## 基础 URL
+
+```
+https://scraping-api.55-tech.com
+```
+
+## 端点
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/fetch` | GET, POST, PUT, PATCH, DELETE | Required | 通过代理网络代理 HTTP 请求 |
+| `/ws` | WebSocket | In connect message | 通过代理节点进行双向 WebSocket 中继 |
+| `/amqp` | POST | In body or header | AMQP/RabbitMQ 消费者中继（SSE 流） |
+| `/usage` | GET | Required | 按密钥的使用指标（请求数、字节数、热门域名） |
+| `/network/agents` | GET | No | 列出所有代理节点及其标识、名称、国家 |
+| `/network/status` | GET | No | 网络概况（代理节点总数、每个国家的代理节点数） |
+| `/network/geo` | GET | No | 按国家分组的代理节点 |
+| `/network/health/{domain}` | GET | Required | 按代理节点查看域名的健康状态 |
+| `/debug/pick` | GET | No | 预览将选择哪个代理节点 |
+| `/healthz` | GET | No | 存活探针 |
+| `/docs` | GET | No | Swagger UI（交互式测试） |
+| `/redoc` | GET | No | ReDoc API 文档 |
+
+## 控制请求头
+
+这些请求头用于控制代理节点选择，在转发到源站之前会被剥离：
+
+| Header | Aliases | Description | Example |
+|--------|---------|-------------|---------|
+| `X-Target-URL` | — | 目标 URL（无需编码，推荐方式） | `https://example.com/?foo=bar` |
+| `X-Geo` | `X-Geo-CC`, `X-Geo-Strict`, `X-CC`, `X-Country` | 限制到特定国家（逗号分隔的 ISO 代码） | `US,DE,AT` |
+| `X-Expect-JSON` | — | 提示源站响应应为 JSON | `1` |
+| `X-Agent` | `?agent=` query param | 通过标识、全名、ip:port 路由到特定代理节点，或逗号分隔进行随机选择 | `de1`, `de1,at5,us3` |
+
+## 关键概念
+
+### 代理网络
+
+60 多个代理节点分布在 15 个以上国家：
+
+| Region | Agents | Countries |
+|--------|--------|-----------|
+| Germany | de1–de20 | DE |
+| Austria | at1–at20 | AT |
+| United States | us1–us7 | US |
+| United Kingdom | uk1–uk5 | GB |
+| Italy | it1–it5 | IT |
+| France | fr1–fr2 | FR |
+| Spain | es1–es2 | ES |
+| Greece | gr1–gr3 | GR |
+| Other | pl1, bg1, au1–au3, br1 | PL, BG, AU, BR |
+
+### 健康状态
+
+每个代理节点**按域名**跟踪健康状态：
+
+| State | Trigger | Cooldown | Description |
+|-------|---------|----------|-------------|
+| `healthy` | 200–399 响应 | — | 代理节点可以抓取此域名 |
+| `soft_block` | 429, 503, 5xx | 60 秒 | 被限流或临时错误 |
+| `hard_block` | 401, 403, 405, 超时 | 20 分钟 | 身份验证失败或被封锁 |
+
+冷却状态通过 Redis 在所有网关工作进程之间共享。
+
+### TLS 指纹模拟
+
+代理节点在启动时从 `curl_cffi.requests.BrowserType` 自动发现并轮换浏览器 TLS 指纹。最新版本的权重最高（约 42% chrome136、约 21% chrome131 等）。按域名的粘性会话确保在 30 分钟内复用相同的指纹和 Cookie，维持跨请求的会话状态。
+
+每个请求额外应用的 TLS 调优：
+- `tls_permute_extensions: True` — 随机化 TLS 扩展顺序
+- `tls_grease: True` — 注入随机 GREASE 值
+- `tls_cert_compression: "brotli"` — 声明支持 brotli 证书压缩
+
+### 代理节点选择算法
+
+调度器使用 4 阶段选择算法：
+
+1. **最近快速（前 50）** — 该域名最近健康的前 50 个代理节点，使用 softmax 加权 RTT，带 20% 探索
+2. **最近其余** — 剩余的最近健康代理节点（第 51 个以后）
+3. **所有已知（前 200）** — 扩展到该域名的所有已知代理节点
+4. **探索** — 从完整代理节点池中随机采样以发现新路径
+
+选择公式：`score = RTT × provider_penalty × freshness_penalty / success_probability`
+
+### 速率限制
+
+速率限制**按 API 密钥**使用令牌桶算法：
+
+- 默认：每秒 10 个请求，突发容量为 10
+- 可按密钥配置（例如 `yourkey:50` 表示 50 RPS）
+- WebSocket 连接在建立时消耗 1 个令牌（非按帧计费）
+
+当触发速率限制时，API 返回 `429` 及以下响应头：
+```
+Retry-After: 1
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+```
+
+## 抓取响应格式
+
+所有 HTTP 抓取响应遵循以下结构：
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://example.com/",
+    "http_version": "HTTP/2",
+    "elapsed_ms": 245,
+    "blocked": false,
+    "headers": { "content-type": "text/html" },
+    "agent": { "id": "scraping-de1" },
+    "bytes": 4521
+  },
+  "raw": "<!DOCTYPE html>...",
+  "raw_json": null
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `meta.status` | 源站返回的 HTTP 状态码 |
+| `meta.final_url` | 重定向后的最终 URL |
+| `meta.http_version` | 使用的 HTTP 版本（例如 HTTP/2） |
+| `meta.elapsed_ms` | 往返时间（毫秒） |
+| `meta.blocked` | 如果在响应中检测到封锁模式则为 `true` |
+| `meta.agent.id` | Node ID（例如 `scraping-de1`） |
+| `meta.bytes` | 响应体大小（字节） |
+| `raw` | 响应体文本（非 JSON 时） |
+| `raw_json` | 解析后的 JSON 对象（响应为有效 JSON 时，否则为 `null`） |
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/zh/scraping-api/authentication">
+    设置您的 API 密钥。
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/zh/scraping-api/quickstart">
+    发送您的第一个代理请求。
+  </Card>
+</Columns>

@@ -1,0 +1,283 @@
+---
+title: "Scraping API WebSocket & AMQP"
+sidebarTitle: "WebSocket & AMQP"
+description: "Relay WebSocket connections and consume AMQP/RabbitMQ streams through the 55 Tech Scraping API agent network."
+---
+
+## WebSocket relay
+
+The Scraping API can relay bidirectional WebSocket connections through the agent network. The agent connects to the target using `curl_cffi AsyncWebSocket` with TLS fingerprinting on the upgrade request, so the target sees a real browser handshake. All WS sub-protocols are relayed transparently — Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WebSocket, etc.
+
+### Endpoint
+
+```
+wss://scraping-api.55-tech.com/ws
+```
+
+### Connection flow
+
+<Steps>
+  <Step title="Connect to the gateway">
+    Open a WebSocket connection to `wss://scraping-api.55-tech.com/ws`. No authentication happens at connection time — the gateway accepts immediately.
+  </Step>
+  <Step title="Send connect message (within 10 seconds)">
+    Send a JSON message specifying the target URL and your API key. You have **10 seconds** to send this message before the connection is closed with code `1008`.
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "wss://target.example.com/stream",
+  "headers": { "Authorization": "Bearer token" },
+  "cookies": { "session": "abc123" },
+  "geo": "US,DE",
+  "agent": "de1",
+  "idle_timeout": 0
+}
+```
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | Yes | — | Your API key (also accepts `key`) |
+| `url` | string | Yes | — | Target WebSocket URL (`wss://...` or `ws://...`) |
+| `headers` | object | No | `{}` | Custom headers for the WS upgrade request |
+| `cookies` | object | No | `{}` | Cookies to send with the WS upgrade request |
+| `geo` | string | No | — | Country filter for agent selection (e.g., `US,DE`) |
+| `agent` | string | No | — | Pin to specific agent(s) by slug (e.g., `de1` or `de1,at5`) |
+| `idle_timeout` | float | No | `0` | Seconds to wait for a target message before disconnect. `0` = no timeout |
+  </Step>
+  <Step title="Receive connected confirmation">
+    The gateway picks an agent via the scheduler, the agent connects to the target WebSocket with TLS fingerprinting, and the gateway responds with:
+
+```json
+{
+  "type": "connected",
+  "status": 101,
+  "node_id": "scraping-de1"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Always `"connected"` |
+| `status` | HTTP status of the WS upgrade (101) |
+| `node_id` | Proxy node handling the connection |
+  </Step>
+  <Step title="Relay frames bidirectionally">
+    After connection, all text and binary frames are relayed transparently:
+    - **Client → target**: Your messages are forwarded to the target as-is
+    - **Target → client**: Target messages are forwarded to you as-is
+    - **Close frame**: Triggers graceful shutdown on both sides
+    - **PONG frames**: From target are forwarded to client
+  </Step>
+</Steps>
+
+### Error responses
+
+If something goes wrong, the gateway sends:
+
+```json
+{
+  "type": "error",
+  "message": "description of what went wrong"
+}
+```
+
+Common errors:
+- Invalid or missing API key (close code `1008`)
+- Rate limit exceeded (close code `1008`)
+- Connect message not received within 10 seconds (close code `1008`)
+- Target connection failed
+- Agent unavailable
+
+### Example: Python
+
+```python
+import asyncio
+import json
+import websockets
+
+async def relay():
+    async with websockets.connect("wss://scraping-api.55-tech.com/ws") as ws:
+        # 1. Send connect message
+        await ws.send(json.dumps({
+            "apiKey": "YOUR_API_KEY",
+            "url": "wss://echo.websocket.events",
+            "geo": "DE"
+        }))
+
+        # 2. Wait for connected confirmation
+        resp = json.loads(await ws.recv())
+        if resp.get("type") == "error":
+            print(f"Error: {resp['message']}")
+            return
+        assert resp["type"] == "connected"
+        print(f"Connected via {resp['node_id']}")
+
+        # 3. Send and receive frames
+        await ws.send("hello from scraping api")
+        async for msg in ws:
+            print(f"Received: {msg}")
+
+asyncio.run(relay())
+```
+
+### Example: JavaScript
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://scraping-api.55-tech.com/ws');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    apiKey: 'YOUR_API_KEY',
+    url: 'wss://echo.websocket.events',
+    geo: 'DE'
+  }));
+});
+
+let connected = false;
+ws.on('message', (raw) => {
+  if (!connected) {
+    const msg = JSON.parse(raw.toString());
+    if (msg.type === 'connected') {
+      console.log(`Connected via ${msg.node_id}`);
+      connected = true;
+      ws.send('hello from scraping api');
+    } else if (msg.type === 'error') {
+      console.error(`Error: ${msg.message}`);
+    }
+    return;
+  }
+  // After connected, frames are relayed transparently
+  console.log('Received:', raw.toString());
+});
+```
+
+### Supported sub-protocols
+
+All sub-protocols are relayed transparently — no special configuration needed:
+
+- Raw WebSocket (text/binary)
+- Socket.IO (engine.io transport)
+- SignalR (JSON + `\x1e` delimiter)
+- Centrifugo (JSON-RPC)
+- GraphQL-WS subscriptions
+
+---
+
+## AMQP consumer (SSE)
+
+Stream messages from a RabbitMQ broker through the agent network, delivered as Server-Sent Events. The agent connects to the broker using `aio-pika`, creates a temporary auto-delete queue, binds it to the specified exchange, and streams messages back.
+
+### Endpoint
+
+```
+POST https://scraping-api.55-tech.com/amqp
+```
+
+### Request body
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "host": "broker.example.com",
+  "port": 5671,
+  "virtual_host": "/",
+  "username": "user",
+  "password": "pass",
+  "exchange": "my_exchange",
+  "routing_key": "#",
+  "queue_prefix": "scrape",
+  "ssl": true,
+  "heartbeat": 60,
+  "geo": "DE",
+  "agent": "de1"
+}
+```
+
+Authentication can also be provided via the `X-API-Key` header instead of the `apiKey` body field.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | Yes | — | Your API key (or use `X-API-Key` header) |
+| `host` | string | Yes | — | AMQP broker hostname |
+| `port` | int | No | `5672` | Broker port (use `5671` for SSL) |
+| `virtual_host` | string | No | `/` | AMQP virtual host |
+| `username` | string | No | `""` | Broker username |
+| `password` | string | No | `""` | Broker password |
+| `exchange` | string | No | `""` | Exchange to bind to |
+| `routing_key` | string | No | `#` | Routing key pattern (`#` = all messages) |
+| `queue_prefix` | string | No | `scrape` | Prefix for the auto-delete queue name (e.g., `scrape_de1_4821`) |
+| `ssl` | bool | No | `false` | Use AMQPS (TLS) connection |
+| `heartbeat` | int | No | `60` | AMQP heartbeat interval in seconds |
+| `geo` | string | No | — | Country filter for agent selection |
+| `agent` | string | No | — | Pin to specific agent by slug |
+
+### SSE events
+
+**`connected`** — Agent connected to broker, queue created and bound:
+
+```
+event: connected
+data: {"agent_id": "scraping-de1", "queue_name": "scrape_de1_4821"}
+```
+
+**`message`** — Message received from queue:
+
+```
+event: message
+data: {"body": "{\"odds\": 1.95}", "routing_key": "19454.match.123", "exchange": "19454.all", "delivery_tag": 1, "content_type": "application/json"}
+```
+
+**`error`** — Connection or consumption error (stream ends):
+
+```
+event: error
+data: {"message": "agent error: connection refused", "code": 1011}
+```
+
+### Example: curl
+
+```bash
+curl -N -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{
+    "host": "broker.example.com",
+    "port": 5671,
+    "ssl": true,
+    "username": "user",
+    "password": "pass",
+    "exchange": "my_exchange",
+    "routing_key": "#"
+  }' \
+  https://scraping-api.55-tech.com/amqp
+```
+
+### Example: Python
+
+```python
+import requests
+import json
+
+resp = requests.post(
+    "https://scraping-api.55-tech.com/amqp",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={
+        "host": "broker.example.com",
+        "port": 5671,
+        "ssl": True,
+        "username": "user",
+        "password": "pass",
+        "exchange": "my_exchange",
+        "routing_key": "#",
+    },
+    stream=True,
+)
+
+for line in resp.iter_lines():
+    if line.startswith(b"data: "):
+        event = json.loads(line[6:])
+        print(event)
+```

@@ -1,0 +1,218 @@
+---
+title: "Scraping API Quickstart"
+sidebarTitle: "Quickstart"
+description: "通过 55 Tech Scraping API 发送您的第一个代理 HTTP 请求、WebSocket 连接和 AMQP 流。"
+---
+
+## 步骤 1：检查网络
+
+查看哪些代理节点可用（无需身份验证）：
+
+```bash
+curl https://scraping-api.55-tech.com/network/status
+```
+
+```json
+{
+  "total_agents": 62,
+  "total_countries": 15,
+  "agents_by_country": {
+    "DE": 20,
+    "AT": 22,
+    "US": 7,
+    "UK": 5,
+    "IT": 5,
+    "AU": 3,
+    "GR": 3,
+    "FR": 2,
+    "ES": 2,
+    "BR": 1
+  }
+}
+```
+
+## 步骤 2：发送 HTTP GET 请求
+
+使用 `X-Target-URL` 请求头（推荐用于带查询参数的 URL — 无需编码）通过代理网络抓取一个 URL：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+或使用 `url` 查询参数：
+
+```bash
+curl "https://scraping-api.55-tech.com/fetch?url=https://httpbin.org/ip&apiKey=YOUR_API_KEY"
+```
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://httpbin.org/ip",
+    "http_version": "HTTP/2",
+    "elapsed_ms": 312,
+    "blocked": false,
+    "headers": { "content-type": "application/json" },
+    "agent": { "id": "scraping-de5" },
+    "bytes": 32
+  },
+  "raw": null,
+  "raw_json": {
+    "origin": "188.68.36.26"
+  }
+}
+```
+
+`origin` IP 是代理节点的 IP，而不是您的 IP。JSON 响应会自动解析到 `raw_json` 中。
+
+## 步骤 3：发送带自定义请求体和请求头的 POST 请求
+
+使用 `POST /fetch` 配合 JSON 请求体向目标发送自定义请求头、请求体和方法：
+
+```bash
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://httpbin.org/post",
+    "headers": {
+      "Authorization": "Bearer my-token",
+      "Accept": "application/json"
+    },
+    "body": "{\"key\": \"value\"}",
+    "timeout": 30
+  }' \
+  https://scraping-api.55-tech.com/fetch
+```
+
+**POST 请求体字段：**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `url` | Yes (or use `X-Target-URL` header) | — | 目标 URL |
+| `method` | No | Matches request method | 覆盖 HTTP 方法 |
+| `headers` | No | `{}` | 发送到目标源站的自定义请求头 |
+| `body` | No | `""` | 发送到目标的请求体 |
+| `timeout` | No | `30` | 请求超时时间（秒） |
+| `allow_redirects` | No | `true` | 是否跟随重定向 |
+
+## 步骤 4：指定目标国家
+
+使用 `X-Geo` 通过特定国家的代理节点进行路由：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Geo: US" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+使用 `X-Agent` 固定到特定代理节点：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Agent: de1" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+或从一组代理节点中随机选择：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Agent: de1,at5,us3" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+## 步骤 5：检查域名健康状态
+
+查看哪些代理节点可以访问特定域名：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/network/health/example.com
+```
+
+```json
+{
+  "domain": "example.com",
+  "agents_checked": 62,
+  "healthy": 58,
+  "soft_blocked": 2,
+  "hard_blocked": 2,
+  "details": [
+    {
+      "agent_id": "scraping-de1",
+      "slug": "de1",
+      "state": "healthy",
+      "rtt_ms": 145,
+      "last_check": "2026-03-13T22:15:00Z"
+    }
+  ]
+}
+```
+
+## 步骤 6：预览代理节点选择
+
+在不实际发送请求的情况下，调试将选择哪个代理节点：
+
+```bash
+curl "https://scraping-api.55-tech.com/debug/pick?url=https://example.com" \
+  -H "X-Geo: US"
+```
+
+```json
+{
+  "node_id": "scraping-us3",
+  "node_slug": "us3",
+  "country": "US",
+  "valid_until_epoch_ms": 1710374100000
+}
+```
+
+## 步骤 7：查看使用情况
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+```json
+{
+  "api_key": "YOUR_KEY",
+  "total": 15243,
+  "success": 14821,
+  "fail": 422,
+  "success_rate": 97.2,
+  "bytes_transferred": 1847362541,
+  "rate_limit": {
+    "rps": 10.0,
+    "burst": 10,
+    "remaining": 9.3
+  },
+  "by_protocol": {
+    "fetch": 14200,
+    "ws": 923,
+    "amqp": 120
+  },
+  "top_domains": [
+    { "domain": "example.com", "requests": 4521 }
+  ]
+}
+```
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="WebSocket & AMQP" icon="bolt" href="/zh/scraping-api/websocket">
+    中继 WebSocket 连接和消费 AMQP 流。
+  </Card>
+
+  <Card title="Error handling" icon="triangle-exclamation" href="/zh/scraping-api/errors">
+    状态码、封锁检测和重试策略。
+  </Card>
+</Columns>

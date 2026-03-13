@@ -1,0 +1,101 @@
+---
+title: "Scraping API Authentication"
+sidebarTitle: "Authentication"
+description: "使用 X-API-Key 请求头对 Scraping API 请求进行身份验证。速率限制、密钥格式和按密钥配置。"
+---
+
+所有 Scraping API 端点（除下方列出的公开端点外）都需要身份验证。
+
+## 传递 API 密钥
+
+使用以下方法之一传递您的 API 密钥：
+
+**HTTP 请求头（推荐）：**
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+**查询参数：**
+
+```bash
+curl "https://scraping-api.55-tech.com/fetch?apiKey=YOUR_API_KEY&url=https://example.com"
+```
+
+`key` 查询参数也可作为 `apiKey` 的备用别名。
+
+**JSON 请求体字段（用于 POST `/fetch`、WebSocket `/ws`、AMQP `/amqp`）：**
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "https://example.com"
+}
+```
+
+### 优先级顺序
+
+对于 HTTP `/fetch`，API 密钥按以下顺序解析：
+1. `apiKey` 查询参数
+2. `X-API-Key` 请求头
+3. `key` 查询参数（备用）
+
+对于 WebSocket `/ws` 和 AMQP `/amqp`，密钥从 JSON 请求体字段 `apiKey`（或 `key`）或 `X-API-Key` 请求头中读取。
+
+## 速率限制
+
+每个 API 密钥使用令牌桶算法配置可调的速率限制：
+
+| Setting | Default |
+|---------|---------|
+| Requests per second (RPS) | 10 |
+| Burst capacity | Equal to RPS |
+
+当触发速率限制时，API 返回 `429 Too Many Requests` 及以下响应头：
+
+```
+Retry-After: 1
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+```
+
+请实现指数退避策略：等待 1 秒、2 秒、4 秒，依此类推。
+
+检查当前速率限制和使用情况：
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+响应包含您的剩余令牌数：
+
+```json
+{
+  "rate_limit": {
+    "rps": 10.0,
+    "burst": 10,
+    "remaining": 9.3
+  }
+}
+```
+
+## 公开端点
+
+以下端点**无需**身份验证：
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | API 概述和使用信息 |
+| `GET /healthz` | 存活探针（`{"ok": true}`） |
+| `GET /network/agents` | 列出所有代理节点 |
+| `GET /network/status` | 网络概况 |
+| `GET /network/geo` | 按国家分组的代理节点 |
+| `GET /docs` | Swagger UI（交互式测试） |
+| `GET /redoc` | ReDoc API 文档 |
+
+## 获取密钥
+
+联系 [support@55-tech.com](mailto:support@55-tech.com) 获取根据您的使用场景配置速率限制的 API 密钥。

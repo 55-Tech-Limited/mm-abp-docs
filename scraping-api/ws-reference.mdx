@@ -1,0 +1,213 @@
+---
+title: "WebSocket Protocol Reference"
+sidebarTitle: "WS Reference"
+description: "Complete reference for the Scraping API WebSocket relay protocol. Connect message schema, response types, error codes, and interactive testing."
+---
+
+## Protocol overview
+
+The WebSocket relay at `wss://scraping-api.55-tech.com/ws` provides a bidirectional proxy. You connect to the gateway, send a JSON connect message, and the gateway relays all frames between you and the target through a TLS-fingerprinted agent.
+
+```
+Client ←→ Gateway (wss://.../ws) ←→ Agent (gRPC WsRelay) ←→ Target WebSocket
+```
+
+## Interactive playground
+
+The API includes a built-in Swagger UI with WebSocket documentation:
+
+```
+https://scraping-api.55-tech.com/docs
+```
+
+The `/ws/docs` endpoint returns the protocol schema:
+
+```bash
+curl https://scraping-api.55-tech.com/ws/docs
+```
+
+```json
+{
+  "type": "connected",
+  "status": 101,
+  "node_id": "scraping-de1",
+  "message": "This is a documentation endpoint. Connect via WebSocket at wss://scraping-api.55-tech.com/ws"
+}
+```
+
+For interactive WebSocket testing, use `wscat`:
+
+```bash
+npm install -g wscat
+wscat -c wss://scraping-api.55-tech.com/ws
+```
+
+Then paste:
+```json
+{"apiKey":"YOUR_API_KEY","url":"wss://echo.websocket.events"}
+```
+
+## Connect message (client → gateway)
+
+Must be sent as JSON text within **10 seconds** of connecting.
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "wss://target.example.com/stream",
+  "headers": {
+    "Authorization": "Bearer token",
+    "Origin": "https://target.example.com"
+  },
+  "cookies": {
+    "session": "abc123"
+  },
+  "geo": "US,DE",
+  "agent": "de1",
+  "idle_timeout": 0
+}
+```
+
+### Fields
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | **Yes** | — | API key for authentication. `key` is also accepted. |
+| `url` | string | **Yes** | — | Target WebSocket URL (`wss://...` or `ws://...`) |
+| `headers` | object | No | `{}` | Custom headers sent with the WS upgrade request to the target. Useful for `Authorization`, `Origin`, `Cookie` headers that the target expects. |
+| `cookies` | object | No | `{}` | Cookies sent with the WS upgrade request. Merged into the `Cookie` header. |
+| `geo` | string | No | — | Restrict agent selection to specific countries. Comma-separated ISO codes (e.g. `US,DE,AT`). |
+| `agent` | string | No | — | Pin to specific agent(s) by slug (e.g. `de1`) or comma-separated for random pick (`de1,at5,us3`). |
+| `idle_timeout` | float | No | `0` | If > 0, disconnect after this many seconds without receiving a message from the target. `0` = no idle timeout. |
+
+## Response messages (gateway → client)
+
+### Connected
+
+Sent once after the agent successfully connects to the target WebSocket.
+
+```json
+{
+  "type": "connected",
+  "status": 101,
+  "node_id": "scraping-de1"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Always `"connected"` |
+| `status` | int | HTTP status code of the WS upgrade. `101` = success. |
+| `node_id` | string | Proxy node handling the relay (e.g. `scraping-de1`) |
+
+### Error
+
+Sent when connection fails or an error occurs. The WebSocket is closed after this message.
+
+```json
+{
+  "type": "error",
+  "message": "Invalid or missing API key"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Always `"error"` |
+| `message` | string | Human-readable error description |
+
+### Relayed frames
+
+After the `connected` message, all subsequent frames are raw relay — no JSON wrapping. Text frames stay text, binary frames stay binary.
+
+## Close codes
+
+| Code | Meaning |
+|------|---------|
+| `1000` | Normal closure (you or target closed) |
+| `1008` | Policy violation — invalid API key, rate limited, or connect timeout |
+| `1011` | Internal error — agent failure or target unreachable |
+
+## Error scenarios
+
+| Scenario | What happens |
+|----------|-------------|
+| No connect message within 10s | Gateway closes with code `1008` |
+| Invalid API key | Gateway sends error JSON, closes with `1008` |
+| Rate limit exceeded | Gateway sends error JSON, closes with `1008` |
+| Target connection refused | Gateway sends error JSON, closes with `1011` |
+| No agent available | Gateway sends error JSON, closes with `1011` |
+| Target closes connection | Gateway forwards the close frame with target's code and reason |
+| Client closes connection | Gateway forwards close to target, cleans up |
+| Agent crashes mid-relay | Gateway closes with `1011` |
+
+## Frame flow diagram
+
+```
+Time →
+
+Client                 Gateway                Agent                  Target
+  │                      │                      │                      │
+  │──── WS connect ─────▶│                      │                      │
+  │◀── accept ───────────│                      │                      │
+  │                      │                      │                      │
+  │──── {"apiKey":...} ─▶│                      │                      │
+  │                      │── gRPC WsRelay ─────▶│                      │
+  │                      │                      │── WS upgrade ───────▶│
+  │                      │                      │◀── 101 Switching ────│
+  │                      │◀── connected ────────│                      │
+  │◀── {"type":"connected"}│                    │                      │
+  │                      │                      │                      │
+  │──── text frame ─────▶│── relay ────────────▶│── relay ────────────▶│
+  │◀── text frame ───────│◀── relay ────────────│◀── relay ────────────│
+  │                      │                      │                      │
+  │──── close ──────────▶│── close ────────────▶│── close ────────────▶│
+  │◀── close ────────────│◀── close ────────────│◀── close ────────────│
+```
+
+## Rate limiting
+
+WebSocket connections consume **1 token** from your rate limit bucket on connect (when the connect message is validated). Subsequent frames do not consume tokens. If your bucket is empty, the gateway sends an error and closes with `1008`.
+
+## Testing with wscat
+
+```bash
+# Install
+npm install -g wscat
+
+# Connect
+wscat -c wss://scraping-api.55-tech.com/ws
+
+# Paste connect message:
+{"apiKey":"YOUR_KEY","url":"wss://echo.websocket.events"}
+
+# After "connected" response, type messages to relay:
+hello world
+
+# The echo server will send back your message
+```
+
+## Testing with Python
+
+```python
+import asyncio
+import json
+import websockets
+
+async def test():
+    async with websockets.connect("wss://scraping-api.55-tech.com/ws") as ws:
+        await ws.send(json.dumps({
+            "apiKey": "YOUR_API_KEY",
+            "url": "wss://echo.websocket.events",
+        }))
+
+        resp = json.loads(await ws.recv())
+        print(f"Status: {resp}")
+
+        if resp["type"] == "connected":
+            await ws.send("test message")
+            reply = await ws.recv()
+            print(f"Echo: {reply}")
+
+asyncio.run(test())
+```

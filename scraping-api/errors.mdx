@@ -1,0 +1,160 @@
+---
+title: "Scraping API Error Handling"
+sidebarTitle: "Errors"
+description: "Scraping API error codes, block detection, health states, and retry strategies."
+---
+
+## Error response format
+
+All API errors return JSON:
+
+```json
+{
+  "detail": "Invalid or missing API key"
+}
+```
+
+## HTTP status codes
+
+| Status | Description |
+|--------|-------------|
+| `200` | Success — origin response proxied (check `meta.blocked` for block detection) |
+| `401` | Unauthorized — missing or invalid API key |
+| `429` | Rate limited — token bucket exhausted. Headers include `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` |
+| `502` | Bad gateway — scheduler or agent error (e.g. all agents blocked for this domain) |
+| `504` | Gateway timeout — agent did not respond within timeout (default 30s) |
+
+## Block detection
+
+The Scraping API detects blocking at two levels:
+
+### Status-based detection
+
+| Origin status | Classification | Cooldown |
+|---------------|----------------|----------|
+| 429, 503, 5xx | `soft_block` | 60 seconds |
+| 401, 403, 405, timeout | `hard_block` | 20 minutes |
+| 200–399 | `healthy` | — |
+
+### Content-based detection
+
+The response body is scanned for patterns indicating bot detection:
+
+- `captcha`, `recaptcha`, `hcaptcha`
+- `access denied`, `forbidden`
+- `verify you are human`
+- `datadome`, `akamai`, `cloudflare`
+- `bot detect`, `no service`
+
+When patterns match, the response's `meta.blocked` field is `true` and the agent enters cooldown for that domain.
+
+## meta.blocked field
+
+Every fetch response includes `meta.blocked`:
+
+```json
+{
+  "meta": {
+    "status": 403,
+    "blocked": true,
+    "agent": { "id": "scraping-de5" }
+  },
+  "raw": "<html>Access Denied...</html>"
+}
+```
+
+When `blocked` is `true`:
+- The agent is placed in cooldown for this domain
+- Subsequent requests will route to a different agent automatically
+- The response still contains the full origin body for inspection
+
+## Agent health states
+
+Each agent tracks health **per domain**:
+
+| State | Meaning | Cooldown | Auto-recovery |
+|-------|---------|----------|---------------|
+| `healthy` | Agent can fetch this domain | — | — |
+| `soft_block` | Rate limited (429/503/5xx) | 60 seconds | Automatic after cooldown |
+| `hard_block` | Blocked (403/captcha/timeout) | 20 minutes | Automatic after cooldown |
+
+Cooldowns are shared across all gateway workers via Redis, so when one worker cools an agent, all other workers see it immediately.
+
+Check domain health:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/network/health/example.com
+```
+
+## Retry strategies
+
+### Rate limit (429)
+
+Use exponential backoff: wait 1s, 2s, 4s, etc. Check `GET /usage` for your current token count and rate limit configuration.
+
+### Blocked (meta.blocked = true)
+
+No client-side retry logic needed. The scheduler automatically routes your next request to a different, healthy agent. Just keep making requests normally.
+
+### Timeout (504)
+
+- Increase the `timeout` field in your POST body (default: 30 seconds)
+- If the target is consistently slow, pin to agents with lower RTT using `X-Geo` to pick agents closer to the target
+- Use `GET /debug/pick?url=...` to see which agent would be selected
+
+### All agents blocked (502)
+
+If all agents for a domain are in cooldown, the scheduler returns `502`. Wait for cooldowns to expire (60s for soft, 20min for hard) or use `GET /network/health/{domain}` to check which agents have recovered.
+
+## WebSocket errors
+
+| Error | Cause | Close code |
+|-------|-------|------------|
+| Invalid API key | Missing or unrecognized key in connect message | `1008` |
+| Rate limit exceeded | Token bucket exhausted | `1008` |
+| Connect timeout | No JSON connect message within 10 seconds | `1008` |
+| Target connection failed | Agent could not connect to target WS | `1011` |
+| Agent unavailable | No agent available for the request | `1011` |
+
+## AMQP errors
+
+AMQP errors are delivered as SSE events:
+
+```
+event: error
+data: {"message": "agent error: connection refused", "code": 1011}
+```
+
+After an error event, the SSE stream closes.
+
+## Common errors
+
+### Missing target URL
+
+```bash
+# Wrong: no URL specified
+curl -H "X-API-Key: YOUR_KEY" https://scraping-api.55-tech.com/fetch
+
+# Right: URL in header (recommended)
+curl -H "X-API-Key: YOUR_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+
+# Right: URL in query param
+curl "https://scraping-api.55-tech.com/fetch?url=https://example.com&apiKey=YOUR_KEY"
+```
+
+### Invalid geo code
+
+```bash
+# Wrong: full country name
+-H "X-Geo: Germany"
+
+# Right: ISO 2-char code
+-H "X-Geo: DE"
+```
+
+### WebSocket connect timeout
+
+The first JSON message with `apiKey` and `url` must be sent within **10 seconds** of opening the WebSocket connection, or it will be closed with code `1008`.

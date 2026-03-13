@@ -1,0 +1,283 @@
+---
+title: "Scraping API WebSocket & AMQP"
+sidebarTitle: "WebSocket & AMQP"
+description: "通过 55 Tech Scraping API 代理网络中继 WebSocket 连接和消费 AMQP/RabbitMQ 流。"
+---
+
+## WebSocket 中继
+
+Scraping API 可以通过代理网络中继双向 WebSocket 连接。代理节点使用 `curl_cffi AsyncWebSocket` 配合 TLS 指纹模拟连接到目标，因此目标看到的是真实的浏览器握手。所有 WS 子协议均透明中继 — Socket.IO、SignalR、Centrifugo、GraphQL-WS、原生 WebSocket 等。
+
+### 端点
+
+```
+wss://scraping-api.55-tech.com/ws
+```
+
+### 连接流程
+
+<Steps>
+  <Step title="连接到网关">
+    打开到 `wss://scraping-api.55-tech.com/ws` 的 WebSocket 连接。连接时无需身份验证 — 网关会立即接受连接。
+  </Step>
+  <Step title="发送连接消息（10 秒内）">
+    发送一条 JSON 消息，指定目标 URL 和您的 API 密钥。您有 **10 秒**时间发送此消息，否则连接将以关闭代码 `1008` 断开。
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "wss://target.example.com/stream",
+  "headers": { "Authorization": "Bearer token" },
+  "cookies": { "session": "abc123" },
+  "geo": "US,DE",
+  "agent": "de1",
+  "idle_timeout": 0
+}
+```
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | Yes | — | 您的 API 密钥（也接受 `key`） |
+| `url` | string | Yes | — | 目标 WebSocket URL（`wss://...` 或 `ws://...`） |
+| `headers` | object | No | `{}` | WS 升级请求的自定义请求头 |
+| `cookies` | object | No | `{}` | 随 WS 升级请求发送的 Cookie |
+| `geo` | string | No | — | 代理节点选择的国家过滤（例如 `US,DE`） |
+| `agent` | string | No | — | 通过标识固定到特定代理节点（例如 `de1` 或 `de1,at5`） |
+| `idle_timeout` | float | No | `0` | 等待目标消息的超时时间（秒）。`0` = 不超时 |
+  </Step>
+  <Step title="接收连接确认">
+    网关通过调度器选择代理节点，代理节点使用 TLS 指纹模拟连接到目标 WebSocket，然后网关响应：
+
+```json
+{
+  "type": "connected",
+  "status": 101,
+  "node_id": "scraping-de1"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | 始终为 `"connected"` |
+| `status` | WS 升级的 HTTP 状态码（101） |
+| `node_id` | 处理连接的代理节点 |
+  </Step>
+  <Step title="双向中继帧">
+    连接建立后，所有文本帧和二进制帧均透明中继：
+    - **客户端 -> 目标**：您的消息按原样转发到目标
+    - **目标 -> 客户端**：目标消息按原样转发给您
+    - **关闭帧**：触发双方优雅关闭
+    - **PONG 帧**：来自目标的 PONG 帧转发给客户端
+  </Step>
+</Steps>
+
+### 错误响应
+
+如果出现问题，网关会发送：
+
+```json
+{
+  "type": "error",
+  "message": "description of what went wrong"
+}
+```
+
+常见错误：
+- API 密钥无效或缺失（关闭代码 `1008`）
+- 超出速率限制（关闭代码 `1008`）
+- 10 秒内未收到连接消息（关闭代码 `1008`）
+- 目标连接失败
+- 代理节点不可用
+
+### 示例：Python
+
+```python
+import asyncio
+import json
+import websockets
+
+async def relay():
+    async with websockets.connect("wss://scraping-api.55-tech.com/ws") as ws:
+        # 1. Send connect message
+        await ws.send(json.dumps({
+            "apiKey": "YOUR_API_KEY",
+            "url": "wss://echo.websocket.events",
+            "geo": "DE"
+        }))
+
+        # 2. Wait for connected confirmation
+        resp = json.loads(await ws.recv())
+        if resp.get("type") == "error":
+            print(f"Error: {resp['message']}")
+            return
+        assert resp["type"] == "connected"
+        print(f"Connected via {resp['node_id']}")
+
+        # 3. Send and receive frames
+        await ws.send("hello from scraping api")
+        async for msg in ws:
+            print(f"Received: {msg}")
+
+asyncio.run(relay())
+```
+
+### 示例：JavaScript
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://scraping-api.55-tech.com/ws');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    apiKey: 'YOUR_API_KEY',
+    url: 'wss://echo.websocket.events',
+    geo: 'DE'
+  }));
+});
+
+let connected = false;
+ws.on('message', (raw) => {
+  if (!connected) {
+    const msg = JSON.parse(raw.toString());
+    if (msg.type === 'connected') {
+      console.log(`Connected via ${msg.node_id}`);
+      connected = true;
+      ws.send('hello from scraping api');
+    } else if (msg.type === 'error') {
+      console.error(`Error: ${msg.message}`);
+    }
+    return;
+  }
+  // After connected, frames are relayed transparently
+  console.log('Received:', raw.toString());
+});
+```
+
+### 支持的子协议
+
+所有子协议均透明中继 — 无需特殊配置：
+
+- Raw WebSocket (text/binary)
+- Socket.IO (engine.io transport)
+- SignalR (JSON + `\x1e` delimiter)
+- Centrifugo (JSON-RPC)
+- GraphQL-WS subscriptions
+
+---
+
+## AMQP 消费者 (SSE)
+
+通过代理网络从 RabbitMQ 代理流式传输消息，以 Server-Sent Events 形式交付。代理节点使用 `aio-pika` 连接到消息代理，创建临时自动删除队列，将其绑定到指定的交换机，并将消息流式传回。
+
+### 端点
+
+```
+POST https://scraping-api.55-tech.com/amqp
+```
+
+### 请求体
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "host": "broker.example.com",
+  "port": 5671,
+  "virtual_host": "/",
+  "username": "user",
+  "password": "pass",
+  "exchange": "my_exchange",
+  "routing_key": "#",
+  "queue_prefix": "scrape",
+  "ssl": true,
+  "heartbeat": 60,
+  "geo": "DE",
+  "agent": "de1"
+}
+```
+
+身份验证也可以通过 `X-API-Key` 请求头提供，而不是使用 `apiKey` 请求体字段。
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `apiKey` | string | Yes | — | 您的 API 密钥（或使用 `X-API-Key` 请求头） |
+| `host` | string | Yes | — | AMQP 消息代理主机名 |
+| `port` | int | No | `5672` | 消息代理端口（SSL 使用 `5671`） |
+| `virtual_host` | string | No | `/` | AMQP 虚拟主机 |
+| `username` | string | No | `""` | 消息代理用户名 |
+| `password` | string | No | `""` | 消息代理密码 |
+| `exchange` | string | No | `""` | 要绑定的交换机 |
+| `routing_key` | string | No | `#` | 路由键模式（`#` = 所有消息） |
+| `queue_prefix` | string | No | `scrape` | 自动删除队列名称的前缀（例如 `scrape_de1_4821`） |
+| `ssl` | bool | No | `false` | 使用 AMQPS (TLS) 连接 |
+| `heartbeat` | int | No | `60` | AMQP 心跳间隔（秒） |
+| `geo` | string | No | — | 代理节点选择的国家过滤 |
+| `agent` | string | No | — | 通过标识固定到特定代理节点 |
+
+### SSE 事件
+
+**`connected`** — 代理节点已连接到消息代理，队列已创建并绑定：
+
+```
+event: connected
+data: {"node_id": "scraping-de1", "queue_name": "scrape_de1_4821"}
+```
+
+**`message`** — 从队列接收到的消息：
+
+```
+event: message
+data: {"body": "{\"odds\": 1.95}", "routing_key": "19454.match.123", "exchange": "19454.all", "delivery_tag": 1, "content_type": "application/json"}
+```
+
+**`error`** — 连接或消费错误（流结束）：
+
+```
+event: error
+data: {"message": "agent error: connection refused", "code": 1011}
+```
+
+### 示例：curl
+
+```bash
+curl -N -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{
+    "host": "broker.example.com",
+    "port": 5671,
+    "ssl": true,
+    "username": "user",
+    "password": "pass",
+    "exchange": "my_exchange",
+    "routing_key": "#"
+  }' \
+  https://scraping-api.55-tech.com/amqp
+```
+
+### 示例：Python
+
+```python
+import requests
+import json
+
+resp = requests.post(
+    "https://scraping-api.55-tech.com/amqp",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={
+        "host": "broker.example.com",
+        "port": 5671,
+        "ssl": True,
+        "username": "user",
+        "password": "pass",
+        "exchange": "my_exchange",
+        "routing_key": "#",
+    },
+    stream=True,
+)
+
+for line in resp.iter_lines():
+    if line.startswith(b"data: "):
+        event = json.loads(line[6:])
+        print(event)
+```
