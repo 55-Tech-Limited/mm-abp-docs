@@ -10,7 +10,7 @@ All Scraping API endpoints (except public ones listed below) require authenticat
 
 Pass your API key using one of these methods:
 
-**HTTP header (recommended):**
+**HTTP header (recommended for `/fetch`):**
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
@@ -18,29 +18,14 @@ curl -H "X-API-Key: YOUR_API_KEY" \
   https://scraping-api.55-tech.com/fetch
 ```
 
-**Query parameter:**
-
-```bash
-curl "https://scraping-api.55-tech.com/fetch?apiKey=YOUR_API_KEY&url=https://example.com"
-```
-
-The `key` query parameter is also accepted as a fallback alias for `apiKey`.
-
-**JSON body field (for POST `/fetch`, WebSocket `/ws`, AMQP `/amqp`):**
+**JSON body field (for WebSocket `/ws` and AMQP `/amqp`):**
 
 ```json
 {
   "apiKey": "YOUR_API_KEY",
-  "url": "https://example.com"
+  "url": "wss://target.example.com/stream"
 }
 ```
-
-### Priority order
-
-For HTTP `/fetch`, the API key is resolved in this order:
-1. `apiKey` query parameter
-2. `X-API-Key` header
-3. `key` query parameter (fallback)
 
 For WebSocket `/ws` and AMQP `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
 
@@ -98,4 +83,4 @@ These endpoints do **not** require authentication:
 
 ## Obtaining a key
 
-Contact [support@55-tech.com](mailto:support@55-tech.com) to obtain an API key with a rate limit configured for your use case.
+Contact [contact@55-tech.com](mailto:contact@55-tech.com) to obtain an API key with a rate limit configured for your use case.

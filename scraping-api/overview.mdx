@@ -6,7 +6,7 @@ description: "55 Tech Scraping API — route HTTP, WebSocket, and AMQP requests 
 
 ## What is the Scraping API?
 
-The **Scraping API** by [55 Tech](https://55-tech.com/) lets you route HTTP, WebSocket, and AMQP requests through a network of 60+ geo-distributed agents. Requests are automatically routed to healthy nodes, so you get reliable responses without managing proxies yourself.
+The **Scraping API** by [55 Tech](https://55-tech.com/) lets you route HTTP, WebSocket, and AMQP requests through a network of 60+ geo-distributed agents. Within seconds, the API automatically identifies the most reliable agents for each target — so your requests become instantly more successful without managing proxies yourself.
 
 **What you can do:**
 
@@ -24,7 +24,7 @@ https://scraping-api.55-tech.com
 
 ## Authentication
 
-Pass your API key via the `X-API-Key` header, the `apiKey` query parameter, or (for WebSocket/AMQP) the `apiKey` body field. See [Authentication](/scraping-api/authentication) for details.
+Pass your API key via the `X-API-Key` header or (for WebSocket/AMQP) the `apiKey` body field. See [Authentication](/scraping-api/authentication) for details.
 
 ## Endpoints
 
@@ -52,7 +52,8 @@ These headers control routing and are stripped before forwarding to the target:
 | `X-Target-URL` | — | Target URL (no encoding needed, recommended) | `https://example.com/?foo=bar` |
 | `X-Geo` | `X-Geo-CC`, `X-Geo-Strict`, `X-CC`, `X-Country` | Restrict to specific countries (comma-separated ISO codes) | `US,DE,AT` |
 | `X-Expect-JSON` | — | Hint that the target response is JSON | `1` |
-| `X-Agent` | `?agent=` query param | Route through specific agent(s) by slug or comma-separated list | `de1`, `de1,at5,us3` |
+| `X-Agent` | — | Route through specific agent(s) by slug or comma-separated list | `de1`, `de1,at5,us3` |
+| `X-Timeout` | — | Override request timeout in seconds | `60` |
 
 ## Rate limiting
 

@@ -6,7 +6,7 @@
     "version": "2.1.0",
     "contact": {
       "name": "55 Tech Support",
-      "email": "support@55-tech.com"
+      "email": "contact@55-tech.com"
     }
   },
   "servers": [
@@ -39,31 +39,13 @@
       "get": {
         "operationId": "fetch_get",
         "summary": "Fetch a URL (GET)",
-        "description": "Send a GET request to the target URL through the agent network. The target URL can be passed via the X-Target-URL header (recommended), the url query parameter, or the u query parameter.",
+        "description": "Send a GET request to the target URL through the agent network. Pass the target URL via the X-Target-URL header.",
         "tags": ["Fetch"],
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
           { "$ref": "#/components/parameters/XGeo" },
           { "$ref": "#/components/parameters/XExpectJSON" },
-          { "$ref": "#/components/parameters/XAgent" },
-          {
-            "name": "url",
-            "in": "query",
-            "description": "Target URL (must be URL-encoded if it contains query parameters).",
-            "schema": { "type": "string" }
-          },
-          {
-            "name": "timeout",
-            "in": "query",
-            "description": "Request timeout in seconds. Default: 30.",
-            "schema": { "type": "number" }
-          },
-          {
-            "name": "agent",
-            "in": "query",
-            "description": "Pin to specific agent by slug (e.g. de1).",
-            "schema": { "type": "string" }
-          }
+          { "$ref": "#/components/parameters/XAgent" }
         ],
         "responses": {
           "200": {
@@ -116,7 +98,7 @@
       "post": {
         "operationId": "fetch_post",
         "summary": "Fetch a URL (POST)",
-        "description": "Send a request to the target URL through the agent network. Pass a JSON body with url, method, headers, body, timeout, and allow_redirects fields. The target URL can also be set via the X-Target-URL header.",
+        "description": "Send a request to the target URL through the agent network. Pass the target URL via the X-Target-URL header. Optionally include a JSON body with method, headers, body, timeout, and allow_redirects fields.",
         "tags": ["Fetch"],
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
@@ -214,13 +196,7 @@
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
           { "$ref": "#/components/parameters/XGeo" },
-          { "$ref": "#/components/parameters/XAgent" },
-          {
-            "name": "url",
-            "in": "query",
-            "description": "Target URL.",
-            "schema": { "type": "string" }
-          }
+          { "$ref": "#/components/parameters/XAgent" }
         ],
         "responses": {
           "200": {
@@ -408,12 +384,6 @@
         "in": "header",
         "name": "X-API-Key",
         "description": "API key passed in the X-API-Key header."
-      },
-      "ApiKeyQuery": {
-        "type": "apiKey",
-        "in": "query",
-        "name": "apiKey",
-        "description": "API key passed as the apiKey query parameter."
       }
     },
     "schemas": {
@@ -480,10 +450,6 @@
       "FetchPostBody": {
         "type": "object",
         "properties": {
-          "url": {
-            "type": "string",
-            "description": "Target URL. Alternative to X-Target-URL header or url query param."
-          },
           "method": {
             "type": "string",
             "description": "Override HTTP method (e.g. POST, PUT). Defaults to the request's own method."
@@ -729,7 +695,7 @@
       "XAgent": {
         "name": "X-Agent",
         "in": "header",
-        "description": "Route through specific agent(s) by slug (e.g. de1), full name (scraping-de1), ip:port, or comma-separated list for random pick.",
+        "description": "Route through specific agent(s) by slug (e.g. de1) or comma-separated list for random pick (e.g. de1,at5,us3).",
         "schema": { "type": "string" }
       }
     }

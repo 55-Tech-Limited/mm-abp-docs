@@ -144,25 +144,23 @@ After the `connected` message, all subsequent frames are raw relay — no JSON w
 ## Frame flow diagram
 
 ```
-Time →
-
-Client                 Gateway                Agent                  Target
-  │                      │                      │                      │
-  │──── WS connect ─────▶│                      │                      │
-  │◀── accept ───────────│                      │                      │
-  │                      │                      │                      │
-  │──── {"apiKey":...} ─▶│                      │                      │
-  │                      │── pick agent ────────▶│                      │
-  │                      │                      │── WS upgrade ───────▶│
-  │                      │                      │◀── 101 Switching ────│
-  │                      │◀── connected ────────│                      │
-  │◀── {"type":"connected"}│                    │                      │
-  │                      │                      │                      │
-  │──── text frame ─────▶│── relay ────────────▶│── relay ────────────▶│
-  │◀── text frame ───────│◀── relay ────────────│◀── relay ────────────│
-  │                      │                      │                      │
-  │──── close ──────────▶│── close ────────────▶│── close ────────────▶│
-  │◀── close ────────────│◀── close ────────────│◀── close ────────────│
+Client               Gateway               Agent                Target
+  │                     │                     │                     │
+  │── WS connect ──────▶│                     │                     │
+  │◀── accept ──────────│                     │                     │
+  │                     │                     │                     │
+  │── {apiKey, url} ───▶│                     │                     │
+  │                     │── pick agent ──────▶│                     │
+  │                     │                     │── WS upgrade ──────▶│
+  │                     │                     │◀── 101 Switching ───│
+  │                     │◀── connected ───────│                     │
+  │◀── connected msg ───│                     │                     │
+  │                     │                     │                     │
+  │── text frame ──────▶│── relay ───────────▶│── relay ───────────▶│
+  │◀── text frame ──────│◀── relay ───────────│◀── relay ───────────│
+  │                     │                     │                     │
+  │── close ───────────▶│── close ───────────▶│── close ───────────▶│
+  │◀── close ───────────│◀── close ───────────│◀── close ───────────│
 ```
 
 ## Rate limiting

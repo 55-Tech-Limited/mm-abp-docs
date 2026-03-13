@@ -14,9 +14,9 @@ curl https://scraping-api.55-tech.com/network/status
 
 ```json
 {
-  "total_agents": 62,
+  "total_nodes": 62,
   "total_countries": 15,
-  "agents_by_country": {
+  "nodes_by_country": {
     "DE": 20,
     "AT": 22,
     "US": 7,
@@ -33,40 +33,37 @@ curl https://scraping-api.55-tech.com/network/status
 
 ## 步骤 2：发送 HTTP GET 请求
 
-使用 `X-Target-URL` 请求头（推荐用于带查询参数的 URL — 无需编码）通过代理网络抓取一个 URL：
+使用 `X-Target-URL` 请求头通过代理网络抓取一个 URL：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   https://scraping-api.55-tech.com/fetch
-```
-
-或使用 `url` 查询参数：
-
-```bash
-curl "https://scraping-api.55-tech.com/fetch?url=https://httpbin.org/ip&apiKey=YOUR_API_KEY"
 ```
 
 ```json
 {
   "meta": {
     "status": 200,
-    "final_url": "https://httpbin.org/ip",
+    "final_url": "https://httpbin.org/headers",
     "http_version": "HTTP/2",
     "elapsed_ms": 312,
     "blocked": false,
     "headers": { "content-type": "application/json" },
     "agent": { "id": "scraping-de5" },
-    "bytes": 32
+    "bytes": 128
   },
   "raw": null,
   "raw_json": {
-    "origin": "188.68.36.26"
+    "headers": {
+      "Accept": "*/*",
+      "Host": "httpbin.org"
+    }
   }
 }
 ```
 
-`origin` IP 是代理节点的 IP，而不是您的 IP。JSON 响应会自动解析到 `raw_json` 中。
+JSON 响应会自动解析到 `raw_json` 中。
 
 ## 步骤 3：发送带自定义请求体和请求头的 POST 请求
 
@@ -75,9 +72,9 @@ curl "https://scraping-api.55-tech.com/fetch?url=https://httpbin.org/ip&apiKey=Y
 ```bash
 curl -X POST \
   -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/post" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://httpbin.org/post",
     "headers": {
       "Authorization": "Bearer my-token",
       "Accept": "application/json"
@@ -92,7 +89,6 @@ curl -X POST \
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `url` | Yes (or use `X-Target-URL` header) | — | 目标 URL |
 | `method` | No | Matches request method | 覆盖 HTTP 方法 |
 | `headers` | No | `{}` | 发送到目标源站的自定义请求头 |
 | `body` | No | `""` | 发送到目标的请求体 |
@@ -105,7 +101,7 @@ curl -X POST \
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   -H "X-Geo: US" \
   https://scraping-api.55-tech.com/fetch
 ```
@@ -114,7 +110,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   -H "X-Agent: de1" \
   https://scraping-api.55-tech.com/fetch
 ```
@@ -123,7 +119,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   -H "X-Agent: de1,at5,us3" \
   https://scraping-api.55-tech.com/fetch
 ```
@@ -140,15 +136,15 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ```json
 {
   "domain": "example.com",
-  "agents_checked": 62,
-  "healthy": 58,
-  "soft_blocked": 2,
-  "hard_blocked": 2,
+  "nodes_checked": 62,
+  "available": 58,
+  "limited": 2,
+  "unavailable": 2,
   "details": [
     {
-      "agent_id": "scraping-de1",
+      "node_id": "scraping-de1",
       "slug": "de1",
-      "state": "healthy",
+      "state": "available",
       "rtt_ms": 145,
       "last_check": "2026-03-13T22:15:00Z"
     }

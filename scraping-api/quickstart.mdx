@@ -14,9 +14,9 @@ curl https://scraping-api.55-tech.com/network/status
 
 ```json
 {
-  "total_agents": 62,
+  "total_nodes": 62,
   "total_countries": 15,
-  "agents_by_country": {
+  "nodes_by_country": {
     "DE": 20,
     "AT": 22,
     "US": 7,
@@ -33,40 +33,37 @@ curl https://scraping-api.55-tech.com/network/status
 
 ## Step 2: Make an HTTP GET request
 
-Fetch a URL through the agent network using the `X-Target-URL` header (recommended for URLs with query parameters — no encoding needed):
+Fetch a URL through the agent network using the `X-Target-URL` header:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   https://scraping-api.55-tech.com/fetch
-```
-
-Or using the `url` query parameter:
-
-```bash
-curl "https://scraping-api.55-tech.com/fetch?url=https://httpbin.org/ip&apiKey=YOUR_API_KEY"
 ```
 
 ```json
 {
   "meta": {
     "status": 200,
-    "final_url": "https://httpbin.org/ip",
+    "final_url": "https://httpbin.org/headers",
     "http_version": "HTTP/2",
     "elapsed_ms": 312,
     "blocked": false,
     "headers": { "content-type": "application/json" },
     "agent": { "id": "scraping-de5" },
-    "bytes": 32
+    "bytes": 128
   },
   "raw": null,
   "raw_json": {
-    "origin": "188.68.36.26"
+    "headers": {
+      "Accept": "*/*",
+      "Host": "httpbin.org"
+    }
   }
 }
 ```
 
-The `origin` IP is the agent's IP, not yours. JSON responses are automatically parsed into `raw_json`.
+JSON responses are automatically parsed into `raw_json`.
 
 ## Step 3: POST with a custom body and headers
 
@@ -75,9 +72,9 @@ Use `POST /fetch` with a JSON body to send custom headers, body, and method to t
 ```bash
 curl -X POST \
   -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://httpbin.org/post" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://httpbin.org/post",
     "headers": {
       "Authorization": "Bearer my-token",
       "Accept": "application/json"
@@ -92,7 +89,6 @@ curl -X POST \
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `url` | Yes (or use `X-Target-URL` header) | — | Target URL |
 | `method` | No | Matches request method | Override HTTP method |
 | `headers` | No | `{}` | Custom headers sent to the target origin |
 | `body` | No | `""` | Request body sent to the target |
@@ -105,7 +101,7 @@ Use `X-Geo` to route through agents in specific countries:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   -H "X-Geo: US" \
   https://scraping-api.55-tech.com/fetch
 ```
@@ -114,7 +110,7 @@ Pin to a specific agent with `X-Agent`:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   -H "X-Agent: de1" \
   https://scraping-api.55-tech.com/fetch
 ```
@@ -123,7 +119,7 @@ Or pick randomly from a set of agents:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://httpbin.org/ip" \
+  -H "X-Target-URL: https://httpbin.org/headers" \
   -H "X-Agent: de1,at5,us3" \
   https://scraping-api.55-tech.com/fetch
 ```
@@ -140,15 +136,15 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ```json
 {
   "domain": "example.com",
-  "agents_checked": 62,
-  "healthy": 58,
-  "soft_blocked": 2,
-  "hard_blocked": 2,
+  "nodes_checked": 62,
+  "available": 58,
+  "limited": 2,
+  "unavailable": 2,
   "details": [
     {
-      "agent_id": "scraping-de1",
+      "node_id": "scraping-de1",
       "slug": "de1",
-      "state": "healthy",
+      "state": "available",
       "rtt_ms": 145,
       "last_check": "2026-03-13T22:15:00Z"
     }

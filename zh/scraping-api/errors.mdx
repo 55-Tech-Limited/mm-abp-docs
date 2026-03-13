@@ -51,7 +51,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
   https://scraping-api.55-tech.com/network/health/example.com
 ```
 
-健康端点返回三种状态：`healthy`、`soft_block`（临时排除）和 `hard_block`（较长时间排除）。代理节点会自动恢复。
+健康端点返回三种状态：`available`、`limited`（临时排除）和 `unavailable`（较长时间排除）。代理节点会自动恢复。
 
 ## 重试策略
 
@@ -102,13 +102,10 @@ data: {"message": "agent error: connection refused", "code": 1011}
 # Wrong: no URL specified
 curl -H "X-API-Key: YOUR_KEY" https://scraping-api.55-tech.com/fetch
 
-# Right: URL in header (recommended)
+# Right: URL in header
 curl -H "X-API-Key: YOUR_KEY" \
   -H "X-Target-URL: https://example.com" \
   https://scraping-api.55-tech.com/fetch
-
-# Right: URL in query param
-curl "https://scraping-api.55-tech.com/fetch?url=https://example.com&apiKey=YOUR_KEY"
 ```
 
 ### 无效的地理代码

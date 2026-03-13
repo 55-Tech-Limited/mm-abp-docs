@@ -1176,7 +1176,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key",
-        "description": "API key for authentication. Contact support@55-tech.com to obtain a key."
+        "description": "API key for authentication. Contact contact@55-tech.com to obtain a key."
       }
     },
     "schemas": {

@@ -1957,7 +1957,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "Client API key (UUID format). Contact support@55-tech.com to obtain your key."
+        "description": "Client API key (UUID format). Contact contact@55-tech.com to obtain your key."
       }
     }
   },
