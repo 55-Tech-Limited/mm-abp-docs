@@ -101,7 +101,11 @@
           },
           {
             "tab": "OddsPapi+",
-            "href": "https://docs.oddspapi.io/"
+            "href": "https://docs.oddspapi.io"
+          },
+          {
+            "tab": "55+",
+            "href": "https://55-tech.com"
           }
         ]
       },
@@ -182,6 +186,10 @@
           {
             "tab": "OddsPapi+",
             "href": "https://docs.oddspapi.io/"
+          },
+          {
+            "tab": "55+",
+            "href": "https://55-tech.com"
           }
         ]
       }
