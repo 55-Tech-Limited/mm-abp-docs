@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ABP v2 - Automated Bet Placing API",
-    "description": "\nPlace bets across 30+ bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `x-api-key` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
+    "description": "\nPlace bets across 30+ bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `X-API-Key` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
     "version": "2.0"
   },
   "servers": [
@@ -1175,7 +1175,7 @@
       "apiKey": {
         "type": "apiKey",
         "in": "header",
-        "name": "x-api-key",
+        "name": "X-API-Key",
         "description": "API key for authentication. Contact contact@55-tech.com to obtain a key."
       }
     },

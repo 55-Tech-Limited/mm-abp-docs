@@ -9,7 +9,7 @@ description: "通过 ABP API 下您第一注的分步指南。从账户设置到
 检查为您的API密钥配置了哪些博彩公司账户：
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
@@ -41,7 +41,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
 下注前，获取当前赔率和限额。需要 `fixtureId`、`outcomeId` 和 `playerId`：
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   "https://v2.55-tech.com/betslip?fixtureId=id1000002361061419&outcomeId=101&playerId=0"
 ```
 
@@ -101,7 +101,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
 
 ```bash
 curl -X POST \
-  -H "x-api-key: YOUR_API_KEY" \
+  -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "orders": [
@@ -192,14 +192,14 @@ curl -X POST \
 按 `userRef`、`orderIds` 或 `requestUuids` 查询订单（至少需要一个过滤条件）：
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   "https://v2.55-tech.com/orders?userRef=my-strategy-1"
 ```
 
 查看特定订单的单个投注：
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   "https://v2.55-tech.com/bets?orderIds=327"
 ```
 
@@ -234,7 +234,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
 查看您的汇总敞口（默认按博彩公司分组）：
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   https://v2.55-tech.com/positions
 ```
 
@@ -254,7 +254,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
 查看盈亏：
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   https://v2.55-tech.com/pnl
 ```
 

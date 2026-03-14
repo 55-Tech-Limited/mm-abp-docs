@@ -9,7 +9,7 @@ description: "Step-by-step guide to placing your first bet through the ABP API. 
 Check which bookmaker accounts are configured for your API key:
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
@@ -41,7 +41,7 @@ Response includes each account's bookmaker, balance, priority, stake limits, and
 Before placing a bet, retrieve current odds and limits. You need a `fixtureId`, `outcomeId`, and `playerId`:
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   "https://v2.55-tech.com/betslip?fixtureId=id1000002361061419&outcomeId=101&playerId=0"
 ```
 
@@ -101,7 +101,7 @@ Place a bet order with minimum price protection. Each order needs a unique `requ
 
 ```bash
 curl -X POST \
-  -H "x-api-key: YOUR_API_KEY" \
+  -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "orders": [
@@ -192,14 +192,14 @@ Orders that fail validation appear in `declinedOrders` with a `declineReason`:
 Query orders by `userRef`, `orderIds`, or `requestUuids` (at least one filter required):
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   "https://v2.55-tech.com/orders?userRef=my-strategy-1"
 ```
 
 View individual bets for specific orders:
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   "https://v2.55-tech.com/bets?orderIds=327"
 ```
 
@@ -234,7 +234,7 @@ Each bet includes the bookmaker, placed price, placed stake, bet status, and set
 View your aggregated open positions (grouped by bookmaker by default):
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   https://v2.55-tech.com/positions
 ```
 
@@ -254,7 +254,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
 View profit and loss:
 
 ```bash
-curl -H "x-api-key: YOUR_API_KEY" \
+curl -H "X-API-Key: YOUR_API_KEY" \
   https://v2.55-tech.com/pnl
 ```
 
