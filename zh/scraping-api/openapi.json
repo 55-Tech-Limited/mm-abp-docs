@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "55 Tech Scraping API",
-    "description": "Distributed fetch network. Route HTTP, WebSocket, and AMQP requests through 60+ geo-distributed agents with health-aware routing and block detection.",
+    "description": "Distributed fetch network. Route HTTP, WebSocket, and AMQP requests through 80+ geo-distributed agents with health-aware routing and block detection.",
     "version": "2.1.0",
     "contact": {
       "name": "55 Tech Support",

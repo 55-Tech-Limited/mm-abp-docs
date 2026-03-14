@@ -1,12 +1,15 @@
-# 55-Tech API Docs — Full Bundle
-# Generated from docs.json navigation
-# Source: MDX files
-# APIs: ABP (Automated Bet Placing), MM (Market Making), and Scraping API
+# 55-Tech API — Full Documentation
+# Generated from all English .mdx files in navigation order
 
+================================================================================
+# 55-Tech API Documentation
+# Source: /index
+================================================================================
 
 ---
-## 55-Tech API Documentation
-Source: /index
+title: "55-Tech API Documentation"
+sidebarTitle: "Introduction"
+description: "Official API documentation for 55-Tech's Market Making (MM) and Automated Bet Placing (ABP) platforms. High-frequency trading and automated bet execution for sports betting markets."
 ---
 
 <Note>
@@ -45,9 +48,15 @@ Both platforms consume real-time odds data from [OddsPapi](https://docs.oddspapi
 </Columns>
 
 
+================================================================================
+# Quickstart - Connect to 55-Tech APIs
+# Source: /quickstart
+================================================================================
+
 ---
-## Quickstart - Connect to 55-Tech APIs
-Source: /quickstart
+title: "Quickstart - Connect to 55-Tech APIs"
+sidebarTitle: "Quickstart"
+description: "Get started with the 55-Tech ABP, MM, and Scraping APIs. Check connectivity, authenticate, and make your first API calls."
 ---
 
 ## Prerequisites
@@ -181,9 +190,15 @@ All APIs support WebSocket connections for live updates. See the WebSocket docum
 </Columns>
 
 
+================================================================================
+# AI & LLM Integration - Documentation Export
+# Source: /ai
+================================================================================
+
 ---
-## AI & LLM Integration - Documentation Export
-Source: /ai
+title: "AI & LLM Integration - Documentation Export"
+sidebarTitle: "AI / Offline Export"
+description: "Download 55-Tech API documentation for AI tools, LLMs, and offline use. Machine-readable exports in TXT and OpenAPI JSON formats for ChatGPT, Claude, and other AI assistants."
 ---
 
 ## Download
@@ -194,6 +209,7 @@ Source: /ai
 | [`/llms-full.txt`](/llms-full.txt) | TXT | Full docs bundle — all guide pages concatenated |
 | [`/abp-api/openapi.json`](/abp-api/openapi.json) | JSON | ABP OpenAPI 3.1 spec — 13 endpoints, full schemas |
 | [`/mm-api/openapi.json`](/mm-api/openapi.json) | JSON | MM OpenAPI 3.1 spec — REST reference |
+| [`/scraping-api/openapi.json`](/scraping-api/openapi.json) | JSON | Scraping OpenAPI 3.1 spec — fetch, WebSocket, AMQP, network endpoints |
 
 ## What's included
 
@@ -212,12 +228,22 @@ The **MM API** documentation covers:
 - Market-making engine configuration and real-time spread management
 - WebSocket-driven pricing updates and order book interaction
 
+The **Scraping API** documentation covers:
+
+- **HTTP fetch** — GET/POST/PUT/PATCH/DELETE through 80+ geo-distributed agents
+- **WebSocket relay** — Bidirectional frame relay for Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WS
+- **AMQP consumer** — Stream RabbitMQ messages via SSE
+- **Network intelligence** — Agent listing, geo distribution, per-domain health checks
+- **Usage & rate limits** — Per-key metrics, request analytics, top domains
+
 ## Recommended usage
 
 **For AI assistants that fetch URLs:**
 
 - `/llms-full.txt` — best for "read everything once" (all guide pages + examples)
-- `/abp-api/openapi.json` — best for endpoint + schema accuracy (typed, with examples)
+- `/abp-api/openapi.json` — ABP endpoint + schema accuracy (typed, with examples)
+- `/mm-api/openapi.json` — MM endpoint + schema reference
+- `/scraping-api/openapi.json` — Scraping endpoint + schema reference
 
 **For copy/paste workflows:**
 
@@ -225,14 +251,14 @@ Open `/llms-full.txt` in the browser and paste the contents into your AI tool.
 
 **For code generation:**
 
-Feed the OpenAPI spec to tools like `openapi-generator`, `oapi-codegen`, or Cursor/Copilot for typed client SDK generation.
+Feed the OpenAPI specs to tools like `openapi-generator`, `oapi-codegen`, or Cursor/Copilot for typed client SDK generation.
 
 ## Notes
 
 - `llms-full.txt` follows the same ordering as the site navigation
 - WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs
-- Both ABP and MM documentation are included in a single bundle
-- Authentication uses the `x-api-key` header for ABP and `x-api-key` for MM
+- All three APIs (ABP, MM, Scraping) are included in a single bundle
+- All APIs authenticate via the `X-API-Key` header
 
 ---
 
@@ -248,9 +274,15 @@ Click one of the links below — each one opens the full docs bundle in the sele
 - [Ask Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
 
 
+================================================================================
+# ABP API Overview - Automated Bet Placing
+# Source: /abp-api/overview
+================================================================================
+
 ---
-## ABP API Overview - Automated Bet Placing
-Source: /abp-api/overview
+title: "ABP API Overview - Automated Bet Placing"
+sidebarTitle: "Overview"
+description: "ABP v2 API overview. Place bets across 30+ bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
 ---
 
 ## What is ABP?
@@ -408,9 +440,15 @@ ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). 
 </Columns>
 
 
+================================================================================
+# ABP Authentication - API Key Setup
+# Source: /abp-api/authentication
+================================================================================
+
 ---
-## ABP Authentication - API Key Setup
-Source: /abp-api/authentication
+title: "ABP Authentication - API Key Setup"
+sidebarTitle: "Authentication"
+description: "Learn how to authenticate ABP API requests using the x-api-key header. API key resolution, rate limiting, and WebSocket authentication."
 ---
 
 All ABP endpoints require authentication via the `x-api-key` header.
@@ -476,9 +514,15 @@ Implement exponential backoff when receiving `429` responses.
 ```
 
 
+================================================================================
+# ABP Quickstart - Place Your First Bet
+# Source: /abp-api/quickstart
+================================================================================
+
 ---
-## ABP Quickstart - Place Your First Bet
-Source: /abp-api/quickstart
+title: "ABP Quickstart - Place Your First Bet"
+sidebarTitle: "Quickstart"
+description: "Step-by-step guide to placing your first bet through the ABP API. From account setup to order placement, tracking, and settlement."
 ---
 
 ## Step 1: List your accounts
@@ -762,9 +806,15 @@ curl -H "x-api-key: YOUR_API_KEY" \
 </Columns>
 
 
+================================================================================
+# ABP WebSocket - Real-Time Updates
+# Source: /abp-api/websocket
+================================================================================
+
 ---
-## ABP WebSocket - Real-Time Updates
-Source: /abp-api/websocket
+title: "ABP WebSocket - Real-Time Updates"
+sidebarTitle: "WebSocket"
+description: "Connect to the ABP WebSocket for real-time order, bet, settlement, account, and system updates. Server-backed with message ordering and reliable delivery."
 ---
 
 ## Endpoint
@@ -1069,9 +1119,15 @@ ws.on('message', (raw) => {
 ```
 
 
+================================================================================
+# ABP Error Handling
+# Source: /abp-api/errors
+================================================================================
+
 ---
-## ABP Error Handling
-Source: /abp-api/errors
+title: "ABP Error Handling"
+sidebarTitle: "Errors"
+description: "ABP API error codes, validation errors, order decline reasons, and resilience patterns. Learn how to handle errors in your integration."
 ---
 
 ## Error response format
@@ -1223,9 +1279,15 @@ In rare cases, the system may temporarily pause order processing during maintena
 Orders have a default `expiresAt` of 5 seconds from creation. If a bet hasn't been placed within this window, the order status changes to `EXPIRED`. Set a custom `expiresAt` for longer-lived orders.
 
 
+================================================================================
+# MM API Overview - Market Making Engine
+# Source: /mm-api/overview
+================================================================================
+
 ---
-## MM API Overview - Market Making Engine
-Source: /mm-api/overview
+title: "MM API Overview - Market Making Engine"
+sidebarTitle: "Overview"
+description: "MM-V2 Trading API overview. High-frequency market making engine placing orders on prediction market exchanges (Polymarket, Kalshi) and automatically hedging on bookmakers (Pinnacle, Vertex)."
 ---
 
 ## What is MM?
@@ -1367,9 +1429,15 @@ These cover 1x2 markets, over/under, handicap, correct score, and both sides.
 </Columns>
 
 
+================================================================================
+# MM Authentication - API Key Setup
+# Source: /mm-api/authentication
+================================================================================
+
 ---
-## MM Authentication - API Key Setup
-Source: /mm-api/authentication
+title: "MM Authentication - API Key Setup"
+sidebarTitle: "Authentication"
+description: "Learn how to authenticate MM API requests using the X-API-Key header (UUID). Client API and WebSocket authentication."
 ---
 
 All MM client endpoints require authentication via the `X-API-Key` header (UUID format).
@@ -1419,9 +1487,15 @@ Rate limits are enforced per client:
 ```
 
 
+================================================================================
+# MM Quickstart - First API Calls
+# Source: /mm-api/quickstart
+================================================================================
+
 ---
-## MM Quickstart - First API Calls
-Source: /mm-api/quickstart
+title: "MM Quickstart - First API Calls"
+sidebarTitle: "Quickstart"
+description: "Step-by-step guide to using the MM Trading API. Verify identity, view exchange orders, check positions, monitor hedge bets, and track PnL."
 ---
 
 <Note>
@@ -1606,9 +1680,15 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 </Columns>
 
 
+================================================================================
+# MM WebSocket - Real-Time Updates
+# Source: /mm-api/websocket
+================================================================================
+
 ---
-## MM WebSocket - Real-Time Updates
-Source: /mm-api/websocket
+title: "MM WebSocket - Real-Time Updates"
+sidebarTitle: "WebSocket"
+description: "Connect to the MM WebSocket for real-time order fills, hedge bet updates, account balance changes, live scores, and emergency status. server-backed broadcasting."
 ---
 
 ## Endpoint
@@ -1922,9 +2002,15 @@ setInterval(() => {
 ```
 
 
+================================================================================
+# MM Error Handling
+# Source: /mm-api/errors
+================================================================================
+
 ---
-## MM Error Handling
-Source: /mm-api/errors
+title: "MM Error Handling"
+sidebarTitle: "Errors"
+description: "MM API error codes, HTTP status codes, error response format, and emergency mode behavior."
 ---
 
 ## Error response format
@@ -2019,14 +2105,20 @@ When subscribing to the WebSocket, these error messages may be returned:
 
 
 
+================================================================================
+# Scraping API Overview
+# Source: /scraping-api/overview
+================================================================================
+
 ---
-## Scraping API Overview
-Source: /scraping-api/overview
+title: "Scraping API Overview"
+sidebarTitle: "Overview"
+description: "55 Tech Scraping API — route HTTP, WebSocket, and AMQP requests through 80+ geo-distributed agents."
 ---
 
 ## What is the Scraping API?
 
-The **Scraping API** by [55 Tech](https://55-tech.com/) lets you route HTTP, WebSocket, and AMQP requests through a network of 60+ geo-distributed agents. Within seconds, the API automatically identifies the most reliable agents for each target — so your requests become instantly more successful without managing proxies yourself.
+The **Scraping API** by [55 Tech](https://55-tech.com/) lets you route HTTP, WebSocket, and AMQP requests through a network of 80+ geo-distributed agents. Within seconds, the API automatically identifies the most reliable agents for each target — so your requests become instantly more successful without managing proxies yourself.
 
 **What you can do:**
 
@@ -2137,9 +2229,15 @@ All HTTP fetch responses follow this structure:
 </Columns>
 
 
+================================================================================
+# Scraping API Authentication
+# Source: /scraping-api/authentication
+================================================================================
+
 ---
-## Scraping API Authentication
-Source: /scraping-api/authentication
+title: "Scraping API Authentication"
+sidebarTitle: "Authentication"
+description: "Authenticate Scraping API requests using the X-API-Key header. Rate limits, key formats, and per-key configuration."
 ---
 
 All Scraping API endpoints (except public ones listed below) require authentication.
@@ -2224,9 +2322,15 @@ These endpoints do **not** require authentication:
 Contact [contact@55-tech.com](mailto:contact@55-tech.com) to obtain an API key with a rate limit configured for your use case.
 
 
+================================================================================
+# Scraping API Quickstart
+# Source: /scraping-api/quickstart
+================================================================================
+
 ---
-## Scraping API Quickstart
-Source: /scraping-api/quickstart
+title: "Scraping API Quickstart"
+sidebarTitle: "Quickstart"
+description: "Make your first proxied HTTP request, WebSocket connection, and AMQP stream through the 55 Tech Scraping API."
 ---
 
 ## Step 1: Check the network
@@ -2239,19 +2343,21 @@ curl https://scraping-api.55-tech.com/network/status
 
 ```json
 {
-  "total_nodes": 62,
-  "total_countries": 15,
+  "total_nodes": 80,
+  "total_countries": 12,
   "nodes_by_country": {
-    "DE": 20,
     "AT": 22,
+    "DE": 20,
     "US": 7,
-    "UK": 5,
     "IT": 5,
+    "UK": 4,
     "AU": 3,
     "GR": 3,
-    "FR": 2,
     "ES": 2,
-    "BR": 1
+    "FR": 2,
+    "BG": 1,
+    "BR": 1,
+    "PL": 1
   }
 }
 ```
@@ -2439,9 +2545,15 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 </Columns>
 
 
+================================================================================
+# Scraping API WebSocket & AMQP
+# Source: /scraping-api/websocket
+================================================================================
+
 ---
-## Scraping API WebSocket & AMQP
-Source: /scraping-api/websocket
+title: "Scraping API WebSocket & AMQP"
+sidebarTitle: "WebSocket & AMQP"
+description: "Relay WebSocket connections and consume AMQP/RabbitMQ streams through the 55 Tech Scraping API agent network."
 ---
 
 ## WebSocket relay
@@ -2723,9 +2835,15 @@ for line in resp.iter_lines():
 ```
 
 
+================================================================================
+# WebSocket Protocol Reference
+# Source: /scraping-api/ws-reference
+================================================================================
+
 ---
-## WebSocket Protocol Reference
-Source: /scraping-api/ws-reference
+title: "WebSocket Protocol Reference"
+sidebarTitle: "WS Reference"
+description: "Complete reference for the Scraping API WebSocket relay protocol. Connect message schema, response types, error codes, and interactive testing."
 ---
 
 ## Protocol overview
@@ -2867,24 +2985,41 @@ After the `connected` message, all subsequent frames are raw relay — no JSON w
 
 ## Frame flow diagram
 
-```
-Client               Gateway               Agent                Target
-  │                     │                     │                     │
-  │── WS connect ──────▶│                     │                     │
-  │◀── accept ──────────│                     │                     │
-  │                     │                     │                     │
-  │── {apiKey, url} ───▶│                     │                     │
-  │                     │── pick agent ──────▶│                     │
-  │                     │                     │── WS upgrade ──────▶│
-  │                     │                     │◀── 101 Switching ───│
-  │                     │◀── connected ───────│                     │
-  │◀── connected msg ───│                     │                     │
-  │                     │                     │                     │
-  │── text frame ──────▶│── relay ───────────▶│── relay ───────────▶│
-  │◀── text frame ──────│◀── relay ───────────│◀── relay ───────────│
-  │                     │                     │                     │
-  │── close ───────────▶│── close ───────────▶│── close ───────────▶│
-  │◀── close ───────────│◀── close ───────────│◀── close ───────────│
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant G as Gateway
+    participant A as Agent
+    participant T as Target
+
+    C->>G: WS connect
+    G-->>C: accept
+
+    C->>G: {"apiKey", "url"}
+    G->>A: pick agent
+
+    A->>T: WS upgrade
+    T-->>A: 101 Switching
+
+    A-->>G: connected
+    G-->>C: {"type":"connected"}
+
+    rect rgb(240, 248, 255)
+        Note over C,T: Bidirectional relay
+        C->>G: text/binary frame
+        G->>A: relay
+        A->>T: relay
+        T-->>A: text/binary frame
+        A-->>G: relay
+        G-->>C: relay
+    end
+
+    C->>G: close
+    G->>A: close
+    A->>T: close
+    T-->>A: close
+    A-->>G: close
+    G-->>C: close
 ```
 
 ## Rate limiting
@@ -2935,9 +3070,15 @@ asyncio.run(test())
 ```
 
 
+================================================================================
+# Scraping API Error Handling
+# Source: /scraping-api/errors
+================================================================================
+
 ---
-## Scraping API Error Handling
-Source: /scraping-api/errors
+title: "Scraping API Error Handling"
+sidebarTitle: "Errors"
+description: "Scraping API error codes, block detection, and retry strategies."
 ---
 
 ## Error response format
@@ -3057,3 +3198,4 @@ curl -H "X-API-Key: YOUR_KEY" \
 ### WebSocket connect timeout
 
 The first JSON message with `apiKey` and `url` must be sent within **10 seconds** of opening the WebSocket connection, or it will be closed with code `1008`.
+

@@ -143,24 +143,41 @@ After the `connected` message, all subsequent frames are raw relay — no JSON w
 
 ## Frame flow diagram
 
-```
-Client               Gateway               Agent                Target
-  │                     │                     │                     │
-  │── WS connect ──────▶│                     │                     │
-  │◀── accept ──────────│                     │                     │
-  │                     │                     │                     │
-  │── {apiKey, url} ───▶│                     │                     │
-  │                     │── pick agent ──────▶│                     │
-  │                     │                     │── WS upgrade ──────▶│
-  │                     │                     │◀── 101 Switching ───│
-  │                     │◀── connected ───────│                     │
-  │◀── connected msg ───│                     │                     │
-  │                     │                     │                     │
-  │── text frame ──────▶│── relay ───────────▶│── relay ───────────▶│
-  │◀── text frame ──────│◀── relay ───────────│◀── relay ───────────│
-  │                     │                     │                     │
-  │── close ───────────▶│── close ───────────▶│── close ───────────▶│
-  │◀── close ───────────│◀── close ───────────│◀── close ───────────│
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant G as Gateway
+    participant A as Agent
+    participant T as Target
+
+    C->>G: WS connect
+    G-->>C: accept
+
+    C->>G: {"apiKey", "url"}
+    G->>A: pick agent
+
+    A->>T: WS upgrade
+    T-->>A: 101 Switching
+
+    A-->>G: connected
+    G-->>C: {"type":"connected"}
+
+    rect rgb(240, 248, 255)
+        Note over C,T: Bidirectional relay
+        C->>G: text/binary frame
+        G->>A: relay
+        A->>T: relay
+        T-->>A: text/binary frame
+        A-->>G: relay
+        G-->>C: relay
+    end
+
+    C->>G: close
+    G->>A: close
+    A->>T: close
+    T-->>A: close
+    A-->>G: close
+    G-->>C: close
 ```
 
 ## Rate limiting
