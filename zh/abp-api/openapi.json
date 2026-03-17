@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ABP v2 - Automated Bet Placing API",
-    "description": "\nPlace bets across 30+ bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `X-API-Key` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
+    "description": "\nPlace bets across 30+ bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `X-API-Key` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `betslip`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
     "version": "2.0"
   },
   "servers": [
@@ -234,16 +234,32 @@
       "get": {
         "tags": ["Betslip"],
         "summary": "Get live odds and betslip metadata",
-        "description": "Get current odds and metadata for a specific fixture/outcome/player combination.\n\n**Required parameters:** `fixtureId`, `outcomeId`, `playerId`\n\n**Response includes:**\n- `fixtureInfo` — Fixture details (teams, sport, tournament, start time, scores)\n- `outcomeInfo` — Market and outcome details (market name, type, handicap)\n- `playerInfo` — Player details (for player prop markets, null otherwise)\n- `odds` — Live odds keyed by bookmaker, each containing:\n  - `price` — Current decimal odds\n  - `limit` / `limitMin` — Max/min stake in account currency\n  - `limitUsd` / `limitMinUsd` — Limits converted to USD\n  - `limitCurrency` — Account currency for limits\n  - `active` — Whether odds are currently available\n  - `account` — Account username for this bookmaker\n  - `currencyInfo` — Currency exchange rate details\n  - `bookmakerFixtureId/MarketId/OutcomeId` — Bookmaker's internal IDs\n  - `meta` — Exchange orderbook data (for Betfair, Polymarket, etc.)\n\n**Limit cascade:** account.minStake/maxStake > bookmaker.minStake/maxStake > odds.limitMin/limit",
+        "description": "Get current odds and metadata for a specific fixture/outcome/player combination, or a futures/outright market.\n\n**Fixture mode (required parameters):** `fixtureId`, `outcomeId`, `playerId`\n\n**Futures mode (coming soon):** `futureId`, `outcomeId`, `playerId`, `participantId` — currently returns `501 Not Implemented`\n\n**Response includes:**\n- `fixtureInfo` — Fixture details (teams, sport, tournament, start time, scores)\n- `outcomeInfo` — Market and outcome details (market name, type, handicap)\n- `playerInfo` — Player details (for player prop markets, null otherwise)\n- `odds` — Live odds keyed by bookmaker, each containing:\n  - `price` — Current decimal odds\n  - `limit` / `limitMin` — Max/min stake in account currency\n  - `limitUsd` / `limitMinUsd` — Limits converted to USD\n  - `limitCurrency` — Account currency for limits\n  - `active` — Whether odds are currently available\n  - `account` — Account username for this bookmaker\n  - `currencyInfo` — Currency exchange rate details\n  - `bookmakerFixtureId/MarketId/OutcomeId` — Bookmaker's internal IDs\n  - `meta` — Exchange orderbook data (for Betfair, Polymarket, etc.)\n\n**Limit cascade:** account.minStake/maxStake > bookmaker.minStake/maxStake > odds.limitMin/limit",
         "operationId": "get_betslip",
         "parameters": [
           {
             "name": "fixtureId",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": { "type": "string" },
-            "description": "Fixture identifier (e.g., 'id1000004461512432')",
+            "description": "Fixture identifier (e.g., 'id1000004461512432'). Required for fixture markets. Mutually exclusive with futureId.",
             "example": "id1000004461512432"
+          },
+          {
+            "name": "futureId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "[Coming soon] Future/outright market identifier. Mutually exclusive with fixtureId. Currently returns 501.",
+            "example": "fut_123456"
+          },
+          {
+            "name": "participantId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 0 },
+            "description": "[Coming soon] Participant identifier for futures (e.g., team/player). Only used with futureId.",
+            "example": 0
           },
           {
             "name": "outcomeId",
@@ -388,6 +404,10 @@
           "404": {
             "description": "No odds found for the given fixture/outcome/player combination",
             "content": { "application/json": { "example": { "detail": "No odds found for given parameters" } } }
+          },
+          "501": {
+            "description": "Futures betslip not yet implemented (returned when futureId is provided)",
+            "content": { "application/json": { "example": { "detail": "Futures betslip is not yet implemented" } } }
           },
           "500": { "description": "Internal server error" }
         }
@@ -586,7 +606,7 @@
       "post": {
         "tags": ["Orders"],
         "summary": "Place betting orders",
-        "description": "Submit one or more betting orders for placement with bookmakers.\n\n**Required fields per order:** `requestUuid`, `fixtureId`, `outcomeId`, `playerId`, `orderPrice`, `orderStake`, `userRef`, `testOrder`\n\n**Optional fields:** `bookmakers`, `orderCurrency`, `back`, `expiresAt`, `acceptBetterOdds`, `acceptPartialStake`, `meta`\n\n**Key behavior:**\n- `requestUuid` must be a valid UUID format (used for idempotency — duplicates within 5 minutes are rejected with 409)\n- Server automatically selects the best bookmaker by odds/limits unless `bookmakers` is specified\n- `clientName` is set automatically from your API key\n- Orders expire after `expiresAt` (default: 5 seconds from now)\n- Maximum 100 orders per request\n\n**Response:**\n- `status`: \"accepted\" (all accepted), \"partial-success\" (some declined), or \"declined\" (all declined)\n- `acceptedOrders`: Orders that passed validation with their current status and any placed bets\n- `declinedOrders`: Orders that failed validation with `declineReason`",
+        "description": "Submit one or more betting orders for placement with bookmakers.\n\n**Required fields per order:** `requestUuid`, `outcomeId`, `playerId`, `orderPrice`, `orderStake`, `userRef`, `testOrder`, and either `fixtureId` (fixture markets) or `futureId` (futures/outright markets — coming soon)\n\n**Optional fields:** `bookmakers`, `participantId` (futures only), `orderCurrency`, `back`, `expiresAt`, `acceptBetterOdds`, `acceptPartialStake`, `meta`\n\n**Key behavior:**\n- `requestUuid` must be a valid UUID format (used for idempotency — duplicates within 30 minutes are rejected with 409)\n- `fixtureId` and `futureId` are mutually exclusive — provide one or the other\n- Orders with `futureId` currently return `501 Not Implemented` (coming soon)\n- Server automatically selects the best bookmaker by odds/limits unless `bookmakers` is specified\n- `clientName` is set automatically from your API key\n- Orders expire after `expiresAt` (default: 5 seconds from now, capped at 24 hours maximum)\n- Maximum 100 orders per request\n\n**Response:**\n- `status`: \"accepted\" (all accepted), \"partial-success\" (some declined), or \"declined\" (all declined)\n- `acceptedOrders`: Orders that passed validation with their current status and any placed bets\n- `declinedOrders`: Orders that failed validation with `declineReason`",
         "operationId": "place_orders",
         "requestBody": {
           "required": true,
@@ -750,7 +770,7 @@
           "401": { "description": "Unauthorized — missing or invalid API key" },
           "403": { "description": "Access denied — client not resolved from API key" },
           "409": {
-            "description": "All orders are duplicates (requestUuid already processed within 5 minutes)",
+            "description": "All orders are duplicates (requestUuid already processed within 30 minutes)",
             "content": {
               "application/json": {
                 "example": {
@@ -762,6 +782,10 @@
             }
           },
           "422": { "description": "Request body validation error (invalid field values)" },
+          "501": {
+            "description": "Futures order placement not yet implemented (returned when any order contains futureId)",
+            "content": { "application/json": { "example": { "detail": "Futures order placement is not yet implemented" } } }
+          },
           "500": { "description": "Internal server error" }
         }
       }
@@ -1230,10 +1254,13 @@
       },
       "PlaceOrderRequest": {
         "type": "object",
-        "required": ["requestUuid", "fixtureId", "outcomeId", "playerId", "orderPrice", "orderStake", "userRef", "testOrder"],
+        "required": ["requestUuid", "outcomeId", "orderPrice", "orderStake", "userRef", "testOrder"],
+        "description": "Either `fixtureId` or `futureId` must be provided (mutually exclusive). For fixture orders, `playerId` is required. For futures orders, `participantId` is used instead.",
         "properties": {
-          "requestUuid": { "type": "string", "description": "Unique idempotency key (UUID format). Duplicates within 5 minutes are rejected with 409.", "example": "eb45b192-317b-42d5-9f65-af497b9fa8c1" },
-          "fixtureId": { "type": "string", "description": "OddsPAPI fixture identifier (e.g., 'id1000004461512432')", "example": "id1000004461512432" },
+          "requestUuid": { "type": "string", "description": "Unique idempotency key (UUID format). Duplicates within 30 minutes are rejected with 409.", "example": "eb45b192-317b-42d5-9f65-af497b9fa8c1" },
+          "fixtureId": { "type": "string", "nullable": true, "description": "OddsPAPI fixture identifier (e.g., 'id1000004461512432'). Required for fixture orders. Mutually exclusive with futureId.", "example": "id1000004461512432" },
+          "futureId": { "type": "string", "nullable": true, "description": "[Coming soon] Future/outright market identifier. Mutually exclusive with fixtureId. Orders with futureId currently return 501.", "example": "fut_123456" },
+          "participantId": { "type": "integer", "nullable": true, "default": 0, "description": "[Coming soon] Participant identifier for futures markets (e.g., team or player selection). Only used with futureId.", "example": 0 },
           "outcomeId": { "type": "integer", "description": "Outcome/market ID from OddsPAPI (e.g., 103 for Match Winner Away)", "example": 103 },
           "playerId": { "type": "integer", "description": "Player ID for player prop markets. Use 0 for non-player markets.", "example": 0 },
           "orderPrice": { "type": "number", "exclusiveMinimum": 0, "description": "Minimum acceptable decimal odds. Bets will only be placed at this price or better.", "example": 1.95 },
@@ -1243,7 +1270,7 @@
           "bookmakers": { "type": "string", "nullable": true, "description": "Comma-separated bookmaker slugs to target (e.g., 'pinnacle,bet365'). Use '*' or omit for automatic selection.", "example": "pinnacle,vertex" },
           "orderCurrency": { "type": "string", "default": "USD", "description": "ISO 4217 currency code for orderStake. Converted to bookmaker currency at placement.", "example": "USD" },
           "back": { "type": "boolean", "default": true, "description": "Bet direction. true = back (win if selection wins), false = lay (win if selection loses).", "example": true },
-          "expiresAt": { "type": "string", "nullable": true, "description": "ISO 8601 timestamp when order expires. Defaults to 5 seconds from now.", "example": "2026-01-15T12:00:05Z" },
+          "expiresAt": { "type": "string", "nullable": true, "description": "ISO 8601 timestamp when order expires. Defaults to 5 seconds from now. Capped at 24 hours maximum.", "example": "2026-01-15T12:00:05Z" },
           "acceptBetterOdds": { "type": "boolean", "default": true, "description": "Accept odds better than orderPrice.", "example": true },
           "acceptPartialStake": { "type": "boolean", "default": true, "description": "Allow partial stake fills when full stake exceeds bookmaker limit.", "example": true },
           "meta": { "type": "object", "nullable": true, "description": "Custom metadata object. Stored with order but not sent to bookmaker.", "example": { "strategy": "value" } }

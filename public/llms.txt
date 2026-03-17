@@ -1,31 +1,25 @@
-# 55-Tech API Docs (Mintlify)
-# Generated from docs.json navigation
+# 55 Tech API Documentation
 
-- /index — 55-Tech API Documentation
-- /quickstart — Quickstart - Connect to 55-Tech APIs
-- /ai — AI & LLM Integration - Documentation Export
-- /abp-api/overview — ABP API Overview - Automated Bet Placing
-- /abp-api/authentication — ABP Authentication - API Key Setup
-- /abp-api/quickstart — ABP Quickstart - Place Your First Bet
-- /abp-api/websocket — ABP WebSocket - Real-Time Updates
-- /abp-api/errors — ABP Error Handling
-- /mm-api/overview — MM API Overview - Market Making Engine
-- /mm-api/authentication — MM Authentication - API Key Setup
-- /mm-api/quickstart — MM Quickstart - First API Calls
-- /mm-api/websocket — MM WebSocket - Real-Time Updates
-- /mm-api/errors — MM Error Handling
-- /scraping-api/overview — Scraping API Overview
-- /scraping-api/authentication — Scraping API Authentication
-- /scraping-api/quickstart — Scraping API Quickstart
-- /scraping-api/websocket — Scraping API WebSocket & AMQP
-- /scraping-api/ws-reference — WebSocket Protocol Reference
-- /scraping-api/errors — Scraping API Error Handling
+Docs: https://docs.55-tech.com
 
-# OpenAPI
-- /abp-api/openapi.json — OpenAPI 3.1 spec
+## Pages
 
-# OpenAPI
-- /mm-api/openapi.json — OpenAPI 3.1 spec
-
-# OpenAPI
-- /scraping-api/openapi.json — OpenAPI 3.1 spec
+- [ABP Authentication - API Key Setup](https://docs.55-tech.com/abp-api/authentication)
+- [ABP Error Handling](https://docs.55-tech.com/abp-api/errors)
+- [ABP API Overview - Automated Bet Placing](https://docs.55-tech.com/abp-api/overview)
+- [ABP Quickstart - Place Your First Bet](https://docs.55-tech.com/abp-api/quickstart)
+- [ABP WebSocket - Real-Time Updates](https://docs.55-tech.com/abp-api/websocket)
+- [AI & LLM Integration - Documentation Export](https://docs.55-tech.com/ai)
+- [55-Tech API Documentation](https://docs.55-tech.com/index)
+- [MM Authentication - API Key Setup](https://docs.55-tech.com/mm-api/authentication)
+- [MM Error Handling](https://docs.55-tech.com/mm-api/errors)
+- [MM API Overview - Market Making Engine](https://docs.55-tech.com/mm-api/overview)
+- [MM Quickstart - First API Calls](https://docs.55-tech.com/mm-api/quickstart)
+- [MM WebSocket - Real-Time Updates](https://docs.55-tech.com/mm-api/websocket)
+- [Quickstart - Connect to 55-Tech APIs](https://docs.55-tech.com/quickstart)
+- [Scraping API Authentication](https://docs.55-tech.com/scraping-api/authentication)
+- [Scraping API Error Handling](https://docs.55-tech.com/scraping-api/errors)
+- [Scraping API Overview](https://docs.55-tech.com/scraping-api/overview)
+- [Scraping API Quickstart](https://docs.55-tech.com/scraping-api/quickstart)
+- [Scraping API WebSocket & AMQP](https://docs.55-tech.com/scraping-api/websocket)
+- [WebSocket Protocol Reference](https://docs.55-tech.com/scraping-api/ws-reference)

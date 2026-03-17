@@ -1,464 +1,27 @@
-# 55-Tech API — Full Documentation
-# Generated from all English .mdx files in navigation order
+# 55 Tech API Documentation - Full Content
 
-================================================================================
-# 55-Tech API Documentation
-# Source: /index
-================================================================================
-
----
-title: "55-Tech API Documentation"
-sidebarTitle: "Introduction"
-description: "Official API documentation for 55-Tech's Market Making (MM) and Automated Bet Placing (ABP) platforms. High-frequency trading and automated bet execution for sports betting markets."
----
-
-<Note>
-**B2B Platform** — 55-Tech provides enterprise trading infrastructure for licensed operators, trading firms, and sports betting platforms. Contact [contact@55-tech.com](mailto:contact@55-tech.com) for API access.
-</Note>
-
-## What is 55-Tech?
-
-55-Tech operates two core trading platforms:
-
-- **Market Making (MM)** — High-frequency market making engine that places orders on prediction market exchanges (Polymarket, Kalshi) and hedges on bookmakers
-- **Automated Bet Placing (ABP)** — Place bets across 30+ bookmakers through a single API with real-time tracking and settlement
-
-Both platforms consume real-time odds data from [OddsPapi](https://docs.oddspapi.io/) and expose REST + WebSocket APIs for client integration.
+Docs: https://docs.55-tech.com
 
 ---
 
-## Get started
-
-<Columns cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Get connected to both APIs in minutes.
-  </Card>
-
-  <Card title="ABP API" icon="bolt" href="/abp-api/overview">
-    Place bets across 30+ bookmakers through a single API.
-  </Card>
-
-  <Card title="MM API" icon="chart-line" href="/mm-api/overview">
-    High-frequency market making on prediction exchanges.
-  </Card>
-
-  <Card title="OddsPapi Data" icon="database" href="https://docs.oddspapi.io/">
-    Real-time odds data powering both platforms.
-  </Card>
-</Columns>
-
-
-================================================================================
-# Quickstart - Connect to 55-Tech APIs
-# Source: /quickstart
-================================================================================
-
----
-title: "Quickstart - Connect to 55-Tech APIs"
-sidebarTitle: "Quickstart"
-description: "Get started with the 55-Tech ABP, MM, and Scraping APIs. Check connectivity, authenticate, and make your first API calls."
----
-
-## Prerequisites
-
-You need an API key for the platform you want to use. Contact [contact@55-tech.com](mailto:contact@55-tech.com) to get your key.
-
-| Platform | Auth Header | Base URL |
-|----------|------------|----------|
-| ABP (Automated Bet Placing) | `x-api-key` | `https://v2.55-tech.com` |
-| MM (Market Making) | `X-API-Key` | `https://mmapi.55-tech.com` |
-| Scraping API | `X-API-Key` | `https://scraping-api.55-tech.com` |
-
----
-
-## ABP — Automated Bet Placing
-
-### 1. List your accounts
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  https://v2.55-tech.com/accounts
-```
-
-### 2. Get a betslip (live odds)
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/betslip?fixtureId=ID&outcomeId=161&playerId=0"
-```
-
-### 3. Place an order
-
-```bash
-curl -X POST -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"orders": [{"fixtureId": "...", "outcomeId": 161, "playerId": 0, "stake": 10, "minPrice": 1.5}]}' \
-  https://v2.55-tech.com/place-orders
-```
-
-### 4. Track results
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  https://v2.55-tech.com/orders
-```
-
----
-
-## MM — Market Making
-
-### 1. Verify your identity
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
-```
-
-### 2. List your orders
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/orders
-```
-
-### 3. Check positions
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/positions
-```
-
-### 4. View profit & loss
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/pnl
-```
-
----
-
-## Scraping API
-
-### 1. Check network status
-
-```bash
-curl https://scraping-api.55-tech.com/network/status
-```
-
-### 2. Fetch a page
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://example.com" \
-  https://scraping-api.55-tech.com/fetch
-```
-
-### 3. Fetch with geo targeting
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://example.com" \
-  -H "X-Geo: DE" \
-  https://scraping-api.55-tech.com/fetch
-```
-
-### 4. Check usage
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://scraping-api.55-tech.com/usage
-```
-
----
-
-## Real-time updates
-
-All APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
-
-<Columns cols={3}>
-  <Card title="ABP WebSocket" icon="bolt" href="/abp-api/websocket">
-    Real-time order, bet, and settlement updates.
-  </Card>
-
-  <Card title="MM WebSocket" icon="bolt" href="/mm-api/websocket">
-    Live order fills, bets, and score updates.
-  </Card>
-
-  <Card title="Scraping WebSocket" icon="bolt" href="/scraping-api/websocket">
-    Real-time fetch results via WebSocket relay.
-  </Card>
-</Columns>
-
-
-================================================================================
-# AI & LLM Integration - Documentation Export
-# Source: /ai
-================================================================================
-
----
-title: "AI & LLM Integration - Documentation Export"
-sidebarTitle: "AI / Offline Export"
-description: "Download 55-Tech API documentation for AI tools, LLMs, and offline use. Machine-readable exports in TXT and OpenAPI JSON formats for ChatGPT, Claude, and other AI assistants."
----
-
-## Download
-
-| Resource | Format | Description |
-|----------|--------|-------------|
-| [`/llms.txt`](/llms.txt) | TXT | Docs index — page titles and paths |
-| [`/llms-full.txt`](/llms-full.txt) | TXT | Full docs bundle — all guide pages concatenated |
-| [`/abp-api/openapi.json`](/abp-api/openapi.json) | JSON | ABP OpenAPI 3.1 spec — 13 endpoints, full schemas |
-| [`/mm-api/openapi.json`](/mm-api/openapi.json) | JSON | MM OpenAPI 3.1 spec — REST reference |
-| [`/scraping-api/openapi.json`](/scraping-api/openapi.json) | JSON | Scraping OpenAPI 3.1 spec — fetch, WebSocket, AMQP, network endpoints |
-
-## What's included
-
-The **ABP API** documentation covers:
-
-- **Account management** — Full CRUD for bookmaker accounts across 30+ integrations
-- **Betslip** — Real-time odds and limits from OddsPapi v5 with multi-bookmaker aggregation
-- **Order placement** — Smart routing with idempotency (`requestUuid`), partial fills, and configurable expiry
-- **Bet tracking** — Keyset-paginated queries with full lifecycle from PENDING through CONFIRMED/SETTLED
-- **Analytics** — Positions and PnL grouped by bookmaker, account, or user reference
-- **WebSocket** — Real-time push for orders, bets, settlements, balance, fixtures, currencies, status, emergency
-- **30+ bookmaker integrations** — pinnacle, betfair-ex, polymarket, kalshi, cloudbet, smarkets, and more
-
-The **MM API** documentation covers:
-
-- Market-making engine configuration and real-time spread management
-- WebSocket-driven pricing updates and order book interaction
-
-The **Scraping API** documentation covers:
-
-- **HTTP fetch** — GET/POST/PUT/PATCH/DELETE through 80+ geo-distributed agents
-- **WebSocket relay** — Bidirectional frame relay for Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WS
-- **AMQP consumer** — Stream RabbitMQ messages via SSE
-- **Network intelligence** — Agent listing, geo distribution, per-domain health checks
-- **Usage & rate limits** — Per-key metrics, request analytics, top domains
-
-## Recommended usage
-
-**For AI assistants that fetch URLs:**
-
-- `/llms-full.txt` — best for "read everything once" (all guide pages + examples)
-- `/abp-api/openapi.json` — ABP endpoint + schema accuracy (typed, with examples)
-- `/mm-api/openapi.json` — MM endpoint + schema reference
-- `/scraping-api/openapi.json` — Scraping endpoint + schema reference
-
-**For copy/paste workflows:**
-
-Open `/llms-full.txt` in the browser and paste the contents into your AI tool.
-
-**For code generation:**
-
-Feed the OpenAPI specs to tools like `openapi-generator`, `oapi-codegen`, or Cursor/Copilot for typed client SDK generation.
-
-## Notes
-
-- `llms-full.txt` follows the same ordering as the site navigation
-- WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs
-- All three APIs (ABP, MM, Scraping) are included in a single bundle
-- All APIs authenticate via the `X-API-Key` header
-
----
-
-## Ask an AI Assistant
-
-Want to explore or ask questions about this API using your favorite AI?
-
-Click one of the links below — each one opens the full docs bundle in the selected tool with a pre-filled prompt:
-
-- [Ask ChatGPT](https://chatgpt.com/?prompt=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+with+this+API.)
-- [Ask Claude](https://claude.ai/?prompt=Please+read+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
-- [Ask Perplexity](https://www.perplexity.ai/search?q=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt)
-- [Ask Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
-
-
-================================================================================
-# ABP API Overview - Automated Bet Placing
-# Source: /abp-api/overview
-================================================================================
-
----
-title: "ABP API Overview - Automated Bet Placing"
-sidebarTitle: "Overview"
-description: "ABP v2 API overview. Place bets across 30+ bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
----
-
-## What is ABP?
-
-The **Automated Bet Placing (ABP)** API by [55 Tech](https://55-tech.com/) lets you place bets across 30+ bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
-
-**Core capabilities:**
-
-- **Account management** — Full CRUD for bookmaker accounts with priority-based selection, per-account stake limits, and multi-currency support
-- **Betslip retrieval** — Get real-time odds and limits for any fixture/outcome across all configured bookmakers before placing
-- **Smart order routing** — Place single or bulk orders; ABP automatically selects the best bookmaker by odds and limits
-- **Bet tracking** — Monitor every bet from placement through confirmation and settlement with full audit trail
-- **Position & PnL analytics** — Aggregated views of exposure and profit/loss grouped by bookmaker, account, or user reference
-
-## Data flow
-
-<Steps>
-  <Step title="Discover fixtures & odds via OddsPapi v5">
-    Your app consumes the [OddsPapi v5 API](https://docs.oddspapi.io/) to discover fixtures, markets, outcomes, and real-time odds across all supported bookmakers. OddsPapi is the data layer — ABP is the execution layer built on top of it. Fixture IDs and outcome IDs are shared between both APIs.
-  </Step>
-  <Step title="Fetch betslip from ABP">
-    Before placing, call `GET /betslip?fixtureId=...&outcomeId=...&playerId=...` to get aggregated odds and limits from all your configured bookmaker accounts. ABP resolves stake limits (account > bookmaker > odds) and returns the effective min/max per bookmaker.
-  </Step>
-  <Step title="Place orders through ABP">
-    Send `POST /place-orders` with one or more orders. ABP routes each order to the best bookmaker(s) based on price, available limits, and account priority. Each bookmaker integration places the bet and reports back confirmation or decline.
-  </Step>
-  <Step title="Receive real-time updates via WebSocket">
-    Connect to `WS /ws` to receive real-time pushes for order status changes, bet confirmations, settlements, balance updates, and system events. No polling needed.
-  </Step>
-  <Step title="Query history & analytics">
-    Use `GET /orders`, `GET /bets` for order/bet history with keyset pagination, and `GET /positions`, `GET /pnl` for aggregated exposure and profit/loss analytics.
-  </Step>
-</Steps>
-
-## Base URL
-
-```
-https://v2.55-tech.com
-```
-
-## Key concepts
-
-### Orders vs bets
-
-An **order** is your instruction to place a bet. A **bet** is the actual wager placed on a bookmaker. One order can result in multiple bets when using partial fills or multi-bookmaker routing.
-
-### Request deduplication
-
-Each order requires a unique `requestUuid` (UUID format). ABP uses server-side deduplication (5-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
-
-### Order lifecycle
-
-```
-PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANCELLED / FAILED
-```
-
-- **PENDING** — Order received and queued
-- **PROCESSING** — Routing to bookmakers
-- **FILLED** — All stake placed successfully
-- **PARTIALLY_FILLED** — Some stake placed, remaining expired or no capacity
-- **REJECTED** — Failed validation (bad odds, invalid fixture, etc.)
-- **EXPIRED** — Order `expiresAt` time reached (default: 5 seconds)
-- **CANCELLED** — Explicitly cancelled by client
-- **FAILED** — Internal error during placement
-
-### Bet lifecycle
-
-```
-PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
-```
-
-- **PENDING** — Bet created, awaiting bookmaker response
-- **PLACED** — Sent to bookmaker, awaiting confirmation
-- **CONFIRMED** — Bookmaker accepted the bet
-- **REJECTED** — Bookmaker rejected the bet
-- **CANCELLED** — Bet cancelled before confirmation
-- **FAILED** — Internal error during placement
-- **VOID** — Bet voided by bookmaker
-
-### Settlement lifecycle
-
-```
-UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
-```
-
-- **UNSETTLED** — Bet is live, awaiting result
-- **WON** — Full win
-- **LOST** — Full loss
-- **VOID** — Bet voided (stake returned)
-- **HALF_WON** — Asian handicap partial win
-- **HALF_LOST** — Asian handicap partial loss
-- **PUSH** — Stake returned (tie on the line)
-- **CASHOUT** — Early withdrawal at negotiated price
-
-### Account priority
-
-Each bookmaker account has a `priority` field (higher = preferred). When placing an order, ABP selects the highest-priority active account first for each bookmaker.
-
-### Limit cascade
-
-Stake limits are resolved in priority order: **account limits > bookmaker limits > odds limits**.
-
-For example, if an account has `minStake: 10`, the bookmaker default is `minStake: 1`, and the odds entry shows `limitMin: 5`, the effective minimum is `10` (from the account override).
-
-### Bookmaker slugs
-
-Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `polymarket`). Use `GET /bookmakers` to list all 30+ supported bookmakers with their default stake limits.
-
-## Endpoints at a glance
-
-| Category | Endpoints | Description |
-|----------|-----------|-------------|
-| **Accounts** | `GET/POST/PATCH/DELETE /accounts` | Manage bookmaker accounts (credentials, balances, priority, limits) |
-| **Betslip** | `GET /betslip` | Get live odds & limits before placing |
-| **Orders** | `POST /place-orders`, `POST /cancel-orders`, `POST /cancel-all-orders`, `GET /orders` | Place, cancel, and track orders |
-| **Bets** | `GET /bets`, `GET /bets/{bet_id}` | View individual bet results |
-| **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
-| **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
-| **Markets** | `GET /markets` | Available markets and odds types |
-| **WebSocket** | `WS /ws` | Real-time updates |
-
-## Supported bookmakers
-
-**Traditional sportsbooks:** pinnacle, pinnacleb2b, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, vertex
-
-**Betting exchanges:** betfair-ex, smarkets, matchbook
-
-**Prediction markets:** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, 4casters
-
-**Punter platforms:** punter.io
-
-## Resilience
-
-ABP includes production-grade reliability features:
-
-- **Circuit breakers** — Per-bookmaker circuit breakers prevent cascading failures and auto-recover
-- **Retry with exponential backoff** — for transient failures
-- **Emergency controls** — Orders may be temporarily paused during system maintenance
-- **Rate limiting** — Per-API-key rate limits (configurable per client)
-
-## Data source
-
-ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). Fixture IDs and outcome IDs in ABP correspond directly to OddsPapi identifiers. Your app should use OddsPapi to discover fixtures and markets, then use ABP to execute bets.
-
-## Next steps
-
-<Columns cols={2}>
-  <Card title="Authentication" icon="key" href="/abp-api/authentication">
-    Set up your API key.
-  </Card>
-
-  <Card title="Quickstart" icon="rocket" href="/abp-api/quickstart">
-    Place your first bet in 5 steps.
-  </Card>
-</Columns>
-
-
-================================================================================
 # ABP Authentication - API Key Setup
-# Source: /abp-api/authentication
-================================================================================
+
+Source: https://docs.55-tech.com/abp-api/authentication
 
 ---
 title: "ABP Authentication - API Key Setup"
 sidebarTitle: "Authentication"
-description: "Learn how to authenticate ABP API requests using the x-api-key header. API key resolution, rate limiting, and WebSocket authentication."
+description: "Learn how to authenticate ABP API requests using the X-API-Key header. API key resolution, rate limiting, and WebSocket authentication."
 ---
 
-All ABP endpoints require authentication via the `x-api-key` header.
+All ABP endpoints require authentication via the `X-API-Key` header.
 
 ## How to authenticate
 
-Pass your API key in the `x-api-key` request header:
+Pass your API key in the `X-API-Key` request header:
 
 ```bash
-curl -H "x-api-key: your-api-key" \
+curl -H "X-API-Key: your-api-key" \
   https://v2.55-tech.com/accounts
 ```
 
@@ -514,615 +77,11 @@ Implement exponential backoff when receiving `429` responses.
 ```
 
 
-================================================================================
-# ABP Quickstart - Place Your First Bet
-# Source: /abp-api/quickstart
-================================================================================
-
----
-title: "ABP Quickstart - Place Your First Bet"
-sidebarTitle: "Quickstart"
-description: "Step-by-step guide to placing your first bet through the ABP API. From account setup to order placement, tracking, and settlement."
 ---
 
-## Step 1: List your accounts
-
-Check which bookmaker accounts are configured for your API key:
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  https://v2.55-tech.com/accounts
-```
-
-Response includes each account's bookmaker, balance, priority, stake limits, and currency:
-
-```json
-[
-  {
-    "bookmaker": "pinnacle",
-    "username": "pinnacle_main",
-    "client": "your-client",
-    "password": "***",
-    "balance": 5000.0,
-    "active": true,
-    "priority": 10,
-    "maxStake": 1000.0,
-    "minStake": 5.0,
-    "currencyId": "USD",
-    "verifyBetslip": false,
-    "meta": {},
-    "createdAt": "2026-01-01T00:00:00Z",
-    "updatedAt": "2026-02-01T12:00:00Z"
-  }
-]
-```
-
-## Step 2: Get a betslip
-
-Before placing a bet, retrieve current odds and limits. You need a `fixtureId`, `outcomeId`, and `playerId`:
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/betslip?fixtureId=id1000002361061419&outcomeId=101&playerId=0"
-```
-
-The betslip returns live odds from every bookmaker that has this market, with fixture and outcome metadata:
-
-```json
-{
-  "fixtureId": "id1000002361061419",
-  "outcomeId": 101,
-  "playerId": 0,
-  "client": "your-client",
-  "fixtureInfo": {
-    "sport": { "sportId": 10, "sportName": "Soccer" },
-    "tournament": { "tournamentName": "Serie A", "categoryName": "Italy" },
-    "participants": {
-      "participant1Name": "AS Roma",
-      "participant2Name": "Cagliari Calcio"
-    }
-  },
-  "outcomeInfo": {
-    "marketName": "Full Time Result",
-    "outcomeName": "1"
-  },
-  "odds": {
-    "pinnacle": {
-      "id1000002361061419:pinnacle:101:0": {
-        "price": 1.5,
-        "limit": 15000,
-        "limitMin": 5,
-        "limitCurrency": "USD",
-        "active": true,
-        "account": "pinnacle_main"
-      }
-    },
-    "sharpbet": {
-      "id1000002361061419:sharpbet:101:0": {
-        "price": 1.52,
-        "limit": 751.34,
-        "limitMin": 1,
-        "limitCurrency": "EUR",
-        "limitUsd": 886.13,
-        "active": true,
-        "account": "sharpbet_user"
-      }
-    }
-  }
-}
-```
-
-<Note>
-Use the [OddsPapi API](https://docs.oddspapi.io/) to discover fixture IDs and outcome IDs. ABP uses OddsPapi identifiers directly.
-</Note>
-
-## Step 3: Place an order
-
-Place a bet order with minimum price protection. Each order needs a unique `requestUuid` for idempotency:
-
-```bash
-curl -X POST \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "orders": [
-      {
-        "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-        "fixtureId": "id1000004461512432",
-        "outcomeId": 103,
-        "playerId": 0,
-        "orderStake": 10.0,
-        "orderPrice": 1.95,
-        "userRef": "my-strategy-1",
-        "testOrder": false
-      }
-    ]
-  }' \
-  https://v2.55-tech.com/place-orders
-```
-
-**Key fields:**
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `requestUuid` | Yes | Unique UUID for idempotency (duplicates within 5 min return 409) |
-| `fixtureId` | Yes | OddsPapi fixture ID |
-| `outcomeId` | Yes | Market outcome (e.g., 103 = away win) |
-| `playerId` | Yes | Set to `0` for non-player-prop markets |
-| `orderStake` | Yes | Total amount to wager |
-| `orderPrice` | Yes | Minimum acceptable decimal odds |
-| `userRef` | Yes | Your reference for grouping related orders |
-| `testOrder` | Yes | Validate only, don't actually place (`false` for real bets) |
-| `bookmakers` | No | Comma-separated slugs to target (omit for automatic selection) |
-| `orderCurrency` | No | Currency code (default: `USD`) |
-| `acceptBetterOdds` | No | Accept odds better than `orderPrice` (default: `true`) |
-| `acceptPartialStake` | No | Allow partial fills (default: `true`) |
-| `back` | No | Back bet (`true`) or lay bet (`false`) (default: `true`) |
-| `expiresAt` | No | ISO 8601 expiry time (default: 5 seconds from now) |
-| `meta` | No | Custom metadata object (stored but not sent to bookmaker) |
-
-**Response:**
-
-```json
-{
-  "status": "accepted",
-  "acceptedOrders": [
-    {
-      "orderId": 327,
-      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-      "orderStatus": "FILLED",
-      "fixtureId": "id1000004461512432",
-      "outcomeId": 103,
-      "orderStake": 10.0,
-      "orderPrice": 1.95,
-      "filledStake": 10.0,
-      "bets": [
-        {
-          "betId": 73,
-          "bookmaker": "pinnacle",
-          "placedPrice": 1.98,
-          "placedStake": 10.0,
-          "betStatus": "CONFIRMED"
-        }
-      ]
-    }
-  ],
-  "declinedOrders": []
-}
-```
-
-Orders that fail validation appear in `declinedOrders` with a `declineReason`:
-
-```json
-{
-  "status": "declined",
-  "acceptedOrders": [],
-  "declinedOrders": [
-    {
-      "requestUuid": "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d",
-      "fixtureId": "id1000004461512432",
-      "outcomeId": 103,
-      "declineReason": "Order stake 100.00 USD exceeds available limit 50.00 USD"
-    }
-  ]
-}
-```
-
-## Step 4: Track your order
-
-Query orders by `userRef`, `orderIds`, or `requestUuids` (at least one filter required):
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/orders?userRef=my-strategy-1"
-```
-
-View individual bets for specific orders:
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/bets?orderIds=327"
-```
-
-Each bet includes the bookmaker, placed price, placed stake, bet status, and settlement status:
-
-```json
-{
-  "status": "success",
-  "bets": [
-    {
-      "betId": 73,
-      "orderId": 327,
-      "bookmaker": "pinnacle",
-      "bookmakerBetId": "3332684214",
-      "placedStake": 10.0,
-      "placedPrice": 1.98,
-      "placedCurrency": "USD",
-      "betStatus": "CONFIRMED",
-      "settlementStatus": "UNSETTLED",
-      "account": "pinnacle_main",
-      "userRef": "my-strategy-1"
-    }
-  ],
-  "count": 1,
-  "hasMore": false,
-  "nextCursor": null
-}
-```
-
-## Step 5: Check positions & PnL
-
-View your aggregated open positions (grouped by bookmaker by default):
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  https://v2.55-tech.com/positions
-```
-
-```json
-{
-  "status": "success",
-  "groupBy": "bookmaker",
-  "positions": [
-    { "bookmaker": "pinnacle", "openBets": 5, "totalStake": 250.0, "avgPrice": 1.92 }
-  ],
-  "count": 1,
-  "totalStake": 250.0,
-  "totalOpenBets": 5
-}
-```
-
-View profit and loss:
-
-```bash
-curl -H "x-api-key: YOUR_API_KEY" \
-  https://v2.55-tech.com/pnl
-```
-
-```json
-{
-  "status": "success",
-  "groupBy": "bookmaker",
-  "pnl": [
-    { "bookmaker": "pinnacle", "settledBets": 42, "wins": 23, "losses": 17, "netPnl": 250.0, "winRate": 54.8 }
-  ],
-  "count": 1,
-  "totalNetPnl": 250.0,
-  "totalStaked": 2100.0,
-  "totalSettledBets": 42
-}
-```
-
-## Next steps
-
-<Columns cols={2}>
-  <Card title="WebSocket updates" icon="bolt" href="/abp-api/websocket">
-    Get real-time order, bet, and settlement updates.
-  </Card>
-
-  <Card title="API reference" icon="terminal" href="/abp-api/overview">
-    Explore all available endpoints.
-  </Card>
-</Columns>
-
-
-================================================================================
-# ABP WebSocket - Real-Time Updates
-# Source: /abp-api/websocket
-================================================================================
-
----
-title: "ABP WebSocket - Real-Time Updates"
-sidebarTitle: "WebSocket"
-description: "Connect to the ABP WebSocket for real-time order, bet, settlement, account, and system updates. Server-backed with message ordering and reliable delivery."
----
-
-## Endpoint
-
-```
-wss://v2.55-tech.com/ws
-```
-
-## Connection flow
-
-### 1. Connect
-
-Open a WebSocket connection. No authentication is needed at connection time.
-
-### 2. Login
-
-Send a login message within **30 seconds** of connecting:
-
-```json
-{
-  "type": "login",
-  "apiKey": "YOUR_API_KEY",
-  "channels": []
-}
-```
-
-An empty `channels` array subscribes to all available channels. To subscribe to specific channels:
-
-```json
-{
-  "type": "login",
-  "apiKey": "YOUR_API_KEY",
-  "channels": ["orders", "bets", "settlements"]
-}
-```
-
-You can optionally enable reliable delivery with message acknowledgments:
-
-```json
-{
-  "type": "login",
-  "apiKey": "YOUR_API_KEY",
-  "channels": ["orders", "bets"],
-  "reliableDelivery": true
-}
-```
-
-### 3. Login confirmation
-
-On success, the server responds with:
-
-```json
-{
-  "type": "login_ok",
-  "clientName": "your-client",
-  "channels": ["orders", "bets", "settlements"],
-  "subscriptionId": 1,
-  "access": {
-    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance"],
-    "global": ["fixtures", "currencies", "status", "emergency"]
-  },
-  "reliableDelivery": false,
-  "features": {
-    "messageOrdering": true,
-    "acknowledgments": false,
-    "batchAck": false
-  }
-}
-```
-
-### 4. Receive updates
-
-Data messages follow this format:
-
-```json
-{
-  "type": "data",
-  "channel": "orders",
-  "event": "INSERT",
-  "payload": { ... },
-  "ts": 1771183909789,
-  "seq": 1
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `type` | Always `"data"` for data messages |
-| `channel` | Which channel this message belongs to |
-| `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `SETTLED`, `STATUS` |
-| `payload` | The full updated object (see per-channel payload schemas below) |
-| `ts` | Server timestamp (milliseconds since epoch) |
-| `seq` | Per-subscription monotonically increasing sequence number |
-| `requireAck` | Present and `true` only when reliable delivery is enabled |
-
-### 5. Keep alive
-
-The server sends a ping every **30 seconds**:
-
-```json
-{"type": "ping"}
-```
-
-Respond with pong within **120 seconds** or the connection is closed:
-
-```json
-{"type": "pong"}
-```
-
-You can also send pings from the client — the server responds with pong.
-
-## Channels
-
-### Client-filtered channels
-
-These channels only deliver data belonging to your `clientName`:
-
-| Channel | Events | Description |
-|---------|--------|-------------|
-| `orders` | INSERT, UPDATE, DELETE | Order placement, fills, status changes |
-| `bets` | INSERT, UPDATE | Bet placement and confirmation |
-| `settlements` | SETTLED | Settlement status updates (same payload as bets) |
-| `accounts` | UPDATE | Account status changes |
-| `balance` | UPDATE | Balance change notifications |
-
-### Global channels
-
-All subscribers receive these:
-
-| Channel | Events | Description |
-|---------|--------|-------------|
-| `fixtures` | UPDATE | Fixture metadata and score changes |
-| `currencies` | UPDATE | Currency exchange rate updates |
-| `status` | STATUS | System status changes |
-| `emergency` | STATUS | Emergency mode activation/deactivation |
-
-## Payload schemas
-
-### Orders payload
-
-Full database row from the `orders` table:
-
-```json
-{
-  "orderId": 327,
-  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-  "client": "demo",
-  "clientName": "demo",
-  "fixtureId": "id1000004461512432",
-  "outcomeId": 103,
-  "playerId": 0,
-  "orderPrice": 1.95,
-  "orderStake": 10.0,
-  "filledStake": 10.0,
-  "remainingStake": 0.0,
-  "orderStatus": "FILLED",
-  "statusReason": null,
-  "userRef": "bettor1234",
-  "testOrder": false,
-  "acceptBetterOdds": true,
-  "acceptPartialStake": true,
-  "orderCurrency": "USD",
-  "back": true,
-  "allowedBookmakers": "*",
-  "meta": {},
-  "expiresAt": "2026-02-07T17:29:37+00:00",
-  "filledAt": "2026-02-07T17:29:32+00:00",
-  "createdAt": "2026-02-07T17:29:32+00:00",
-  "updatedAt": "2026-02-07T17:29:32+00:00"
-}
-```
-
-### Bets / settlements payload
-
-Full database row from the `bets` table:
-
-```json
-{
-  "betId": 73,
-  "orderId": 327,
-  "bookmaker": "pinnacle",
-  "bookmakerBetId": "3332684214",
-  "betStatus": "CONFIRMED",
-  "settlementStatus": "UNSETTLED",
-  "placedStake": 10.0,
-  "placedPrice": 1.98,
-  "placedCurrency": "USD",
-  "account": "pinnacle_main",
-  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-  "userRef": "bettor1234",
-  "testBet": false,
-  "client": "demo",
-  "clientName": "demo",
-  "sentData": { "stake": 10.0, "price": 1.95 },
-  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
-  "settlementAmount": null,
-  "settlementReason": null,
-  "settledAt": null,
-  "declineReason": null,
-  "placedAt": "2026-02-07T17:29:32+00:00",
-  "createdAt": "2026-02-07T17:29:32+00:00",
-  "updatedAt": "2026-02-07T17:29:32+00:00"
-}
-```
-
-### Balance payload
-
-```json
-{
-  "clientName": "demo",
-  "bookmaker": "pinnacle",
-  "username": "pinnacle_main",
-  "balance": 4990.0,
-  "currency": "USD",
-  "ts": 1771183910123
-}
-```
-
-### Emergency payload
-
-```json
-{
-  "active": true,
-  "reason": "Upstream provider maintenance",
-  "ts": 1771183910123
-}
-```
-
-## Connection limits
-
-| Setting | Value |
-|---------|-------|
-| Max connections per API key | 5 |
-| Auth timeout | 30 seconds |
-| Server ping interval | 30 seconds |
-| Pong timeout (disconnect) | 120 seconds |
-| Message buffer (reliable delivery) | 100 messages |
-| Output queue per client | 2000 messages |
-
-## Example: Python client
-
-```python
-import asyncio
-import json
-import websockets
-
-async def connect():
-    uri = "wss://v2.55-tech.com/ws"
-    async with websockets.connect(uri) as ws:
-        # Login
-        await ws.send(json.dumps({
-            "type": "login",
-            "apiKey": "YOUR_API_KEY",
-            "channels": ["orders", "bets", "settlements"]
-        }))
-
-        # Wait for login confirmation
-        login_resp = json.loads(await ws.recv())
-        print(f"Logged in as {login_resp.get('clientName')}")
-
-        # Listen for updates (respond to pings automatically)
-        async for message in ws:
-            data = json.loads(message)
-            if data["type"] == "ping":
-                await ws.send(json.dumps({"type": "pong"}))
-            elif data["type"] == "data":
-                print(f"[{data['channel']}:{data['event']}] {data['payload']}")
-
-asyncio.run(connect())
-```
-
-## Example: JavaScript client
-
-```javascript
-const WebSocket = require('ws');
-
-const ws = new WebSocket('wss://v2.55-tech.com/ws');
-
-ws.on('open', () => {
-  ws.send(JSON.stringify({
-    type: 'login',
-    apiKey: 'YOUR_API_KEY',
-    channels: ['orders', 'bets', 'settlements']
-  }));
-});
-
-ws.on('message', (raw) => {
-  const msg = JSON.parse(raw);
-
-  if (msg.type === 'login_ok') {
-    console.log(`Logged in as ${msg.clientName}`);
-  }
-
-  if (msg.type === 'ping') {
-    ws.send(JSON.stringify({ type: 'pong' }));
-  }
-
-  if (msg.type === 'data') {
-    console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
-  }
-});
-```
-
-
-================================================================================
 # ABP Error Handling
-# Source: /abp-api/errors
-================================================================================
+
+Source: https://docs.55-tech.com/abp-api/errors
 
 ---
 title: "ABP Error Handling"
@@ -1214,7 +173,7 @@ curl https://v2.55-tech.com/accounts
 # Returns: 401 {"detail": "Unauthorized - missing or invalid API key"}
 
 # Include the header
-curl -H "x-api-key: your-key" https://v2.55-tech.com/accounts
+curl -H "X-API-Key: your-key" https://v2.55-tech.com/accounts
 # Returns: 200
 ```
 
@@ -1279,10 +238,1165 @@ In rare cases, the system may temporarily pause order processing during maintena
 Orders have a default `expiresAt` of 5 seconds from creation. If a bet hasn't been placed within this window, the order status changes to `EXPIRED`. Set a custom `expiresAt` for longer-lived orders.
 
 
-================================================================================
+---
+
+# ABP API Overview - Automated Bet Placing
+
+Source: https://docs.55-tech.com/abp-api/overview
+
+---
+title: "ABP API Overview - Automated Bet Placing"
+sidebarTitle: "Overview"
+description: "ABP v2 API overview. Place bets across 30+ bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
+---
+
+## What is ABP?
+
+The **Automated Bet Placing (ABP)** API by [55 Tech](https://55-tech.com/) lets you place bets across 30+ bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
+
+**Core capabilities:**
+
+- **Account management** — Full CRUD for bookmaker accounts with priority-based selection, per-account stake limits, and multi-currency support
+- **Betslip retrieval** — Get real-time odds and limits for any fixture/outcome across all configured bookmakers before placing
+- **Futures support** — Place bets on outright/futures markets using `futureId` and `participantId` (coming soon)
+- **Smart order routing** — Place single or bulk orders; ABP automatically selects the best bookmaker by odds and limits
+- **Bet tracking** — Monitor every bet from placement through confirmation and settlement with full audit trail
+- **Position & PnL analytics** — Aggregated views of exposure and profit/loss grouped by bookmaker, account, or user reference
+
+## Data flow
+
+<Steps>
+  <Step title="Discover fixtures & odds via OddsPapi v5">
+    Your app consumes the [OddsPapi v5 API](https://docs.oddspapi.io/) to discover fixtures, markets, outcomes, and real-time odds across all supported bookmakers. OddsPapi is the data layer — ABP is the execution layer built on top of it. Fixture IDs and outcome IDs are shared between both APIs.
+  </Step>
+  <Step title="Fetch betslip from ABP">
+    Before placing, call `GET /betslip?fixtureId=...&outcomeId=...&playerId=...` to get aggregated odds and limits from all your configured bookmaker accounts. For futures markets, use `futureId` instead of `fixtureId` along with `participantId`. ABP resolves stake limits (account > bookmaker > odds) and returns the effective min/max per bookmaker.
+  </Step>
+  <Step title="Place orders through ABP">
+    Send `POST /place-orders` with one or more orders. Each order targets either a fixture (`fixtureId`) or a future (`futureId`). ABP routes each order to the best bookmaker(s) based on price, available limits, and account priority. Each bookmaker integration places the bet and reports back confirmation or decline.
+  </Step>
+  <Step title="Receive real-time updates via WebSocket">
+    Connect to `WS /ws` to receive real-time pushes for order status changes, bet confirmations, settlements, balance updates, and system events. No polling needed.
+  </Step>
+  <Step title="Query history & analytics">
+    Use `GET /orders`, `GET /bets` for order/bet history with keyset pagination, and `GET /positions`, `GET /pnl` for aggregated exposure and profit/loss analytics.
+  </Step>
+</Steps>
+
+## Base URL
+
+```
+https://v2.55-tech.com
+```
+
+## Key concepts
+
+### Orders vs bets
+
+An **order** is your instruction to place a bet. A **bet** is the actual wager placed on a bookmaker. One order can result in multiple bets when using partial fills or multi-bookmaker routing.
+
+### Request deduplication
+
+Each order requires a unique `requestUuid` (UUID format). ABP uses server-side deduplication (30-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
+
+### Order lifecycle
+
+```
+PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANCELLED / FAILED
+```
+
+- **PENDING** — Order received and queued
+- **PROCESSING** — Routing to bookmakers
+- **FILLED** — All stake placed successfully
+- **PARTIALLY_FILLED** — Some stake placed, remaining expired or no capacity
+- **REJECTED** — Failed validation (bad odds, invalid fixture, etc.)
+- **EXPIRED** — Order `expiresAt` time reached (default: 5 seconds, max: 24 hours)
+- **CANCELLED** — Explicitly cancelled by client
+- **FAILED** — Internal error during placement
+
+### Bet lifecycle
+
+```
+PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
+```
+
+- **PENDING** — Bet created, awaiting bookmaker response
+- **PLACED** — Sent to bookmaker, awaiting confirmation
+- **CONFIRMED** — Bookmaker accepted the bet
+- **REJECTED** — Bookmaker rejected the bet
+- **CANCELLED** — Bet cancelled before confirmation
+- **FAILED** — Internal error during placement
+- **VOID** — Bet voided by bookmaker
+
+### Settlement lifecycle
+
+```
+UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
+```
+
+- **UNSETTLED** — Bet is live, awaiting result
+- **WON** — Full win
+- **LOST** — Full loss
+- **VOID** — Bet voided (stake returned)
+- **HALF_WON** — Asian handicap partial win
+- **HALF_LOST** — Asian handicap partial loss
+- **PUSH** — Stake returned (tie on the line)
+- **CASHOUT** — Early withdrawal at negotiated price
+
+### Account priority
+
+Each bookmaker account has a `priority` field (higher = preferred). When placing an order, ABP selects the highest-priority active account first for each bookmaker.
+
+### Limit cascade
+
+Stake limits are resolved in priority order: **account limits > bookmaker limits > odds limits**.
+
+For example, if an account has `minStake: 10`, the bookmaker default is `minStake: 1`, and the odds entry shows `limitMin: 5`, the effective minimum is `10` (from the account override).
+
+### Futures (coming soon)
+
+ABP supports **futures** (outright) markets alongside standard fixture-based markets. Instead of a `fixtureId`, futures use a `futureId` to identify the outright market and a `participantId` to specify the selection (e.g., a team or player to win a league/tournament).
+
+**Key differences from fixture orders:**
+
+| | Fixture orders | Futures orders |
+|---|---|---|
+| Identifier | `fixtureId` | `futureId` |
+| Selection | `outcomeId` + `playerId` | `outcomeId` + `playerId` + `participantId` |
+| Betslip | `GET /betslip?fixtureId=...` | `GET /betslip?futureId=...` |
+| Market key format | `fixtureId:bookmaker:outcomeId:playerId` | `futureId:bookmaker:outcomeId:playerId:participantId` |
+
+**Current status:** The data model and betslip infrastructure are in place. Order placement and betslip retrieval for futures currently return `501 Not Implemented`. This will be enabled in an upcoming release.
+
+### Bookmaker slugs
+
+Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `polymarket`). Use `GET /bookmakers` to list all 30+ supported bookmakers with their default stake limits.
+
+## Endpoints at a glance
+
+| Category | Endpoints | Description |
+|----------|-----------|-------------|
+| **Accounts** | `GET/POST/PATCH/DELETE /accounts` | Manage bookmaker accounts (credentials, balances, priority, limits) |
+| **Betslip** | `GET /betslip` | Get live odds & limits before placing (fixtures and futures) |
+| **Orders** | `POST /place-orders`, `POST /cancel-orders`, `POST /cancel-all-orders`, `GET /orders` | Place, cancel, and track orders |
+| **Bets** | `GET /bets`, `GET /bets/{bet_id}` | View individual bet results |
+| **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
+| **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
+| **Markets** | `GET /markets` | Available markets and odds types |
+| **WebSocket** | `WS /ws` | Real-time updates |
+
+## Supported bookmakers
+
+**Traditional sportsbooks:** pinnacle, pinnacleb2b, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, vertex
+
+**Betting exchanges:** betfair-ex, smarkets, matchbook
+
+**Prediction markets:** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, 4casters
+
+**Punter platforms:** punter.io
+
+## Resilience
+
+ABP includes production-grade reliability features:
+
+- **Circuit breakers** — Per-bookmaker circuit breakers prevent cascading failures and auto-recover
+- **Retry with exponential backoff** — for transient failures
+- **Emergency controls** — Orders may be temporarily paused during system maintenance
+- **Rate limiting** — Per-API-key rate limits (configurable per client)
+
+## Data source
+
+ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). Fixture IDs and outcome IDs in ABP correspond directly to OddsPapi identifiers. Your app should use OddsPapi to discover fixtures and markets, then use ABP to execute bets.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Authentication" icon="key" href="/abp-api/authentication">
+    Set up your API key.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/abp-api/quickstart">
+    Place your first bet in 5 steps.
+  </Card>
+</Columns>
+
+
+---
+
+# ABP Quickstart - Place Your First Bet
+
+Source: https://docs.55-tech.com/abp-api/quickstart
+
+---
+title: "ABP Quickstart - Place Your First Bet"
+sidebarTitle: "Quickstart"
+description: "Step-by-step guide to placing your first bet through the ABP API. From account setup to order placement, tracking, and settlement."
+---
+
+## Step 1: List your accounts
+
+Check which bookmaker accounts are configured for your API key:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://v2.55-tech.com/accounts
+```
+
+Response includes each account's bookmaker, balance, priority, stake limits, and currency:
+
+```json
+[
+  {
+    "bookmaker": "pinnacle",
+    "username": "pinnacle_main",
+    "client": "your-client",
+    "password": "***",
+    "balance": 5000.0,
+    "active": true,
+    "priority": 10,
+    "maxStake": 1000.0,
+    "minStake": 5.0,
+    "currencyId": "USD",
+    "verifyBetslip": false,
+    "meta": {},
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-02-01T12:00:00Z"
+  }
+]
+```
+
+## Step 2: Get a betslip
+
+Before placing a bet, retrieve current odds and limits. You need a `fixtureId`, `outcomeId`, and `playerId`:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=id1000002361061419&outcomeId=101&playerId=0"
+```
+
+The betslip returns live odds from every bookmaker that has this market, with fixture and outcome metadata:
+
+```json
+{
+  "fixtureId": "id1000002361061419",
+  "outcomeId": 101,
+  "playerId": 0,
+  "client": "your-client",
+  "fixtureInfo": {
+    "sport": { "sportId": 10, "sportName": "Soccer" },
+    "tournament": { "tournamentName": "Serie A", "categoryName": "Italy" },
+    "participants": {
+      "participant1Name": "AS Roma",
+      "participant2Name": "Cagliari Calcio"
+    }
+  },
+  "outcomeInfo": {
+    "marketName": "Full Time Result",
+    "outcomeName": "1"
+  },
+  "odds": {
+    "pinnacle": {
+      "id1000002361061419:pinnacle:101:0": {
+        "price": 1.5,
+        "limit": 15000,
+        "limitMin": 5,
+        "limitCurrency": "USD",
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    },
+    "sharpbet": {
+      "id1000002361061419:sharpbet:101:0": {
+        "price": 1.52,
+        "limit": 751.34,
+        "limitMin": 1,
+        "limitCurrency": "EUR",
+        "limitUsd": 886.13,
+        "active": true,
+        "account": "sharpbet_user"
+      }
+    }
+  }
+}
+```
+
+<Note>
+Use the [OddsPapi API](https://docs.oddspapi.io/) to discover fixture IDs and outcome IDs. ABP uses OddsPapi identifiers directly.
+</Note>
+
+## Step 3: Place an order
+
+Place a bet order with minimum price protection. Each order needs a unique `requestUuid` for idempotency:
+
+```bash
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orders": [
+      {
+        "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+        "fixtureId": "id1000004461512432",
+        "outcomeId": 103,
+        "playerId": 0,
+        "orderStake": 10.0,
+        "orderPrice": 1.95,
+        "userRef": "my-strategy-1",
+        "testOrder": false
+      }
+    ]
+  }' \
+  https://v2.55-tech.com/place-orders
+```
+
+**Key fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `requestUuid` | Yes | Unique UUID for idempotency (duplicates within 5 min return 409) |
+| `fixtureId` | Yes | OddsPapi fixture ID |
+| `outcomeId` | Yes | Market outcome (e.g., 103 = away win) |
+| `playerId` | Yes | Set to `0` for non-player-prop markets |
+| `orderStake` | Yes | Total amount to wager |
+| `orderPrice` | Yes | Minimum acceptable decimal odds |
+| `userRef` | Yes | Your reference for grouping related orders |
+| `testOrder` | Yes | Validate only, don't actually place (`false` for real bets) |
+| `bookmakers` | No | Comma-separated slugs to target (omit for automatic selection) |
+| `orderCurrency` | No | Currency code (default: `USD`) |
+| `acceptBetterOdds` | No | Accept odds better than `orderPrice` (default: `true`) |
+| `acceptPartialStake` | No | Allow partial fills (default: `true`) |
+| `back` | No | Back bet (`true`) or lay bet (`false`) (default: `true`) |
+| `expiresAt` | No | ISO 8601 expiry time (default: 5 seconds from now) |
+| `meta` | No | Custom metadata object (stored but not sent to bookmaker) |
+
+**Response:**
+
+```json
+{
+  "status": "accepted",
+  "acceptedOrders": [
+    {
+      "orderId": 327,
+      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+      "orderStatus": "FILLED",
+      "fixtureId": "id1000004461512432",
+      "outcomeId": 103,
+      "orderStake": 10.0,
+      "orderPrice": 1.95,
+      "filledStake": 10.0,
+      "bets": [
+        {
+          "betId": 73,
+          "bookmaker": "pinnacle",
+          "placedPrice": 1.98,
+          "placedStake": 10.0,
+          "betStatus": "CONFIRMED"
+        }
+      ]
+    }
+  ],
+  "declinedOrders": []
+}
+```
+
+Orders that fail validation appear in `declinedOrders` with a `declineReason`:
+
+```json
+{
+  "status": "declined",
+  "acceptedOrders": [],
+  "declinedOrders": [
+    {
+      "requestUuid": "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d",
+      "fixtureId": "id1000004461512432",
+      "outcomeId": 103,
+      "declineReason": "Order stake 100.00 USD exceeds available limit 50.00 USD"
+    }
+  ]
+}
+```
+
+## Step 4: Track your order
+
+Query orders by `userRef`, `orderIds`, or `requestUuids` (at least one filter required):
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/orders?userRef=my-strategy-1"
+```
+
+View individual bets for specific orders:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/bets?orderIds=327"
+```
+
+Each bet includes the bookmaker, placed price, placed stake, bet status, and settlement status:
+
+```json
+{
+  "status": "success",
+  "bets": [
+    {
+      "betId": 73,
+      "orderId": 327,
+      "bookmaker": "pinnacle",
+      "bookmakerBetId": "3332684214",
+      "placedStake": 10.0,
+      "placedPrice": 1.98,
+      "placedCurrency": "USD",
+      "betStatus": "CONFIRMED",
+      "settlementStatus": "UNSETTLED",
+      "account": "pinnacle_main",
+      "userRef": "my-strategy-1"
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "nextCursor": null
+}
+```
+
+## Step 5: Check positions & PnL
+
+View your aggregated open positions (grouped by bookmaker by default):
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://v2.55-tech.com/positions
+```
+
+```json
+{
+  "status": "success",
+  "groupBy": "bookmaker",
+  "positions": [
+    { "bookmaker": "pinnacle", "openBets": 5, "totalStake": 250.0, "avgPrice": 1.92 }
+  ],
+  "count": 1,
+  "totalStake": 250.0,
+  "totalOpenBets": 5
+}
+```
+
+View profit and loss:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://v2.55-tech.com/pnl
+```
+
+```json
+{
+  "status": "success",
+  "groupBy": "bookmaker",
+  "pnl": [
+    { "bookmaker": "pinnacle", "settledBets": 42, "wins": 23, "losses": 17, "netPnl": 250.0, "winRate": 54.8 }
+  ],
+  "count": 1,
+  "totalNetPnl": 250.0,
+  "totalStaked": 2100.0,
+  "totalSettledBets": 42
+}
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket updates" icon="bolt" href="/abp-api/websocket">
+    Get real-time order, bet, and settlement updates.
+  </Card>
+
+  <Card title="API reference" icon="terminal" href="/abp-api/overview">
+    Explore all available endpoints.
+  </Card>
+</Columns>
+
+
+---
+
+# ABP WebSocket - Real-Time Updates
+
+Source: https://docs.55-tech.com/abp-api/websocket
+
+---
+title: "ABP WebSocket - Real-Time Updates"
+sidebarTitle: "WebSocket"
+description: "Connect to the ABP WebSocket for real-time order, bet, settlement, account, and system updates. Server-backed with message ordering and reliable delivery."
+---
+
+## Endpoint
+
+```
+wss://v2.55-tech.com/ws
+```
+
+## Connection flow
+
+### 1. Connect
+
+Open a WebSocket connection. No authentication is needed at connection time.
+
+### 2. Login
+
+Send a login message within **30 seconds** of connecting:
+
+```json
+{
+  "type": "login",
+  "apiKey": "YOUR_API_KEY",
+  "channels": []
+}
+```
+
+An empty `channels` array subscribes to all available channels. To subscribe to specific channels:
+
+```json
+{
+  "type": "login",
+  "apiKey": "YOUR_API_KEY",
+  "channels": ["orders", "bets", "settlements"]
+}
+```
+
+You can optionally enable reliable delivery with message acknowledgments:
+
+```json
+{
+  "type": "login",
+  "apiKey": "YOUR_API_KEY",
+  "channels": ["orders", "bets"],
+  "reliableDelivery": true
+}
+```
+
+### 3. Login confirmation
+
+On success, the server responds with:
+
+```json
+{
+  "type": "login_ok",
+  "clientName": "your-client",
+  "channels": ["orders", "bets", "settlements"],
+  "subscriptionId": 1,
+  "access": {
+    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance", "betslip"],
+    "global": ["fixtures", "currencies", "status", "emergency"]
+  },
+  "reliableDelivery": false,
+  "features": {
+    "messageOrdering": true,
+    "acknowledgments": false,
+    "batchAck": false
+  }
+}
+```
+
+### 4. Receive updates
+
+Data messages follow this format:
+
+```json
+{
+  "type": "data",
+  "channel": "orders",
+  "event": "INSERT",
+  "payload": { ... },
+  "ts": 1771183909789,
+  "seq": 1
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Always `"data"` for data messages |
+| `channel` | Which channel this message belongs to |
+| `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `SETTLED`, `STATUS` |
+| `payload` | The full updated object (see per-channel payload schemas below) |
+| `ts` | Server timestamp (milliseconds since epoch) |
+| `seq` | Per-subscription monotonically increasing sequence number |
+| `requireAck` | Present and `true` only when reliable delivery is enabled |
+
+### 5. Keep alive
+
+The server sends a ping every **30 seconds**:
+
+```json
+{"type": "ping"}
+```
+
+Respond with pong within **120 seconds** or the connection is closed:
+
+```json
+{"type": "pong"}
+```
+
+You can also send pings from the client — the server responds with pong.
+
+## Channels
+
+### Client-filtered channels
+
+These channels only deliver data belonging to your `clientName`:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `orders` | INSERT, UPDATE, DELETE | Order placement, fills, status changes |
+| `bets` | INSERT, UPDATE, DELETE | Bet placement, confirmation, and removal |
+| `settlements` | SETTLED | Settlement status updates (same payload as bets) |
+| `accounts` | INSERT, UPDATE, DELETE | Account creation, updates, and deletion |
+| `balance` | UPDATE | Balance change notifications |
+| `betslip` | UPDATE | Real-time odds updates for active betslip subscriptions (60s window after each `GET /betslip` call) |
+
+### Global channels
+
+All subscribers receive these:
+
+| Channel | Events | Description |
+|---------|--------|-------------|
+| `fixtures` | UPDATE | Fixture metadata and score changes |
+| `currencies` | UPDATE | Currency exchange rate updates |
+| `status` | STATUS | System status changes |
+| `emergency` | STATUS | Emergency mode activation/deactivation |
+
+## Payload schemas
+
+### Orders payload
+
+Full database row from the `orders` table:
+
+```json
+{
+  "orderId": 327,
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "client": "demo",
+  "clientName": "demo",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "orderPrice": 1.95,
+  "orderStake": 10.0,
+  "filledStake": 10.0,
+  "remainingStake": 0.0,
+  "orderStatus": "FILLED",
+  "statusReason": null,
+  "userRef": "bettor1234",
+  "testOrder": false,
+  "acceptBetterOdds": true,
+  "acceptPartialStake": true,
+  "orderCurrency": "USD",
+  "back": true,
+  "allowedBookmakers": "*",
+  "oddsInfo": null,
+  "meta": {},
+  "expiresAt": "2026-02-07T17:29:37+00:00",
+  "filledAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+### Bets / settlements payload
+
+Full database row from the `bets` table:
+
+```json
+{
+  "betId": 73,
+  "orderId": 327,
+  "bookmaker": "pinnacle",
+  "bookmakerBetId": "3332684214",
+  "betStatus": "CONFIRMED",
+  "settlementStatus": "UNSETTLED",
+  "placedStake": 10.0,
+  "placedPrice": 1.98,
+  "placedCurrency": "USD",
+  "account": "pinnacle_main",
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "userRef": "bettor1234",
+  "testBet": false,
+  "client": "demo",
+  "clientName": "demo",
+  "sentData": { "stake": 10.0, "price": 1.95 },
+  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
+  "settlementAmount": null,
+  "settlementReason": null,
+  "settledAt": null,
+  "declineReason": null,
+  "betRequestId": null,
+  "oddsInfo": null,
+  "meta": {},
+  "placedAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+### Balance payload
+
+```json
+{
+  "clientName": "demo",
+  "bookmaker": "pinnacle",
+  "username": "pinnacle_main",
+  "balance": 4990.0,
+  "currency": "USD",
+  "ts": 1771183910123
+}
+```
+
+### Emergency payload
+
+```json
+{
+  "active": true,
+  "reason": "Upstream provider maintenance",
+  "ts": 1771183910123
+}
+```
+
+### Betslip payload
+
+Real-time odds updates pushed while a betslip subscription is active. Calling `GET /betslip` registers a **60-second sliding window** — during this window, price changes are broadcast in the same shape as the betslip REST response. Each poll resets the timer.
+
+This applies to both fixture-based and futures-based betslip subscriptions. For futures, the payload includes `futureId` and `participantId` instead of (or in addition to) `fixtureId`.
+
+**Fixture betslip example:**
+
+```json
+{
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "client": "demo",
+  "userRef": null,
+  "odds": {
+    "pinnacle": {
+      "odds_12345": {
+        "price": 1.98,
+        "limit": 500.0,
+        "limitMin": 1.0,
+        "limitCurrency": "USD",
+        "limitUsd": 500.0,
+        "limitMinUsd": 1.0,
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    }
+  }
+}
+```
+
+**Futures betslip example (coming soon):**
+
+```json
+{
+  "futureId": "fut_123456",
+  "outcomeId": 0,
+  "playerId": 0,
+  "participantId": 5,
+  "client": "demo",
+  "userRef": null,
+  "odds": {
+    "pinnacle": {
+      "fut_123456:pinnacle:0:0:5": {
+        "price": 3.50,
+        "limit": 1000.0,
+        "limitMin": 5.0,
+        "limitCurrency": "USD",
+        "limitUsd": 1000.0,
+        "limitMinUsd": 5.0,
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    }
+  }
+}
+```
+
+<Note>
+Futures betslip WebSocket broadcasting is not yet enabled. The subscription infrastructure is in place and will be activated in an upcoming release.
+</Note>
+
+## Connection limits
+
+| Setting | Value |
+|---------|-------|
+| Max connections per API key | 5 |
+| Auth timeout | 30 seconds |
+| Server ping interval | 30 seconds |
+| Pong timeout (disconnect) | 120 seconds |
+| Message buffer (reliable delivery) | 100 messages |
+| Output queue per client | 2000 messages |
+
+## Example: Python client
+
+```python
+import asyncio
+import json
+import websockets
+
+async def connect():
+    uri = "wss://v2.55-tech.com/ws"
+    async with websockets.connect(uri) as ws:
+        # Login
+        await ws.send(json.dumps({
+            "type": "login",
+            "apiKey": "YOUR_API_KEY",
+            "channels": ["orders", "bets", "settlements"]
+        }))
+
+        # Wait for login confirmation
+        login_resp = json.loads(await ws.recv())
+        print(f"Logged in as {login_resp.get('clientName')}")
+
+        # Listen for updates (respond to pings automatically)
+        async for message in ws:
+            data = json.loads(message)
+            if data["type"] == "ping":
+                await ws.send(json.dumps({"type": "pong"}))
+            elif data["type"] == "data":
+                print(f"[{data['channel']}:{data['event']}] {data['payload']}")
+
+asyncio.run(connect())
+```
+
+## Example: JavaScript client
+
+```javascript
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://v2.55-tech.com/ws');
+
+ws.on('open', () => {
+  ws.send(JSON.stringify({
+    type: 'login',
+    apiKey: 'YOUR_API_KEY',
+    channels: ['orders', 'bets', 'settlements']
+  }));
+});
+
+ws.on('message', (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === 'login_ok') {
+    console.log(`Logged in as ${msg.clientName}`);
+  }
+
+  if (msg.type === 'ping') {
+    ws.send(JSON.stringify({ type: 'pong' }));
+  }
+
+  if (msg.type === 'data') {
+    console.log(`[${msg.channel}:${msg.event}]`, msg.payload);
+  }
+});
+```
+
+
+---
+
+# AI & LLM Integration - Documentation Export
+
+Source: https://docs.55-tech.com/ai
+
+---
+title: "AI & LLM Integration - Documentation Export"
+sidebarTitle: "AI / Offline Export"
+description: "Download 55-Tech API documentation for AI tools, LLMs, and offline use. Machine-readable exports in TXT and OpenAPI JSON formats for ChatGPT, Claude, and other AI assistants."
+---
+
+## Download
+
+| Resource | Format | Description |
+|----------|--------|-------------|
+| [`/llms.txt`](/llms.txt) | TXT | Docs index — page titles and paths |
+| [`/llms-full.txt`](/llms-full.txt) | TXT | Full docs bundle — all guide pages concatenated |
+| [`/abp-api/openapi.json`](/abp-api/openapi.json) | JSON | ABP OpenAPI 3.1 spec — 13 endpoints, full schemas |
+| [`/mm-api/openapi.json`](/mm-api/openapi.json) | JSON | MM OpenAPI 3.1 spec — REST reference |
+| [`/scraping-api/openapi.json`](/scraping-api/openapi.json) | JSON | Scraping OpenAPI 3.1 spec — fetch, WebSocket, AMQP, network endpoints |
+
+## What's included
+
+The **ABP API** documentation covers:
+
+- **Account management** — Full CRUD for bookmaker accounts across 30+ integrations
+- **Betslip** — Real-time odds and limits from OddsPapi v5 with multi-bookmaker aggregation
+- **Order placement** — Smart routing with idempotency (`requestUuid`), partial fills, and configurable expiry
+- **Bet tracking** — Keyset-paginated queries with full lifecycle from PENDING through CONFIRMED/SETTLED
+- **Analytics** — Positions and PnL grouped by bookmaker, account, or user reference
+- **WebSocket** — Real-time push for orders, bets, settlements, balance, fixtures, currencies, status, emergency
+- **30+ bookmaker integrations** — pinnacle, betfair-ex, polymarket, kalshi, cloudbet, smarkets, and more
+
+The **MM API** documentation covers:
+
+- Market-making engine configuration and real-time spread management
+- WebSocket-driven pricing updates and order book interaction
+
+The **Scraping API** documentation covers:
+
+- **HTTP fetch** — GET/POST/PUT/PATCH/DELETE through 80+ geo-distributed agents
+- **WebSocket relay** — Bidirectional frame relay for Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WS
+- **AMQP consumer** — Stream RabbitMQ messages via SSE
+- **Network intelligence** — Agent listing, geo distribution, per-domain health checks
+- **Usage & rate limits** — Per-key metrics, request analytics, top domains
+
+## Recommended usage
+
+**For AI assistants that fetch URLs:**
+
+- `/llms-full.txt` — best for "read everything once" (all guide pages + examples)
+- `/abp-api/openapi.json` — ABP endpoint + schema accuracy (typed, with examples)
+- `/mm-api/openapi.json` — MM endpoint + schema reference
+- `/scraping-api/openapi.json` — Scraping endpoint + schema reference
+
+**For copy/paste workflows:**
+
+Open `/llms-full.txt` in the browser and paste the contents into your AI tool.
+
+**For code generation:**
+
+Feed the OpenAPI specs to tools like `openapi-generator`, `oapi-codegen`, or Cursor/Copilot for typed client SDK generation.
+
+## Notes
+
+- `llms-full.txt` follows the same ordering as the site navigation
+- WebSocket protocols are documented in the guide pages; REST endpoints are in the OpenAPI specs
+- All three APIs (ABP, MM, Scraping) are included in a single bundle
+- All APIs authenticate via the `X-API-Key` header
+
+---
+
+## Ask an AI Assistant
+
+Want to explore or ask questions about this API using your favorite AI?
+
+Click one of the links below — each one opens the full docs bundle in the selected tool with a pre-filled prompt:
+
+- [Ask ChatGPT](https://chatgpt.com/?prompt=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+with+this+API.)
+- [Ask Claude](https://claude.ai/?prompt=Please+read+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+- [Ask Perplexity](https://www.perplexity.ai/search?q=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt)
+- [Ask Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+
+
+---
+
+# 55-Tech API Documentation
+
+Source: https://docs.55-tech.com/index
+
+---
+title: "55-Tech API Documentation"
+sidebarTitle: "Introduction"
+description: "Official API documentation for 55-Tech's Market Making (MM) and Automated Bet Placing (ABP) platforms. High-frequency trading and automated bet execution for sports betting markets."
+---
+
+<Note>
+**B2B Platform** — 55-Tech provides enterprise trading infrastructure for licensed operators, trading firms, and sports betting platforms. Contact [contact@55-tech.com](mailto:contact@55-tech.com) for API access.
+</Note>
+
+## What is 55-Tech?
+
+55-Tech operates two core trading platforms:
+
+- **Market Making (MM)** — High-frequency market making engine that places orders on prediction market exchanges (Polymarket, Kalshi) and hedges on bookmakers
+- **Automated Bet Placing (ABP)** — Place bets across 30+ bookmakers through a single API with real-time tracking and settlement
+
+Both platforms consume real-time odds data from [OddsPapi](https://docs.oddspapi.io/) and expose REST + WebSocket APIs for client integration.
+
+---
+
+## Get started
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get connected to both APIs in minutes.
+  </Card>
+
+  <Card title="ABP API" icon="bolt" href="/abp-api/overview">
+    Place bets across 30+ bookmakers through a single API.
+  </Card>
+
+  <Card title="MM API" icon="chart-line" href="/mm-api/overview">
+    High-frequency market making on prediction exchanges.
+  </Card>
+
+  <Card title="OddsPapi Data" icon="database" href="https://docs.oddspapi.io/">
+    Real-time odds data powering both platforms.
+  </Card>
+</Columns>
+
+
+---
+
+# MM Authentication - API Key Setup
+
+Source: https://docs.55-tech.com/mm-api/authentication
+
+---
+title: "MM Authentication - API Key Setup"
+sidebarTitle: "Authentication"
+description: "Learn how to authenticate MM API requests using the X-API-Key header (UUID). Client API and WebSocket authentication."
+---
+
+All MM client endpoints require authentication via the `X-API-Key` header (UUID format).
+
+## Client API authentication
+
+Pass your API key (UUID format) in the `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+Your API key is bound to a specific `client` entity. All data returned is filtered to your client — you only see your own orders, bets, and positions.
+
+## WebSocket authentication
+
+For WebSocket connections, send your API key in the subscribe message:
+
+```json
+{
+  "type": "subscribe",
+  "api_key": "YOUR_API_KEY",
+  "channels": ["orders", "bets", "accounts", "scores"]
+}
+```
+
+You must send the subscribe message within **30 seconds** of connecting, or the connection is closed. See [WebSocket](/mm-api/websocket) for details.
+
+## Rate limiting
+
+Rate limits are enforced per client:
+
+- **REST API:** 100 requests per minute
+- **WebSocket:** Maximum 5 concurrent connections per API key
+- **Exceeded:** Returns `429 Too Many Requests`
+
+## Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Invalid or missing API key (must be valid UUID) |
+| `429` | Rate limit exceeded |
+
+```json
+{"detail": "Invalid or missing API key"}
+```
+
+
+---
+
+# MM Error Handling
+
+Source: https://docs.55-tech.com/mm-api/errors
+
+---
+title: "MM Error Handling"
+sidebarTitle: "Errors"
+description: "MM API error codes, HTTP status codes, error response format, and emergency mode behavior."
+---
+
+## Error response format
+
+All API errors return a JSON body:
+
+```json
+{
+  "detail": "Invalid or missing API key"
+}
+```
+
+Validation errors include location details:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["query", "fixture_id"],
+      "msg": "Field required",
+      "type": "missing"
+    }
+  ]
+}
+```
+
+## HTTP status codes
+
+| Status | Description |
+|--------|-------------|
+| `200` | Success |
+| `401` | Unauthorized — invalid or missing API key (must be valid UUID) |
+| `404` | Not found — resource does not exist |
+| `422` | Validation error — request parameters failed validation |
+| `426` | Upgrade required — WebSocket endpoint called via HTTP |
+| `429` | Rate limited — exceeded 100 requests/minute |
+| `500` | Internal server error |
+
+## Rate limiting
+
+The MM API enforces **100 requests/minute** per client API key.
+
+When rate limited, the API returns `429 Too Many Requests`. Implement exponential backoff in your retry logic (wait 1s, 2s, 4s, etc.).
+
+## Common errors
+
+### Authentication (401)
+
+Your API key is missing, invalid, or not in UUID format.
+
+```bash
+# Correct
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# Wrong header name — returns 401
+curl -H "Authorization: Bearer your-key" \
+  https://mmapi.55-tech.com/api/v1/me
+
+# Missing header — returns 401
+curl https://mmapi.55-tech.com/api/v1/me
+```
+
+### Not found (404)
+
+The requested resource doesn't exist:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/999999
+# Returns: 404
+```
+
+### Validation errors (422)
+
+Required query parameters are missing or have invalid values. Check the `loc` field to identify the problematic parameter.
+
+### WebSocket upgrade (426)
+
+If you call the WebSocket endpoint via HTTP instead of upgrading to a WebSocket connection, you receive a `426 Upgrade Required`.
+
+## WebSocket errors
+
+When subscribing to the WebSocket, these error messages may be returned:
+
+| Error | Description |
+|-------|-------------|
+| `api_key required` | No `api_key` field in subscribe message |
+| `Invalid api_key format` | Not a valid UUID |
+| `Invalid API key` | Key not found or client inactive |
+| `Connection limit exceeded` | Already at 5 active connections for this key |
+
+
+
+---
+
 # MM API Overview - Market Making Engine
-# Source: /mm-api/overview
-================================================================================
+
+Source: https://docs.55-tech.com/mm-api/overview
 
 ---
 title: "MM API Overview - Market Making Engine"
@@ -1429,68 +1543,11 @@ These cover 1x2 markets, over/under, handicap, correct score, and both sides.
 </Columns>
 
 
-================================================================================
-# MM Authentication - API Key Setup
-# Source: /mm-api/authentication
-================================================================================
-
----
-title: "MM Authentication - API Key Setup"
-sidebarTitle: "Authentication"
-description: "Learn how to authenticate MM API requests using the X-API-Key header (UUID). Client API and WebSocket authentication."
 ---
 
-All MM client endpoints require authentication via the `X-API-Key` header (UUID format).
-
-## Client API authentication
-
-Pass your API key (UUID format) in the `X-API-Key` header:
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
-```
-
-Your API key is bound to a specific `client` entity. All data returned is filtered to your client — you only see your own orders, bets, and positions.
-
-## WebSocket authentication
-
-For WebSocket connections, send your API key in the subscribe message:
-
-```json
-{
-  "type": "subscribe",
-  "api_key": "YOUR_API_KEY",
-  "channels": ["orders", "bets", "accounts", "scores"]
-}
-```
-
-You must send the subscribe message within **30 seconds** of connecting, or the connection is closed. See [WebSocket](/mm-api/websocket) for details.
-
-## Rate limiting
-
-Rate limits are enforced per client:
-
-- **REST API:** 100 requests per minute
-- **WebSocket:** Maximum 5 concurrent connections per API key
-- **Exceeded:** Returns `429 Too Many Requests`
-
-## Error responses
-
-| Status | Meaning |
-|--------|---------|
-| `401` | Invalid or missing API key (must be valid UUID) |
-| `429` | Rate limit exceeded |
-
-```json
-{"detail": "Invalid or missing API key"}
-```
-
-
-================================================================================
 # MM Quickstart - First API Calls
-# Source: /mm-api/quickstart
-================================================================================
+
+Source: https://docs.55-tech.com/mm-api/quickstart
 
 ---
 title: "MM Quickstart - First API Calls"
@@ -1680,10 +1737,11 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 </Columns>
 
 
-================================================================================
+---
+
 # MM WebSocket - Real-Time Updates
-# Source: /mm-api/websocket
-================================================================================
+
+Source: https://docs.55-tech.com/mm-api/websocket
 
 ---
 title: "MM WebSocket - Real-Time Updates"
@@ -2002,20 +2060,258 @@ setInterval(() => {
 ```
 
 
-================================================================================
-# MM Error Handling
-# Source: /mm-api/errors
-================================================================================
+---
+
+# Quickstart - Connect to 55-Tech APIs
+
+Source: https://docs.55-tech.com/quickstart
 
 ---
-title: "MM Error Handling"
+title: "Quickstart - Connect to 55-Tech APIs"
+sidebarTitle: "Quickstart"
+description: "Get started with the 55-Tech ABP, MM, and Scraping APIs. Check connectivity, authenticate, and make your first API calls."
+---
+
+## Prerequisites
+
+You need an API key for the platform you want to use. Contact [contact@55-tech.com](mailto:contact@55-tech.com) to get your key.
+
+| Platform | Auth Header | Base URL |
+|----------|------------|----------|
+| ABP (Automated Bet Placing) | `X-API-Key` | `https://v2.55-tech.com` |
+| MM (Market Making) | `X-API-Key` | `https://mmapi.55-tech.com` |
+| Scraping API | `X-API-Key` | `https://scraping-api.55-tech.com` |
+
+---
+
+## ABP — Automated Bet Placing
+
+### 1. List your accounts
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://v2.55-tech.com/accounts
+```
+
+### 2. Get a betslip (live odds)
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=ID&outcomeId=161&playerId=0"
+```
+
+### 3. Place an order
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"orders": [{"fixtureId": "...", "outcomeId": 161, "playerId": 0, "stake": 10, "minPrice": 1.5}]}' \
+  https://v2.55-tech.com/place-orders
+```
+
+### 4. Track results
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://v2.55-tech.com/orders
+```
+
+---
+
+## MM — Market Making
+
+### 1. Verify your identity
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/me
+```
+
+### 2. List your orders
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders
+```
+
+### 3. Check positions
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/positions
+```
+
+### 4. View profit & loss
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/pnl
+```
+
+---
+
+## Scraping API
+
+### 1. Check network status
+
+```bash
+curl https://scraping-api.55-tech.com/network/status
+```
+
+### 2. Fetch a page
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+### 3. Fetch with geo targeting
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Geo: DE" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+### 4. Check usage
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+---
+
+## Real-time updates
+
+All APIs support WebSocket connections for live updates. See the WebSocket documentation for each API:
+
+<Columns cols={3}>
+  <Card title="ABP WebSocket" icon="bolt" href="/abp-api/websocket">
+    Real-time order, bet, and settlement updates.
+  </Card>
+
+  <Card title="MM WebSocket" icon="bolt" href="/mm-api/websocket">
+    Live order fills, bets, and score updates.
+  </Card>
+
+  <Card title="Scraping WebSocket" icon="bolt" href="/scraping-api/websocket">
+    Real-time fetch results via WebSocket relay.
+  </Card>
+</Columns>
+
+
+---
+
+# Scraping API Authentication
+
+Source: https://docs.55-tech.com/scraping-api/authentication
+
+---
+title: "Scraping API Authentication"
+sidebarTitle: "Authentication"
+description: "Authenticate Scraping API requests using the X-API-Key header. Rate limits, key formats, and per-key configuration."
+---
+
+All Scraping API endpoints (except public ones listed below) require authentication.
+
+## Passing your API key
+
+Pass your API key using one of these methods:
+
+**HTTP header (recommended for `/fetch`):**
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+**JSON body field (for WebSocket `/ws` and AMQP `/amqp`):**
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "url": "wss://target.example.com/stream"
+}
+```
+
+For WebSocket `/ws` and AMQP `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
+
+## Rate limits
+
+Each API key has a configurable rate limit:
+
+| Setting | Default |
+|---------|---------|
+| Requests per second (RPS) | 10 |
+| Burst capacity | Equal to RPS |
+
+When rate limited, the API returns `429 Too Many Requests` with these headers:
+
+```
+Retry-After: 1
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+```
+
+Implement exponential backoff: wait 1s, 2s, 4s, etc.
+
+Check your current rate limit and usage:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/usage
+```
+
+The response includes your remaining tokens:
+
+```json
+{
+  "rate_limit": {
+    "rps": 10.0,
+    "burst": 10,
+    "remaining": 9.3
+  }
+}
+```
+
+## Public endpoints
+
+These endpoints do **not** require authentication:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | API overview and usage info |
+| `GET /healthz` | Liveness probe (`{"ok": true}`) |
+| `GET /network/agents` | List all agents |
+| `GET /network/status` | Network summary |
+| `GET /network/geo` | Agents grouped by country |
+| `GET /docs` | Swagger UI (interactive playground) |
+| `GET /redoc` | ReDoc API documentation |
+
+## Obtaining a key
+
+Contact [contact@55-tech.com](mailto:contact@55-tech.com) to obtain an API key with a rate limit configured for your use case.
+
+
+---
+
+# Scraping API Error Handling
+
+Source: https://docs.55-tech.com/scraping-api/errors
+
+---
+title: "Scraping API Error Handling"
 sidebarTitle: "Errors"
-description: "MM API error codes, HTTP status codes, error response format, and emergency mode behavior."
+description: "Scraping API error codes, block detection, and retry strategies."
 ---
 
 ## Error response format
 
-All API errors return a JSON body:
+All API errors return JSON:
 
 ```json
 {
@@ -2023,92 +2319,120 @@ All API errors return a JSON body:
 }
 ```
 
-Validation errors include location details:
-
-```json
-{
-  "detail": [
-    {
-      "loc": ["query", "fixture_id"],
-      "msg": "Field required",
-      "type": "missing"
-    }
-  ]
-}
-```
-
 ## HTTP status codes
 
 | Status | Description |
 |--------|-------------|
-| `200` | Success |
-| `401` | Unauthorized — invalid or missing API key (must be valid UUID) |
-| `404` | Not found — resource does not exist |
-| `422` | Validation error — request parameters failed validation |
-| `426` | Upgrade required — WebSocket endpoint called via HTTP |
-| `429` | Rate limited — exceeded 100 requests/minute |
-| `500` | Internal server error |
+| `200` | Success — target response proxied (check `meta.blocked` for block detection) |
+| `401` | Unauthorized — missing or invalid API key |
+| `429` | Rate limited. Headers include `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` |
+| `502` | Bad gateway — no healthy agent available for this domain |
+| `504` | Gateway timeout — target did not respond within timeout (default 30s) |
 
-## Rate limiting
+## Block detection
 
-The MM API enforces **100 requests/minute** per client API key.
+Every fetch response includes a `meta.blocked` field:
 
-When rate limited, the API returns `429 Too Many Requests`. Implement exponential backoff in your retry logic (wait 1s, 2s, 4s, etc.).
-
-## Common errors
-
-### Authentication (401)
-
-Your API key is missing, invalid, or not in UUID format.
-
-```bash
-# Correct
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
-
-# Wrong header name — returns 401
-curl -H "Authorization: Bearer your-key" \
-  https://mmapi.55-tech.com/api/v1/me
-
-# Missing header — returns 401
-curl https://mmapi.55-tech.com/api/v1/me
+```json
+{
+  "meta": {
+    "status": 403,
+    "blocked": true,
+    "agent": { "id": "scraping-de5" }
+  },
+  "raw": "<html>Access Denied...</html>"
+}
 ```
 
-### Not found (404)
+When `meta.blocked` is `true`:
+- The agent that got blocked is automatically excluded for this domain
+- Your next request will be routed to a different agent
+- The response still contains the full target body for your inspection
 
-The requested resource doesn't exist:
+You can check per-agent health for a domain:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/orders/999999
-# Returns: 404
+  https://scraping-api.55-tech.com/network/health/example.com
 ```
 
-### Validation errors (422)
+The health endpoint returns three states: `available`, `limited` (temporary), and `unavailable` (longer exclusion). Agents recover automatically.
 
-Required query parameters are missing or have invalid values. Check the `loc` field to identify the problematic parameter.
+## Retry strategies
 
-### WebSocket upgrade (426)
+### Rate limit (429)
 
-If you call the WebSocket endpoint via HTTP instead of upgrading to a WebSocket connection, you receive a `426 Upgrade Required`.
+Use exponential backoff: wait 1s, 2s, 4s, etc. Check `GET /usage` for your current rate limit status.
+
+### Blocked (meta.blocked = true)
+
+No client-side retry needed. The API automatically routes your next request to a different, healthy agent. Just keep making requests normally.
+
+### Timeout (504)
+
+- Increase the `timeout` field in your POST body (default: 30 seconds)
+- Use `X-Geo` to pick agents geographically closer to the target
+- Use `GET /debug/pick?url=...` to preview which agent would be selected
+
+### No agents available (502)
+
+All agents for this domain are temporarily excluded. Wait a moment and retry, or use `GET /network/health/{domain}` to check recovery status.
 
 ## WebSocket errors
 
-When subscribing to the WebSocket, these error messages may be returned:
+| Error | Cause | Close code |
+|-------|-------|------------|
+| Invalid API key | Missing or unrecognized key in connect message | `1008` |
+| Rate limit exceeded | Too many concurrent connections | `1008` |
+| Connect timeout | No JSON connect message within 10 seconds | `1008` |
+| Target connection failed | Agent could not connect to target WS | `1011` |
+| Agent unavailable | No agent available for the request | `1011` |
 
-| Error | Description |
-|-------|-------------|
-| `api_key required` | No `api_key` field in subscribe message |
-| `Invalid api_key format` | Not a valid UUID |
-| `Invalid API key` | Key not found or client inactive |
-| `Connection limit exceeded` | Already at 5 active connections for this key |
+## AMQP errors
+
+AMQP errors are delivered as SSE events:
+
+```
+event: error
+data: {"message": "agent error: connection refused", "code": 1011}
+```
+
+After an error event, the SSE stream closes.
+
+## Common errors
+
+### Missing target URL
+
+```bash
+# Wrong: no URL specified
+curl -H "X-API-Key: YOUR_KEY" https://scraping-api.55-tech.com/fetch
+
+# Right: URL in header
+curl -H "X-API-Key: YOUR_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  https://scraping-api.55-tech.com/fetch
+```
+
+### Invalid geo code
+
+```bash
+# Wrong: full country name
+-H "X-Geo: Germany"
+
+# Right: ISO 2-char code
+-H "X-Geo: DE"
+```
+
+### WebSocket connect timeout
+
+The first JSON message with `apiKey` and `url` must be sent within **10 seconds** of opening the WebSocket connection, or it will be closed with code `1008`.
 
 
+---
 
-================================================================================
 # Scraping API Overview
-# Source: /scraping-api/overview
-================================================================================
+
+Source: https://docs.55-tech.com/scraping-api/overview
 
 ---
 title: "Scraping API Overview"
@@ -2229,103 +2553,11 @@ All HTTP fetch responses follow this structure:
 </Columns>
 
 
-================================================================================
-# Scraping API Authentication
-# Source: /scraping-api/authentication
-================================================================================
-
----
-title: "Scraping API Authentication"
-sidebarTitle: "Authentication"
-description: "Authenticate Scraping API requests using the X-API-Key header. Rate limits, key formats, and per-key configuration."
 ---
 
-All Scraping API endpoints (except public ones listed below) require authentication.
-
-## Passing your API key
-
-Pass your API key using one of these methods:
-
-**HTTP header (recommended for `/fetch`):**
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  -H "X-Target-URL: https://example.com" \
-  https://scraping-api.55-tech.com/fetch
-```
-
-**JSON body field (for WebSocket `/ws` and AMQP `/amqp`):**
-
-```json
-{
-  "apiKey": "YOUR_API_KEY",
-  "url": "wss://target.example.com/stream"
-}
-```
-
-For WebSocket `/ws` and AMQP `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
-
-## Rate limits
-
-Each API key has a configurable rate limit:
-
-| Setting | Default |
-|---------|---------|
-| Requests per second (RPS) | 10 |
-| Burst capacity | Equal to RPS |
-
-When rate limited, the API returns `429 Too Many Requests` with these headers:
-
-```
-Retry-After: 1
-X-RateLimit-Limit: 10
-X-RateLimit-Remaining: 0
-```
-
-Implement exponential backoff: wait 1s, 2s, 4s, etc.
-
-Check your current rate limit and usage:
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://scraping-api.55-tech.com/usage
-```
-
-The response includes your remaining tokens:
-
-```json
-{
-  "rate_limit": {
-    "rps": 10.0,
-    "burst": 10,
-    "remaining": 9.3
-  }
-}
-```
-
-## Public endpoints
-
-These endpoints do **not** require authentication:
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /` | API overview and usage info |
-| `GET /healthz` | Liveness probe (`{"ok": true}`) |
-| `GET /network/agents` | List all agents |
-| `GET /network/status` | Network summary |
-| `GET /network/geo` | Agents grouped by country |
-| `GET /docs` | Swagger UI (interactive playground) |
-| `GET /redoc` | ReDoc API documentation |
-
-## Obtaining a key
-
-Contact [contact@55-tech.com](mailto:contact@55-tech.com) to obtain an API key with a rate limit configured for your use case.
-
-
-================================================================================
 # Scraping API Quickstart
-# Source: /scraping-api/quickstart
-================================================================================
+
+Source: https://docs.55-tech.com/scraping-api/quickstart
 
 ---
 title: "Scraping API Quickstart"
@@ -2545,10 +2777,11 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 </Columns>
 
 
-================================================================================
+---
+
 # Scraping API WebSocket & AMQP
-# Source: /scraping-api/websocket
-================================================================================
+
+Source: https://docs.55-tech.com/scraping-api/websocket
 
 ---
 title: "Scraping API WebSocket & AMQP"
@@ -2835,10 +3068,11 @@ for line in resp.iter_lines():
 ```
 
 
-================================================================================
+---
+
 # WebSocket Protocol Reference
-# Source: /scraping-api/ws-reference
-================================================================================
+
+Source: https://docs.55-tech.com/scraping-api/ws-reference
 
 ---
 title: "WebSocket Protocol Reference"
@@ -3069,133 +3303,4 @@ async def test():
 asyncio.run(test())
 ```
 
-
-================================================================================
-# Scraping API Error Handling
-# Source: /scraping-api/errors
-================================================================================
-
----
-title: "Scraping API Error Handling"
-sidebarTitle: "Errors"
-description: "Scraping API error codes, block detection, and retry strategies."
----
-
-## Error response format
-
-All API errors return JSON:
-
-```json
-{
-  "detail": "Invalid or missing API key"
-}
-```
-
-## HTTP status codes
-
-| Status | Description |
-|--------|-------------|
-| `200` | Success — target response proxied (check `meta.blocked` for block detection) |
-| `401` | Unauthorized — missing or invalid API key |
-| `429` | Rate limited. Headers include `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` |
-| `502` | Bad gateway — no healthy agent available for this domain |
-| `504` | Gateway timeout — target did not respond within timeout (default 30s) |
-
-## Block detection
-
-Every fetch response includes a `meta.blocked` field:
-
-```json
-{
-  "meta": {
-    "status": 403,
-    "blocked": true,
-    "agent": { "id": "scraping-de5" }
-  },
-  "raw": "<html>Access Denied...</html>"
-}
-```
-
-When `meta.blocked` is `true`:
-- The agent that got blocked is automatically excluded for this domain
-- Your next request will be routed to a different agent
-- The response still contains the full target body for your inspection
-
-You can check per-agent health for a domain:
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://scraping-api.55-tech.com/network/health/example.com
-```
-
-The health endpoint returns three states: `available`, `limited` (temporary), and `unavailable` (longer exclusion). Agents recover automatically.
-
-## Retry strategies
-
-### Rate limit (429)
-
-Use exponential backoff: wait 1s, 2s, 4s, etc. Check `GET /usage` for your current rate limit status.
-
-### Blocked (meta.blocked = true)
-
-No client-side retry needed. The API automatically routes your next request to a different, healthy agent. Just keep making requests normally.
-
-### Timeout (504)
-
-- Increase the `timeout` field in your POST body (default: 30 seconds)
-- Use `X-Geo` to pick agents geographically closer to the target
-- Use `GET /debug/pick?url=...` to preview which agent would be selected
-
-### No agents available (502)
-
-All agents for this domain are temporarily excluded. Wait a moment and retry, or use `GET /network/health/{domain}` to check recovery status.
-
-## WebSocket errors
-
-| Error | Cause | Close code |
-|-------|-------|------------|
-| Invalid API key | Missing or unrecognized key in connect message | `1008` |
-| Rate limit exceeded | Too many concurrent connections | `1008` |
-| Connect timeout | No JSON connect message within 10 seconds | `1008` |
-| Target connection failed | Agent could not connect to target WS | `1011` |
-| Agent unavailable | No agent available for the request | `1011` |
-
-## AMQP errors
-
-AMQP errors are delivered as SSE events:
-
-```
-event: error
-data: {"message": "agent error: connection refused", "code": 1011}
-```
-
-After an error event, the SSE stream closes.
-
-## Common errors
-
-### Missing target URL
-
-```bash
-# Wrong: no URL specified
-curl -H "X-API-Key: YOUR_KEY" https://scraping-api.55-tech.com/fetch
-
-# Right: URL in header
-curl -H "X-API-Key: YOUR_KEY" \
-  -H "X-Target-URL: https://example.com" \
-  https://scraping-api.55-tech.com/fetch
-```
-
-### Invalid geo code
-
-```bash
-# Wrong: full country name
--H "X-Geo: Germany"
-
-# Right: ISO 2-char code
--H "X-Geo: DE"
-```
-
-### WebSocket connect timeout
-
-The first JSON message with `apiKey` and `url` must be sent within **10 seconds** of opening the WebSocket connection, or it will be closed with code `1008`.
 

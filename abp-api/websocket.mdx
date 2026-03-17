@@ -60,7 +60,7 @@ On success, the server responds with:
   "channels": ["orders", "bets", "settlements"],
   "subscriptionId": 1,
   "access": {
-    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance"],
+    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance", "betslip"],
     "global": ["fixtures", "currencies", "status", "emergency"]
   },
   "reliableDelivery": false,
@@ -122,10 +122,11 @@ These channels only deliver data belonging to your `clientName`:
 | Channel | Events | Description |
 |---------|--------|-------------|
 | `orders` | INSERT, UPDATE, DELETE | Order placement, fills, status changes |
-| `bets` | INSERT, UPDATE | Bet placement and confirmation |
+| `bets` | INSERT, UPDATE, DELETE | Bet placement, confirmation, and removal |
 | `settlements` | SETTLED | Settlement status updates (same payload as bets) |
-| `accounts` | UPDATE | Account status changes |
+| `accounts` | INSERT, UPDATE, DELETE | Account creation, updates, and deletion |
 | `balance` | UPDATE | Balance change notifications |
+| `betslip` | UPDATE | Real-time odds updates for active betslip subscriptions (60s window after each `GET /betslip` call) |
 
 ### Global channels
 
@@ -166,6 +167,7 @@ Full database row from the `orders` table:
   "orderCurrency": "USD",
   "back": true,
   "allowedBookmakers": "*",
+  "oddsInfo": null,
   "meta": {},
   "expiresAt": "2026-02-07T17:29:37+00:00",
   "filledAt": "2026-02-07T17:29:32+00:00",
@@ -201,6 +203,9 @@ Full database row from the `bets` table:
   "settlementReason": null,
   "settledAt": null,
   "declineReason": null,
+  "betRequestId": null,
+  "oddsInfo": null,
+  "meta": {},
   "placedAt": "2026-02-07T17:29:32+00:00",
   "createdAt": "2026-02-07T17:29:32+00:00",
   "updatedAt": "2026-02-07T17:29:32+00:00"
@@ -229,6 +234,69 @@ Full database row from the `bets` table:
   "ts": 1771183910123
 }
 ```
+
+### Betslip payload
+
+Real-time odds updates pushed while a betslip subscription is active. Calling `GET /betslip` registers a **60-second sliding window** — during this window, price changes are broadcast in the same shape as the betslip REST response. Each poll resets the timer.
+
+This applies to both fixture-based and futures-based betslip subscriptions. For futures, the payload includes `futureId` and `participantId` instead of (or in addition to) `fixtureId`.
+
+**Fixture betslip example:**
+
+```json
+{
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "client": "demo",
+  "userRef": null,
+  "odds": {
+    "pinnacle": {
+      "odds_12345": {
+        "price": 1.98,
+        "limit": 500.0,
+        "limitMin": 1.0,
+        "limitCurrency": "USD",
+        "limitUsd": 500.0,
+        "limitMinUsd": 1.0,
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    }
+  }
+}
+```
+
+**Futures betslip example (coming soon):**
+
+```json
+{
+  "futureId": "fut_123456",
+  "outcomeId": 0,
+  "playerId": 0,
+  "participantId": 5,
+  "client": "demo",
+  "userRef": null,
+  "odds": {
+    "pinnacle": {
+      "fut_123456:pinnacle:0:0:5": {
+        "price": 3.50,
+        "limit": 1000.0,
+        "limitMin": 5.0,
+        "limitCurrency": "USD",
+        "limitUsd": 1000.0,
+        "limitMinUsd": 5.0,
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    }
+  }
+}
+```
+
+<Note>
+Futures betslip WebSocket broadcasting is not yet enabled. The subscription infrastructure is in place and will be activated in an upcoming release.
+</Note>
 
 ## Connection limits
 

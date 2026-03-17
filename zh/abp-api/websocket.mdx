@@ -60,7 +60,7 @@ wss://v2.55-tech.com/ws
   "channels": ["orders", "bets", "settlements"],
   "subscriptionId": 1,
   "access": {
-    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance"],
+    "clientFiltered": ["orders", "bets", "settlements", "accounts", "balance", "betslip"],
     "global": ["fixtures", "currencies", "status", "emergency"]
   },
   "reliableDelivery": false,
@@ -122,10 +122,11 @@ wss://v2.55-tech.com/ws
 | 频道 | 事件 | 描述 |
 |------|------|------|
 | `orders` | INSERT, UPDATE, DELETE | 订单下达、成交、状态变更 |
-| `bets` | INSERT, UPDATE | 投注下达和确认 |
+| `bets` | INSERT, UPDATE, DELETE | 投注下达、确认和移除 |
 | `settlements` | SETTLED | 结算状态更新（负载与 bets 相同） |
-| `accounts` | UPDATE | 账户状态变更 |
+| `accounts` | INSERT, UPDATE, DELETE | 账户创建、更新和删除 |
 | `balance` | UPDATE | 余额变动通知 |
+| `betslip` | UPDATE | 活跃投注单订阅的实时赔率更新（每次 `GET /betslip` 调用后 60 秒窗口） |
 
 ### 全局频道
 
@@ -166,6 +167,7 @@ wss://v2.55-tech.com/ws
   "orderCurrency": "USD",
   "back": true,
   "allowedBookmakers": "*",
+  "oddsInfo": null,
   "meta": {},
   "expiresAt": "2026-02-07T17:29:37+00:00",
   "filledAt": "2026-02-07T17:29:32+00:00",
@@ -201,6 +203,9 @@ wss://v2.55-tech.com/ws
   "settlementReason": null,
   "settledAt": null,
   "declineReason": null,
+  "betRequestId": null,
+  "oddsInfo": null,
+  "meta": {},
   "placedAt": "2026-02-07T17:29:32+00:00",
   "createdAt": "2026-02-07T17:29:32+00:00",
   "updatedAt": "2026-02-07T17:29:32+00:00"
@@ -229,6 +234,69 @@ wss://v2.55-tech.com/ws
   "ts": 1771183910123
 }
 ```
+
+### 投注单负载
+
+当投注单订阅处于活跃状态时推送实时赔率更新。调用 `GET /betslip` 注册一个 **60 秒的滑动窗口** — 在此窗口内，价格变化以与投注单 REST 响应相同的格式进行广播。每次轮询重置计时器。
+
+这适用于赛事和期货投注单订阅。对于期货，负载包含 `futureId` 和 `participantId` 而非 `fixtureId`。
+
+**赛事投注单示例：**
+
+```json
+{
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "client": "demo",
+  "userRef": null,
+  "odds": {
+    "pinnacle": {
+      "odds_12345": {
+        "price": 1.98,
+        "limit": 500.0,
+        "limitMin": 1.0,
+        "limitCurrency": "USD",
+        "limitUsd": 500.0,
+        "limitMinUsd": 1.0,
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    }
+  }
+}
+```
+
+**期货投注单示例（即将推出）：**
+
+```json
+{
+  "futureId": "fut_123456",
+  "outcomeId": 0,
+  "playerId": 0,
+  "participantId": 5,
+  "client": "demo",
+  "userRef": null,
+  "odds": {
+    "pinnacle": {
+      "fut_123456:pinnacle:0:0:5": {
+        "price": 3.50,
+        "limit": 1000.0,
+        "limitMin": 5.0,
+        "limitCurrency": "USD",
+        "limitUsd": 1000.0,
+        "limitMinUsd": 5.0,
+        "active": true,
+        "account": "pinnacle_main"
+      }
+    }
+  }
+}
+```
+
+<Note>
+期货投注单 WebSocket 广播尚未启用。订阅基础设施已就绪，将在即将发布的版本中激活。
+</Note>
 
 ## 连接限制
 
