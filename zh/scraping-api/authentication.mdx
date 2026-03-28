@@ -4,13 +4,13 @@ sidebarTitle: "Authentication"
 description: "使用 X-API-Key 请求头对 Scraping API 请求进行身份验证。速率限制、密钥格式和按密钥配置。"
 ---
 
-所有 Scraping API 端点（除下方列出的公开端点外）都需要身份验证。
+所有 Scraping API 端点（除 `GET /healthz` 外）都需要身份验证。
 
 ## 传递 API 密钥
 
-使用以下方法之一传递您的 API 密钥：
+根据端点使用以下方法之一传递您的 API 密钥：
 
-**HTTP 请求头（推荐用于 `/fetch`）：**
+**HTTP 请求头（用于 `/fetch`、`/usage`、`/network/*`、`/debug/pick`）：**
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
@@ -28,6 +28,13 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ```
 
 对于 WebSocket `/ws` 和 AMQP `/amqp`，密钥从 JSON 请求体字段 `apiKey`（或 `key`）或 `X-API-Key` 请求头中读取。
+
+## 错误响应
+
+| Status | Meaning |
+|--------|---------|
+| `401` | API 密钥缺失 |
+| `403` | API 密钥无效 |
 
 ## 速率限制
 
@@ -73,13 +80,8 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /` | API 概述和使用信息 |
+| `GET /` | API 概述和状态 |
 | `GET /healthz` | 存活探针（`{"ok": true}`） |
-| `GET /network/agents` | 列出所有代理节点 |
-| `GET /network/status` | 网络概况 |
-| `GET /network/geo` | 按国家分组的代理节点 |
-| `GET /docs` | Swagger UI（交互式测试） |
-| `GET /redoc` | ReDoc API 文档 |
 
 ## 获取密钥
 

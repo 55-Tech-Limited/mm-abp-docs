@@ -34,14 +34,12 @@ https://scraping-api.55-tech.com
 | `/ws` | WebSocket | In connect message | 双向 WebSocket 中继 |
 | `/amqp` | POST | In body or header | AMQP/RabbitMQ 消费者中继（SSE 流） |
 | `/usage` | GET | Required | 按密钥的使用指标（请求数、字节数、热门域名） |
-| `/network/agents` | GET | No | 列出所有代理节点及其标识、名称、国家 |
-| `/network/status` | GET | No | 网络概况（代理节点总数、每个国家的代理节点数） |
-| `/network/geo` | GET | No | 按国家分组的代理节点 |
+| `/network/agents` | GET | Required | 列出所有代理节点及其标识、名称、国家 |
+| `/network/status` | GET | Required | 网络概况（节点总数、每个国家的节点数） |
+| `/network/geo` | GET | Required | 按国家分组的代理节点 |
 | `/network/health/{domain}` | GET | Required | 按代理节点查看域名的健康状态 |
-| `/debug/pick` | GET | No | 预览将选择哪个代理节点 |
+| `/debug/pick` | GET | Required | 预览将选择哪个代理节点 |
 | `/healthz` | GET | No | 存活探针 |
-| `/docs` | GET | No | Swagger UI（交互式测试） |
-| `/redoc` | GET | No | ReDoc API 文档 |
 
 ## 控制请求头
 

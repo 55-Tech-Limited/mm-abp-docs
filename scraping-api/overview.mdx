@@ -34,14 +34,12 @@ Pass your API key via the `X-API-Key` header or (for WebSocket/AMQP) the `apiKey
 | `/ws` | WebSocket | In connect message | Bidirectional WebSocket relay |
 | `/amqp` | POST | In body or header | AMQP/RabbitMQ consumer relay (SSE stream) |
 | `/usage` | GET | Required | Per-key usage metrics (requests, bytes, top domains) |
-| `/network/agents` | GET | No | List all agents with slug, name, country |
-| `/network/status` | GET | No | Network summary (total agents, agents per country) |
-| `/network/geo` | GET | No | Agents grouped by country |
+| `/network/agents` | GET | Required | List all agents with slug, name, country |
+| `/network/status` | GET | Required | Network summary (total nodes, nodes per country) |
+| `/network/geo` | GET | Required | Agents grouped by country |
 | `/network/health/{domain}` | GET | Required | Per-agent health state for a domain |
-| `/debug/pick` | GET | No | Preview which agent would be selected |
+| `/debug/pick` | GET | Required | Preview which agent would be selected |
 | `/healthz` | GET | No | Liveness probe |
-| `/docs` | GET | No | Swagger UI (interactive playground) |
-| `/redoc` | GET | No | ReDoc API documentation |
 
 ## Control headers
 

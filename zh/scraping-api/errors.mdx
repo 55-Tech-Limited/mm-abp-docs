@@ -19,7 +19,8 @@ description: "Scraping API 错误码、封锁检测和重试策略。"
 | Status | Description |
 |--------|-------------|
 | `200` | 成功 — 目标响应已代理（检查 `meta.blocked` 以确认是否被封锁） |
-| `401` | 未授权 — API 密钥缺失或无效 |
+| `401` | 未授权 — API 密钥缺失 |
+| `403` | 禁止访问 — API 密钥无效 |
 | `429` | 速率限制。响应头包含 `Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining` |
 | `502` | 网关错误 — 该域名没有可用的健康代理节点 |
 | `504` | 网关超时 — 目标未在超时时间内响应（默认 30 秒） |

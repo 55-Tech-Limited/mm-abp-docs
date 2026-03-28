@@ -19,7 +19,8 @@ All API errors return JSON:
 | Status | Description |
 |--------|-------------|
 | `200` | Success — target response proxied (check `meta.blocked` for block detection) |
-| `401` | Unauthorized — missing or invalid API key |
+| `401` | Unauthorized — missing API key |
+| `403` | Forbidden — invalid API key |
 | `429` | Rate limited. Headers include `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` |
 | `502` | Bad gateway — no healthy agent available for this domain |
 | `504` | Gateway timeout — target did not respond within timeout (default 30s) |

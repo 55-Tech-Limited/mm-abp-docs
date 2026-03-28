@@ -45,7 +45,8 @@
           { "$ref": "#/components/parameters/XTargetURL" },
           { "$ref": "#/components/parameters/XGeo" },
           { "$ref": "#/components/parameters/XExpectJSON" },
-          { "$ref": "#/components/parameters/XAgent" }
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XTimeout" }
         ],
         "responses": {
           "200": {
@@ -57,7 +58,15 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key.",
+            "description": "Missing API key.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid API key.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -104,7 +113,8 @@
           { "$ref": "#/components/parameters/XTargetURL" },
           { "$ref": "#/components/parameters/XGeo" },
           { "$ref": "#/components/parameters/XExpectJSON" },
-          { "$ref": "#/components/parameters/XAgent" }
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XTimeout" }
         ],
         "requestBody": {
           "content": {
@@ -122,7 +132,8 @@
               }
             }
           },
-          "401": { "description": "Missing or invalid API key." },
+          "401": { "description": "Missing API key." },
+          "403": { "description": "Invalid API key." },
           "429": { "description": "Rate limit exceeded." },
           "502": { "description": "No healthy agent available." },
           "504": { "description": "Agent timeout." }
@@ -136,7 +147,8 @@
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
           { "$ref": "#/components/parameters/XGeo" },
-          { "$ref": "#/components/parameters/XAgent" }
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XTimeout" }
         ],
         "requestBody": {
           "content": {
@@ -154,7 +166,8 @@
               }
             }
           },
-          "401": { "description": "Missing or invalid API key." },
+          "401": { "description": "Missing API key." },
+          "403": { "description": "Invalid API key." },
           "429": { "description": "Rate limit exceeded." }
         }
       },
@@ -166,7 +179,8 @@
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
           { "$ref": "#/components/parameters/XGeo" },
-          { "$ref": "#/components/parameters/XAgent" }
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XTimeout" }
         ],
         "requestBody": {
           "content": {
@@ -184,7 +198,8 @@
               }
             }
           },
-          "401": { "description": "Missing or invalid API key." },
+          "401": { "description": "Missing API key." },
+          "403": { "description": "Invalid API key." },
           "429": { "description": "Rate limit exceeded." }
         }
       },
@@ -196,7 +211,8 @@
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
           { "$ref": "#/components/parameters/XGeo" },
-          { "$ref": "#/components/parameters/XAgent" }
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XTimeout" }
         ],
         "responses": {
           "200": {
@@ -207,7 +223,8 @@
               }
             }
           },
-          "401": { "description": "Missing or invalid API key." },
+          "401": { "description": "Missing API key." },
+          "403": { "description": "Invalid API key." },
           "429": { "description": "Rate limit exceeded." }
         }
       }
@@ -235,7 +252,8 @@
               }
             }
           },
-          "401": { "description": "Missing or invalid API key." },
+          "401": { "description": "Missing API key." },
+          "403": { "description": "Invalid API key." },
           "429": { "description": "Rate limit exceeded." },
           "502": { "description": "No healthy agent available." }
         }
@@ -256,7 +274,8 @@
               }
             }
           },
-          "401": { "description": "Missing or invalid API key." }
+          "401": { "description": "Missing or invalid API key." },
+          "403": { "description": "Invalid API key." }
         }
       }
     },
@@ -266,7 +285,6 @@
         "summary": "List all agents",
         "description": "Returns the full agent registry with slug, name, and country for each agent.",
         "tags": ["Network"],
-        "security": [],
         "responses": {
           "200": {
             "description": "Agent list.",
@@ -275,7 +293,8 @@
                 "schema": { "$ref": "#/components/schemas/AgentListResponse" }
               }
             }
-          }
+          },
+          "401": { "description": "Missing or invalid API key." }
         }
       }
     },
@@ -283,9 +302,8 @@
       "get": {
         "operationId": "network_status",
         "summary": "Network status",
-        "description": "Summary of total agents and agents per country.",
+        "description": "Summary of total nodes and nodes per country.",
         "tags": ["Network"],
-        "security": [],
         "responses": {
           "200": {
             "description": "Network summary.",
@@ -294,7 +312,8 @@
                 "schema": { "$ref": "#/components/schemas/NetworkStatusResponse" }
               }
             }
-          }
+          },
+          "401": { "description": "Missing or invalid API key." }
         }
       }
     },
@@ -304,7 +323,6 @@
         "summary": "Agents by country",
         "description": "Agents grouped by country with slugs listed for each.",
         "tags": ["Network"],
-        "security": [],
         "responses": {
           "200": {
             "description": "Agents grouped by country.",
@@ -313,7 +331,8 @@
                 "schema": { "$ref": "#/components/schemas/NetworkGeoResponse" }
               }
             }
-          }
+          },
+          "401": { "description": "Missing or invalid API key." }
         }
       }
     },
@@ -351,7 +370,6 @@
         "summary": "Debug agent selection",
         "description": "Preview which agent would be selected for a given URL without making the actual request.",
         "tags": ["Debug"],
-        "security": [],
         "parameters": [
           {
             "name": "url",
@@ -372,7 +390,8 @@
                 "schema": { "$ref": "#/components/schemas/DebugPickResponse" }
               }
             }
-          }
+          },
+          "401": { "description": "Missing or invalid API key." }
         }
       }
     }
@@ -384,7 +403,7 @@
         "in": "header",
         "name": "X-API-Key",
         "description": "API key passed in the X-API-Key header."
-      }
+      },
     },
     "schemas": {
       "MetaInfo": {
@@ -582,13 +601,13 @@
         "type": "object",
         "properties": {
           "total": { "type": "integer" },
-          "agents": {
+          "nodes": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "slug": { "type": "string", "description": "Agent slug, e.g. de1." },
-                "name": { "type": "string", "description": "Full agent name, e.g. scraping-de1." },
+                "slug": { "type": "string", "description": "Node slug, e.g. de1." },
+                "name": { "type": "string", "description": "Full node name, e.g. scraping-de1." },
                 "country": { "type": "string", "description": "ISO country code." }
               }
             }
@@ -598,19 +617,19 @@
       "NetworkStatusResponse": {
         "type": "object",
         "properties": {
-          "total_agents": { "type": "integer" },
+          "total_nodes": { "type": "integer" },
           "total_countries": { "type": "integer" },
-          "agents_by_country": {
+          "nodes_by_country": {
             "type": "object",
             "additionalProperties": { "type": "integer" },
-            "description": "Agent count per ISO country code."
+            "description": "Node count per ISO country code."
           }
         }
       },
       "NetworkGeoResponse": {
         "type": "object",
         "properties": {
-          "total_agents": { "type": "integer" },
+          "total_nodes": { "type": "integer" },
           "total_countries": { "type": "integer" },
           "countries": {
             "type": "array",
@@ -619,7 +638,7 @@
               "properties": {
                 "country": { "type": "string" },
                 "count": { "type": "integer" },
-                "agents": {
+                "nodes": {
                   "type": "array",
                   "items": { "type": "string" }
                 }
@@ -632,18 +651,18 @@
         "type": "object",
         "properties": {
           "domain": { "type": "string" },
-          "agents_checked": { "type": "integer" },
-          "healthy": { "type": "integer" },
-          "soft_blocked": { "type": "integer" },
-          "hard_blocked": { "type": "integer" },
+          "nodes_checked": { "type": "integer" },
+          "available": { "type": "integer" },
+          "limited": { "type": "integer" },
+          "unavailable": { "type": "integer" },
           "details": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "agent_id": { "type": "string" },
+                "node_id": { "type": "string" },
                 "slug": { "type": "string" },
-                "state": { "type": "string", "enum": ["healthy", "soft_block", "hard_block"] },
+                "state": { "type": "string", "enum": ["available", "limited", "unavailable"] },
                 "rtt_ms": { "type": "integer" },
                 "last_check": { "type": "string", "format": "date-time" }
               }
@@ -697,13 +716,17 @@
         "in": "header",
         "description": "Route through specific agent(s) by slug (e.g. de1) or comma-separated list for random pick (e.g. de1,at5,us3).",
         "schema": { "type": "string" }
+      },
+      "XTimeout": {
+        "name": "X-Timeout",
+        "in": "header",
+        "description": "Override request timeout in seconds (default: 30).",
+        "schema": { "type": "string" }
       }
     }
   },
   "security": [
-    {
-      "ApiKeyHeader": []
-    }
+    { "ApiKeyHeader": [] }
   ],
   "tags": [
     { "name": "Fetch", "description": "Proxy HTTP requests through the agent network." },

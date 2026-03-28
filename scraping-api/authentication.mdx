@@ -4,13 +4,13 @@ sidebarTitle: "Authentication"
 description: "Authenticate Scraping API requests using the X-API-Key header. Rate limits, key formats, and per-key configuration."
 ---
 
-All Scraping API endpoints (except public ones listed below) require authentication.
+All Scraping API endpoints (except `GET /healthz`) require authentication.
 
 ## Passing your API key
 
-Pass your API key using one of these methods:
+Pass your API key using one of these methods depending on the endpoint:
 
-**HTTP header (recommended for `/fetch`):**
+**HTTP header (for `/fetch`, `/usage`, `/network/*`, `/debug/pick`):**
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
@@ -28,6 +28,13 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ```
 
 For WebSocket `/ws` and AMQP `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
+
+## Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing API key |
+| `403` | Invalid API key |
 
 ## Rate limits
 
@@ -73,13 +80,8 @@ These endpoints do **not** require authentication:
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /` | API overview and usage info |
+| `GET /` | API overview and status |
 | `GET /healthz` | Liveness probe (`{"ok": true}`) |
-| `GET /network/agents` | List all agents |
-| `GET /network/status` | Network summary |
-| `GET /network/geo` | Agents grouped by country |
-| `GET /docs` | Swagger UI (interactive playground) |
-| `GET /redoc` | ReDoc API documentation |
 
 ## Obtaining a key
 

@@ -6,10 +6,11 @@ description: "Make your first proxied HTTP request, WebSocket connection, and AM
 
 ## Step 1: Check the network
 
-See which agents are available (no auth required):
+See which agents are available:
 
 ```bash
-curl https://scraping-api.55-tech.com/network/status
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://scraping-api.55-tech.com/network/status
 ```
 
 ```json
@@ -159,8 +160,9 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 Debug which agent would be picked without making the actual request:
 
 ```bash
-curl "https://scraping-api.55-tech.com/debug/pick?url=https://example.com" \
-  -H "X-Geo: US"
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Geo: US" \
+  "https://scraping-api.55-tech.com/debug/pick?url=https://example.com"
 ```
 
 ```json
