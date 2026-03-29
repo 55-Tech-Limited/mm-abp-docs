@@ -57,11 +57,20 @@ Implement exponential backoff when receiving `429` responses.
 | Status | Meaning |
 |--------|---------|
 | `401` | Missing or invalid API key |
-| `403` | Access denied — resource belongs to a different client |
+| `403` | API key inactive or expired; or resource belongs to a different client |
 | `429` | Rate limit exceeded |
 
+**401 — missing key:**
 ```json
-{
-  "detail": "Unauthorized - missing or invalid API key"
-}
+{"detail": {"message": "Missing X-API-Key header", "code": "UNAUTHORIZED"}}
+```
+
+**401 — invalid key:**
+```json
+{"detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}}
+```
+
+**403 — inactive/expired key:**
+```json
+{"detail": {"message": "API key is inactive", "code": "FORBIDDEN"}}
 ```

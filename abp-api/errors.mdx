@@ -10,7 +10,7 @@ All API errors return a JSON body:
 
 ```json
 {
-  "detail": "Unauthorized - missing or invalid API key"
+  "detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}
 }
 ```
 
@@ -37,7 +37,7 @@ Validation errors include field-level detail:
 | `204` | Resource deleted (no content) |
 | `400` | Bad request — invalid parameters |
 | `401` | Unauthorized — missing or invalid API key |
-| `403` | Forbidden — resource belongs to a different client |
+| `403` | Forbidden — API key inactive/expired, or resource belongs to a different client |
 | `404` | Not found — resource does not exist |
 | `409` | Conflict — duplicate `requestUuid` already in-flight |
 | `422` | Validation error — request body failed validation |
@@ -83,21 +83,24 @@ When placing orders via `POST /place-orders`, orders that fail business validati
 Missing or invalid API key.
 
 ```bash
-# Missing header
+# Missing header → 401 {"detail": {"message": "Missing X-API-Key header", "code": "UNAUTHORIZED"}}
 curl https://v2.55-tech.com/accounts
-# Returns: 401 {"detail": "Unauthorized - missing or invalid API key"}
 
-# Include the header
-curl -H "X-API-Key: your-key" https://v2.55-tech.com/accounts
-# Returns: 200
+# Invalid key → 401 {"detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}}
+curl -H "X-API-Key: wrong-key" https://v2.55-tech.com/accounts
 ```
 
-### Access denied (403)
+### Forbidden (403)
 
-Attempting to access a resource that belongs to a different client.
+Returned in two cases:
+
+- **Inactive or expired API key** — your key exists but is disabled or past its expiry date
+- **Wrong client** — attempting to access a resource that belongs to a different client
 
 ```json
-{"detail": "Access denied - account does not belong to your client"}
+{"detail": {"message": "API key is inactive", "code": "FORBIDDEN"}}
+{"detail": {"message": "API key has expired", "code": "FORBIDDEN"}}
+{"detail": {"message": "Access denied to this order", "code": "FORBIDDEN"}}
 ```
 
 ### Duplicate request (409)

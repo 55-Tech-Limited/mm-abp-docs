@@ -57,11 +57,20 @@ curl -H "X-API-Key: your-api-key" \
 | 状态码 | 含义 |
 |--------|------|
 | `401` | 缺少或无效的API密钥 |
-| `403` | 拒绝访问 — 资源属于其他客户 |
+| `403` | API密钥已停用或过期；或资源属于其他客户 |
 | `429` | 超出速率限制 |
 
+**401 — 缺少密钥：**
 ```json
-{
-  "detail": "Unauthorized - missing or invalid API key"
-}
+{"detail": {"message": "Missing X-API-Key header", "code": "UNAUTHORIZED"}}
+```
+
+**401 — 无效密钥：**
+```json
+{"detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}}
+```
+
+**403 — 密钥已停用/过期：**
+```json
+{"detail": {"message": "API key is inactive", "code": "FORBIDDEN"}}
 ```
