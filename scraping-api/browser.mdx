@@ -250,6 +250,120 @@ console.log(data.js_result);         // "Example Domain"
 console.log(data.cookies.length);    // number of cookies captured
 ```
 
+---
+
+## Browser Stream (SSE)
+
+For live, long-running sessions, use `/browser/stream`. Instead of capturing a single snapshot, the browser stays open and streams events in real-time via Server-Sent Events.
+
+**Use cases:**
+- Capture WebSocket frames that the page receives (live data feeds)
+- Monitor network API calls the page makes (XHR/Fetch responses)
+- Watch DOM elements for changes (price updates, content changes)
+
+### Endpoint
+
+```
+GET https://scraping-api.55-tech.com/browser/stream
+```
+
+### Headers
+
+Same headers as `/browser`, plus:
+
+| Header | Default | Description |
+|--------|---------|-------------|
+| `X-Capture` | `network,ws,console` | Comma-separated event types to stream |
+| `X-DOM-Selector` | — | CSS selector to watch for DOM mutations (requires `dom` in capture) |
+| `X-Network-Filter` | — | Regex filter for network URLs (only matching are streamed) |
+| `X-WS-Filter` | — | Regex filter for WebSocket URLs (only matching are streamed) |
+| `X-JS-After-Load` | — | JavaScript to execute after page load (e.g. click a button, trigger navigation) |
+
+### SSE events
+
+| Event | Description |
+|-------|-------------|
+| `connected` | Browser loaded, streaming started (includes cookies) |
+| `network` | HTTP response captured (XHR/Fetch) — includes body, status, content-type |
+| `ws_open` | Page opened a WebSocket connection |
+| `ws_message` | WebSocket frame received by the page |
+| `ws_close` | Page WebSocket closed |
+| `dom` | DOM mutation on watched selector |
+| `console` | Console output (warn/error) |
+| `error` | Error, stream ends |
+| `done` | Session ended (timeout or closed) |
+
+### Example: Capture page WebSocket feed
+
+```bash
+curl -N -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/live" \
+  -H "X-Capture: ws" \
+  -H "X-Wait-Strategy: networkidle" \
+  -H "X-Timeout: 120" \
+  https://scraping-api.55-tech.com/browser/stream
+```
+
+Events arrive as SSE:
+
+```
+event: connected
+data: {"type":"connected","url":"https://example.com/live","agent_id":"scraping-us5"}
+
+event: ws_open
+data: {"type":"ws_open","url":"wss://feed.example.com/ws","ws_id":"1234"}
+
+event: ws_message
+data: {"type":"ws_message","data":"{\"price\":1.95,\"event\":\"update\"}","ws_id":"1234"}
+
+event: ws_message
+data: {"type":"ws_message","data":"{\"price\":2.10,\"event\":\"update\"}","ws_id":"1234"}
+```
+
+### Example: Monitor network API calls
+
+```bash
+curl -N -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/dashboard" \
+  -H "X-Capture: network" \
+  -H "X-Network-Filter: api\\.example\\.com" \
+  -H "X-Wait-Strategy: networkidle" \
+  https://scraping-api.55-tech.com/browser/stream
+```
+
+### Example: Watch DOM element for changes
+
+```bash
+curl -N -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/prices" \
+  -H "X-Capture: dom" \
+  -H "X-DOM-Selector: #price-table" \
+  -H "X-Wait-Strategy: selector" \
+  -H "X-Wait-Selector: #price-table" \
+  https://scraping-api.55-tech.com/browser/stream
+```
+
+### Python
+
+```python
+import requests
+import json
+
+resp = requests.get("https://scraping-api.55-tech.com/browser/stream", headers={
+    "X-API-Key": "YOUR_API_KEY",
+    "X-Target-URL": "https://example.com/live",
+    "X-Capture": "ws",
+    "X-Wait-Strategy": "networkidle",
+    "X-Timeout": "120",
+}, stream=True)
+
+for line in resp.iter_lines():
+    if line.startswith(b"data: "):
+        event = json.loads(line[6:])
+        if event["type"] == "ws_message":
+            print(event["data"])
+```
+
 ## Next steps
 
 <Columns cols={2}>

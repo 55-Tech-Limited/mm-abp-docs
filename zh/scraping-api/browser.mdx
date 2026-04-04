@@ -195,6 +195,81 @@ for c in data["cookies"]:
     print(f"{c['name']}={c['value']} (httpOnly={c['httpOnly']})")
 ```
 
+---
+
+## Browser Stream（SSE）
+
+对于长时间的实时会话，使用 `/browser/stream`。浏览器保持打开状态，通过 SSE 实时流式传输事件。
+
+**使用场景：**
+- 捕获页面接收的 WebSocket 帧（实时数据流）
+- 监控页面发出的网络 API 调用（XHR/Fetch 响应）
+- 监视 DOM 元素变化（价格更新、内容变化）
+
+### 端点
+
+```
+GET https://scraping-api.55-tech.com/browser/stream
+```
+
+### 请求头
+
+与 `/browser` 相同，另加：
+
+| Header | Default | Description |
+|--------|---------|-------------|
+| `X-Capture` | `network,ws,console` | 逗号分隔的事件类型 |
+| `X-DOM-Selector` | — | 监视 DOM 变化的 CSS 选择器 |
+| `X-Network-Filter` | — | 网络 URL 正则过滤器 |
+| `X-WS-Filter` | — | WebSocket URL 正则过滤器 |
+| `X-JS-After-Load` | — | 页面加载后执行的 JavaScript |
+
+### SSE 事件
+
+| Event | Description |
+|-------|-------------|
+| `connected` | 浏览器已加载，开始流式传输 |
+| `network` | 捕获的 HTTP 响应（XHR/Fetch） |
+| `ws_open` | 页面打开了 WebSocket 连接 |
+| `ws_message` | 页面接收到 WebSocket 帧 |
+| `ws_close` | 页面 WebSocket 已关闭 |
+| `dom` | 监视选择器的 DOM 变化 |
+| `console` | 控制台输出 |
+| `error` | 错误，流结束 |
+| `done` | 会话结束 |
+
+### 示例：捕获页面 WebSocket 数据
+
+```bash
+curl -N -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/live" \
+  -H "X-Capture: ws" \
+  -H "X-Wait-Strategy: networkidle" \
+  -H "X-Timeout: 120" \
+  https://scraping-api.55-tech.com/browser/stream
+```
+
+### Python
+
+```python
+import requests
+import json
+
+resp = requests.get("https://scraping-api.55-tech.com/browser/stream", headers={
+    "X-API-Key": "YOUR_API_KEY",
+    "X-Target-URL": "https://example.com/live",
+    "X-Capture": "ws",
+    "X-Wait-Strategy": "networkidle",
+    "X-Timeout": "120",
+}, stream=True)
+
+for line in resp.iter_lines():
+    if line.startswith(b"data: "):
+        event = json.loads(line[6:])
+        if event["type"] == "ws_message":
+            print(event["data"])
+```
+
 ## 后续步骤
 
 <Columns cols={2}>

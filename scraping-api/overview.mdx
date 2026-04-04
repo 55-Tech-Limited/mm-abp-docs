@@ -34,7 +34,8 @@ Pass your API key via the `X-API-Key` header or (for WebSocket/AMQP) the `apiKey
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/fetch` | GET, POST, PUT, PATCH, DELETE | Required | Proxy HTTP requests through the agent network |
-| `/browser` | POST | In body | Fetch with JavaScript rendering (cookies, screenshots, JS eval) |
+| `/browser` | GET | Header | Fetch with JavaScript rendering (cookies, screenshots, JS eval) |
+| `/browser/stream` | GET | Header | Live browser session — stream network, WebSocket, DOM events (SSE) |
 | `/ws` | WebSocket | In connect message | Bidirectional WebSocket relay |
 | `/amqp` | POST | In body or header | AMQP/RabbitMQ consumer relay (SSE stream) |
 | `/usage` | GET | Required | Per-key usage metrics (requests, bytes, top domains) |

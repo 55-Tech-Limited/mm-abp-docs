@@ -34,7 +34,8 @@ https://scraping-api.55-tech.com
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/fetch` | GET, POST, PUT, PATCH, DELETE | Required | 通过代理网络代理 HTTP 请求 |
-| `/browser` | POST | In body | 支持 JavaScript 渲染的抓取（Cookie、截图、JS 执行） |
+| `/browser` | GET | Header | 支持 JavaScript 渲染的抓取（Cookie、截图、JS 执行） |
+| `/browser/stream` | GET | Header | 实时浏览器会话 — 流式传输网络、WebSocket、DOM 事件（SSE） |
 | `/ws` | WebSocket | In connect message | 双向 WebSocket 中继 |
 | `/amqp` | POST | In body or header | AMQP/RabbitMQ 消费者中继（SSE 流） |
 | `/usage` | GET | Required | 按密钥的使用指标（请求数、字节数、热门域名） |
