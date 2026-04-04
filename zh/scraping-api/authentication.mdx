@@ -18,16 +18,16 @@ curl -H "X-API-Key: YOUR_API_KEY" \
   https://scraping-api.55-tech.com/fetch
 ```
 
-**JSON 请求体字段（用于 WebSocket `/ws` 和 AMQP `/amqp`）：**
+**JSON 请求体字段（用于 `/browser`、WebSocket `/ws` 和 AMQP `/amqp`）：**
 
 ```json
 {
   "apiKey": "YOUR_API_KEY",
-  "url": "wss://target.example.com/stream"
+  "url": "https://example.com"
 }
 ```
 
-对于 WebSocket `/ws` 和 AMQP `/amqp`，密钥从 JSON 请求体字段 `apiKey`（或 `key`）或 `X-API-Key` 请求头中读取。
+对于 `/browser`、`/ws` 和 `/amqp`，密钥从 JSON 请求体字段 `apiKey`（或 `key`）或 `X-API-Key` 请求头中读取。
 
 ## 错误响应
 

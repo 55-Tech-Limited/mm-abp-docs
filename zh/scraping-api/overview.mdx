@@ -1,19 +1,22 @@
 ---
 title: "Scraping API Overview"
 sidebarTitle: "Overview"
-description: "55 Tech Scraping API — 通过 80 多个地理分布式代理节点路由 HTTP、WebSocket 和 AMQP 请求。"
+description: "55 Tech Scraping API — 通过 80 多个地理分布式代理节点路由 HTTP、浏览器渲染、WebSocket 和 AMQP 请求。"
 ---
 
 ## 什么是 Scraping API？
 
-**Scraping API** 由 [55 Tech](https://55-tech.com/) 提供，可将您的 HTTP、WebSocket 和 AMQP 请求通过由 80 多个地理分布式代理节点组成的网络进行路由。API 会在数秒内自动识别每个目标最可靠的代理节点，让您的请求立即变得更加成功，无需自行管理代理。
+**Scraping API** 由 [55 Tech](https://55-tech.com/) 提供，可将您的 HTTP、浏览器渲染、WebSocket 和 AMQP 请求通过由 80 多个地理分布式代理节点组成的网络进行路由。API 会在数秒内自动识别每个目标最可靠的代理节点，让您的请求立即变得更加成功，无需自行管理代理。
 
 **您可以做什么：**
 
 - **HTTP 抓取** — GET/POST/PUT/PATCH/DELETE，完全控制请求头、请求体和 Cookie
+- **浏览器渲染** — 使用真实 Chromium 浏览器渲染页面，支持 JS 执行、Cookie 捕获（包括 httpOnly）、截图
 - **WebSocket 中继** — 双向帧中继（Socket.IO、SignalR、Centrifugo、GraphQL-WS、原生 WebSocket）
 - **AMQP 消费者** — 通过 Server-Sent Events (SSE) 流式传输 RabbitMQ 消息
 - **地理定向** — 将请求固定到特定国家或单个代理节点
+- **代理链接** — 通过住宅代理路由浏览器请求，兼具数据中心速度和住宅 IP 指纹
+- **响应验证** — 验证浏览器渲染页面中是否存在预期内容，缺失时自动在不同节点重试
 - **封锁检测** — 当检测到访问限制时，响应中包含 `meta.blocked` 标志
 
 ## 基础 URL
@@ -31,6 +34,7 @@ https://scraping-api.55-tech.com
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/fetch` | GET, POST, PUT, PATCH, DELETE | Required | 通过代理网络代理 HTTP 请求 |
+| `/browser` | POST | In body | 使用真实浏览器渲染页面（JS、Cookie、截图、代理、验证） |
 | `/ws` | WebSocket | In connect message | 双向 WebSocket 中继 |
 | `/amqp` | POST | In body or header | AMQP/RabbitMQ 消费者中继（SSE 流） |
 | `/usage` | GET | Required | 按密钥的使用指标（请求数、字节数、热门域名） |
@@ -104,12 +108,16 @@ X-RateLimit-Remaining: 0
 
 ## 后续步骤
 
-<Columns cols={2}>
+<Columns cols={3}>
   <Card title="Authentication" icon="key" href="/zh/scraping-api/authentication">
     设置您的 API 密钥。
   </Card>
 
   <Card title="Quickstart" icon="rocket" href="/zh/scraping-api/quickstart">
     发送您的第一个代理请求。
+  </Card>
+
+  <Card title="Browser" icon="window" href="/zh/scraping-api/browser">
+    使用真实浏览器渲染 JavaScript 页面。
   </Card>
 </Columns>

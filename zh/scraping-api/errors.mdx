@@ -64,9 +64,14 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 无需客户端重试逻辑。API 会自动将您的下一个请求路由到其他健康的代理节点。正常继续发送请求即可。
 
+### 浏览器验证失败 (502)
+
+如果您在 `/browser` 上使用 `expectSelector` 或 `expectContains`，且渲染页面不匹配，API 会自动在不同节点上重试后再返回错误。第一次失败无需客户端重试。
+
 ### 超时 (504)
 
 - 增加 POST 请求体中的 `timeout` 字段值（默认：30 秒）
+- 对于 `/browser`，浏览器启动需要约 2-5 秒 — 请相应设置 `timeout`
 - 使用 `X-Geo` 选择地理位置更接近目标的代理节点
 - 使用 `GET /debug/pick?url=...` 预览将选择哪个代理节点
 

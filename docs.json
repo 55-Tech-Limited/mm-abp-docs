@@ -173,6 +173,7 @@
                   "zh/scraping-api/overview",
                   "zh/scraping-api/authentication",
                   "zh/scraping-api/quickstart",
+                  "zh/scraping-api/browser",
                   "zh/scraping-api/websocket",
                   "zh/scraping-api/ws-reference",
                   "zh/scraping-api/errors"
