@@ -1,0 +1,263 @@
+---
+title: "Browser Rendering"
+sidebarTitle: "Browser"
+description: "Fetch with full JavaScript rendering. Returns cookies, screenshots, and supports custom JS evaluation."
+---
+
+## Overview
+
+The `/browser` endpoint fetches a URL with full JavaScript rendering. Unlike `/fetch` (which returns the raw HTTP response), `/browser` waits for dynamic content and returns the fully rendered page.
+
+**When to use `/browser` instead of `/fetch`:**
+
+- The page requires JavaScript to load content (SPAs, dynamic sites)
+- You need all cookies, including those set by client-side scripts
+- You want to execute custom JavaScript to extract data
+- You need a screenshot of the rendered page
+
+The response format is the same as `/fetch` (`meta`, `raw`, `raw_json`), with additional fields for cookies, screenshots, and JS evaluation results.
+
+## Endpoint
+
+```
+GET https://scraping-api.55-tech.com/browser
+```
+
+Works just like `/fetch` — all parameters are passed via headers.
+
+## Request headers
+
+| Header | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `X-API-Key` | Yes | — | Your API key |
+| `X-Target-URL` | Yes | — | Target URL to render |
+| `X-Wait-Strategy` | No | `load` | `load`, `networkidle`, or `selector` ([details](#wait-strategies)) |
+| `X-Wait-Selector` | No | — | CSS selector to wait for (with `selector` strategy) |
+| `X-Timeout` | No | `30` | Timeout in seconds (max 120) |
+| `X-JS-Expression` | No | — | JavaScript to evaluate after the page is ready |
+| `X-Screenshot` | No | `false` | Capture screenshot (`1` or `true`) |
+| `X-Expect-Selector` | No | — | CSS selector that must exist — retries on a different node if missing |
+| `X-Expect-Contains` | No | — | Substring that must exist in the body — retries if missing |
+| `X-Proxy` | No | — | Route through a proxy (`http://` or `socks5://`) |
+| `X-Block-Resources` | No | — | Comma-separated resource types to block: `image,font,stylesheet,media` |
+| `X-Geo` | No | — | Country filter for node selection (e.g. `US`, `DE,AT`) |
+| `X-Agent` | No | — | Pin to a specific node (e.g. `de1`, `us3`) |
+| `Cookie` | No | — | Cookies to inject (`name=value; name2=value2`) |
+| `X-Cookies` | No | — | Cookies as JSON array for full control ([format](#cookies)) |
+
+### Wait strategies
+
+| Strategy | Description |
+|----------|-------------|
+| `load` | Wait for `DOMContentLoaded` event (fastest, works for server-rendered pages) |
+| `networkidle` | Wait until there are no more than 2 network connections for 500ms (best for SPAs) |
+| `selector` | Wait for `X-Wait-Selector` to appear in the DOM (most precise for specific content) |
+
+### Cookies
+
+**Simple cookies** — use the standard `Cookie` header:
+
+```
+Cookie: session=abc123; token=xyz
+```
+
+**Full cookie objects** — use the `X-Cookies` header with a JSON array when you need domain, path, or httpOnly control:
+
+```
+X-Cookies: [{"name":"session","value":"abc","domain":".example.com","secure":true}]
+```
+
+Cookie object fields: `name`, `value`, `domain`, `path`, `secure`, `httpOnly`, `sameSite`, `expires`.
+
+### Resource blocking
+
+Block specific resource types to speed up rendering:
+
+```
+X-Block-Resources: image,font,stylesheet
+```
+
+Blocking images and fonts can reduce render time by 50%+ on media-heavy pages.
+
+## Response
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://example.com/",
+    "http_version": "",
+    "elapsed_ms": 3200,
+    "blocked": false,
+    "headers": { "content-type": "text/html; charset=utf-8" },
+    "agent": { "id": "scraping-de5" },
+    "bytes": 45210
+  },
+  "raw": "<!DOCTYPE html><html>...</html>",
+  "raw_json": null,
+  "cookies": [
+    {
+      "name": "session_id",
+      "value": "a1b2c3...",
+      "domain": ".example.com",
+      "path": "/",
+      "secure": true,
+      "httpOnly": true,
+      "sameSite": "Lax",
+      "expires": 1735689600
+    }
+  ],
+  "screenshot": null,
+  "js_result": null
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `meta` | Same as `/fetch` — status, final URL, headers, timing, node ID |
+| `raw` | Rendered page body as text (HTML or other). `null` if body was valid JSON |
+| `raw_json` | Parsed JSON object if the response was valid JSON, otherwise `null` |
+| `cookies` | All cookies set during rendering, including `httpOnly` cookies |
+| `screenshot` | Base64-encoded PNG of the full page (`null` if not requested) |
+| `js_result` | Return value of `X-JS-Expression` (`null` if not provided) |
+
+### Response validation
+
+Use `X-Expect-Selector` and `X-Expect-Contains` to verify the rendered page has the content you expect. If validation fails, the API automatically retries on a different node before returning an error.
+
+## Examples
+
+### Render a JavaScript-heavy page
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Wait-Strategy: networkidle" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### Wait for specific content
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/dashboard" \
+  -H "X-Wait-Strategy: selector" \
+  -H "X-Wait-Selector: #data-table" \
+  -H "X-Timeout: 45" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### Extract data with JavaScript
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Wait-Strategy: networkidle" \
+  -H "X-JS-Expression: JSON.stringify({title: document.title, links: document.querySelectorAll('a').length})" \
+  https://scraping-api.55-tech.com/browser
+```
+
+The `js_result` field in the response contains the return value:
+
+```json
+{
+  "js_result": "{\"title\":\"Example\",\"links\":42}"
+}
+```
+
+### Capture a screenshot
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Screenshot: 1" \
+  -H "X-Block-Resources: image,font" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### With cookies
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "Cookie: session=abc123; token=xyz" \
+  -H "X-Wait-Strategy: networkidle" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### Route through a proxy
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://geo-restricted-site.com" \
+  -H "X-Proxy: http://user:pass@proxy.example.com:8080" \
+  -H "X-Geo: US" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### Validate response content
+
+If the page doesn't contain the expected content, the API retries on a different node:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/products" \
+  -H "X-Wait-Strategy: selector" \
+  -H "X-Wait-Selector: .product-list" \
+  -H "X-Expect-Selector: .product-list" \
+  -H "X-Expect-Contains: price" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### Python
+
+```python
+import requests
+
+resp = requests.get("https://scraping-api.55-tech.com/browser", headers={
+    "X-API-Key": "YOUR_API_KEY",
+    "X-Target-URL": "https://example.com",
+    "X-Wait-Strategy": "networkidle",
+    "X-JS-Expression": "document.title",
+    "X-Block-Resources": "image,font",
+})
+
+data = resp.json()
+print(data["meta"]["status"])       # 200
+print(data["raw"][:200])            # rendered HTML
+print(data["js_result"])            # "Example Domain"
+
+for c in data["cookies"]:
+    print(f"{c['name']}={c['value']} (httpOnly={c['httpOnly']})")
+```
+
+### JavaScript
+
+```javascript
+const resp = await fetch("https://scraping-api.55-tech.com/browser", {
+  headers: {
+    "X-API-Key": "YOUR_API_KEY",
+    "X-Target-URL": "https://example.com",
+    "X-Wait-Strategy": "networkidle",
+    "X-JS-Expression": "document.title",
+  },
+});
+
+const data = await resp.json();
+console.log(data.meta.status);       // 200
+console.log(data.raw.slice(0, 200)); // rendered HTML
+console.log(data.js_result);         // "Example Domain"
+console.log(data.cookies.length);    // number of cookies captured
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="HTTP Fetch" icon="bolt" href="/scraping-api/quickstart">
+    For pages that don't need JavaScript rendering, use the faster `/fetch` endpoint.
+  </Card>
+
+  <Card title="Error handling" icon="triangle-exclamation" href="/scraping-api/errors">
+    Status codes, block detection, and retry strategies.
+  </Card>
+</Columns>

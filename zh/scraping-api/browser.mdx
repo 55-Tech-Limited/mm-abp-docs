@@ -1,0 +1,208 @@
+---
+title: "Browser Rendering"
+sidebarTitle: "Browser"
+description: "支持 JavaScript 渲染的抓取。返回 Cookie、截图，支持自定义 JS 执行。"
+---
+
+## 概述
+
+`/browser` 端点支持 JavaScript 渲染的抓取。与 `/fetch`（返回原始 HTTP 响应）不同，`/browser` 会等待动态内容加载并返回完全渲染的页面。
+
+**何时使用 `/browser` 而非 `/fetch`：**
+
+- 页面需要 JavaScript 才能加载内容（SPA、动态网站）
+- 您需要所有 Cookie，包括客户端脚本设置的 Cookie
+- 您想执行自定义 JavaScript 提取数据
+- 您需要渲染页面的截图
+
+响应格式与 `/fetch` 相同（`meta`、`raw`、`raw_json`），并额外包含 Cookie、截图和 JS 执行结果。
+
+## 端点
+
+```
+GET https://scraping-api.55-tech.com/browser
+```
+
+与 `/fetch` 用法一致 — 所有参数通过请求头传递。
+
+## 请求头
+
+| Header | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `X-API-Key` | 是 | — | API 密钥 |
+| `X-Target-URL` | 是 | — | 要渲染的目标 URL |
+| `X-Wait-Strategy` | 否 | `load` | `load`、`networkidle` 或 `selector`（[详情](#等待策略)） |
+| `X-Wait-Selector` | 否 | — | 要等待的 CSS 选择器（配合 `selector` 策略） |
+| `X-Timeout` | 否 | `30` | 超时时间，秒（最大 120） |
+| `X-JS-Expression` | 否 | — | 页面就绪后执行的 JavaScript |
+| `X-Screenshot` | 否 | `false` | 捕获截图（`1` 或 `true`） |
+| `X-Expect-Selector` | 否 | — | 必须存在的 CSS 选择器 — 缺失时在不同节点重试 |
+| `X-Expect-Contains` | 否 | — | 必须存在于内容中的子字符串 — 缺失时重试 |
+| `X-Proxy` | 否 | — | 通过代理路由（`http://` 或 `socks5://`） |
+| `X-Block-Resources` | 否 | — | 逗号分隔的阻止资源类型：`image,font,stylesheet,media` |
+| `X-Geo` | 否 | — | 节点国家过滤器（如 `US`、`DE,AT`） |
+| `X-Agent` | 否 | — | 固定到特定节点（如 `de1`、`us3`） |
+| `Cookie` | 否 | — | 注入 Cookie（`name=value; name2=value2`） |
+| `X-Cookies` | 否 | — | Cookie JSON 数组，用于完整控制（[格式](#cookies)） |
+
+### 等待策略
+
+| Strategy | Description |
+|----------|-------------|
+| `load` | 等待 `DOMContentLoaded` 事件（最快） |
+| `networkidle` | 等待直到不超过 2 个网络连接持续 500ms（最适合 SPA） |
+| `selector` | 等待 `X-Wait-Selector` 出现在 DOM 中 |
+
+### Cookies
+
+**简单 Cookie** — 使用标准 `Cookie` 请求头：
+
+```
+Cookie: session=abc123; token=xyz
+```
+
+**完整 Cookie 对象** — 使用 `X-Cookies` 请求头，需要域名、路径等控制时：
+
+```
+X-Cookies: [{"name":"session","value":"abc","domain":".example.com","secure":true}]
+```
+
+### 资源阻止
+
+```
+X-Block-Resources: image,font,stylesheet
+```
+
+阻止图片和字体可以将渲染时间减少 50% 以上。
+
+## 响应
+
+```json
+{
+  "meta": {
+    "status": 200,
+    "final_url": "https://example.com/",
+    "http_version": "",
+    "elapsed_ms": 3200,
+    "blocked": false,
+    "headers": { "content-type": "text/html; charset=utf-8" },
+    "agent": { "id": "scraping-de5" },
+    "bytes": 45210
+  },
+  "raw": "<!DOCTYPE html><html>...</html>",
+  "raw_json": null,
+  "cookies": [
+    {
+      "name": "session_id",
+      "value": "a1b2c3...",
+      "domain": ".example.com",
+      "path": "/",
+      "secure": true,
+      "httpOnly": true,
+      "sameSite": "Lax",
+      "expires": 1735689600
+    }
+  ],
+  "screenshot": null,
+  "js_result": null
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `meta` | 与 `/fetch` 相同 — 状态码、最终 URL、响应头、耗时、节点 ID |
+| `raw` | 渲染后的页面文本。如果是有效 JSON 则为 `null` |
+| `raw_json` | 解析后的 JSON 对象，否则为 `null` |
+| `cookies` | 渲染期间设置的所有 Cookie，包括 `httpOnly` |
+| `screenshot` | 全页 Base64 PNG（未请求时为 `null`） |
+| `js_result` | `X-JS-Expression` 的返回值（未提供时为 `null`） |
+
+### 响应验证
+
+使用 `X-Expect-Selector` 和 `X-Expect-Contains` 验证内容。验证失败时 API 自动在不同节点重试。
+
+## 示例
+
+### 渲染 JavaScript 页面
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Wait-Strategy: networkidle" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### 等待特定内容
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/dashboard" \
+  -H "X-Wait-Strategy: selector" \
+  -H "X-Wait-Selector: #data-table" \
+  -H "X-Timeout: 45" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### 使用 JavaScript 提取数据
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Wait-Strategy: networkidle" \
+  -H "X-JS-Expression: JSON.stringify({title: document.title})" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### 截图
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "X-Screenshot: 1" \
+  -H "X-Block-Resources: image,font" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### 带 Cookie
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com" \
+  -H "Cookie: session=abc123; token=xyz" \
+  -H "X-Wait-Strategy: networkidle" \
+  https://scraping-api.55-tech.com/browser
+```
+
+### Python
+
+```python
+import requests
+
+resp = requests.get("https://scraping-api.55-tech.com/browser", headers={
+    "X-API-Key": "YOUR_API_KEY",
+    "X-Target-URL": "https://example.com",
+    "X-Wait-Strategy": "networkidle",
+    "X-JS-Expression": "document.title",
+    "X-Block-Resources": "image,font",
+})
+
+data = resp.json()
+print(data["meta"]["status"])       # 200
+print(data["raw"][:200])            # 渲染后的 HTML
+print(data["js_result"])            # "Example Domain"
+
+for c in data["cookies"]:
+    print(f"{c['name']}={c['value']} (httpOnly={c['httpOnly']})")
+```
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="HTTP Fetch" icon="bolt" href="/zh/scraping-api/quickstart">
+    对于不需要 JavaScript 渲染的页面，使用更快的 `/fetch` 端点。
+  </Card>
+
+  <Card title="Error handling" icon="triangle-exclamation" href="/zh/scraping-api/errors">
+    状态码、封锁检测和重试策略。
+  </Card>
+</Columns>
