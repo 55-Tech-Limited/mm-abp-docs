@@ -346,6 +346,101 @@
         }
       }
     },
+    "/browser/stream": {
+      "get": {
+        "operationId": "browser_stream",
+        "summary": "Live browser session with event streaming (SSE)",
+        "description": "Open a browser, navigate to the target URL, and stream back events in real-time via Server-Sent Events. Captures network responses (XHR/Fetch), WebSocket frames the page receives, DOM mutations, and console output.\n\nThe session stays open until the timeout is reached or the client disconnects.",
+        "tags": ["Browser"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          {
+            "name": "X-Capture",
+            "in": "header",
+            "description": "Comma-separated event types to stream: network, ws, dom, console.",
+            "schema": { "type": "string", "default": "network,ws,console" }
+          },
+          {
+            "name": "X-DOM-Selector",
+            "in": "header",
+            "description": "CSS selector to watch for DOM mutations (requires dom in X-Capture).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Network-Filter",
+            "in": "header",
+            "description": "Regex filter for network URLs. Only matching responses are streamed.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-WS-Filter",
+            "in": "header",
+            "description": "Regex filter for WebSocket URLs. Only matching connections are streamed.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-JS-After-Load",
+            "in": "header",
+            "description": "JavaScript to execute after page load (e.g. click a button, trigger navigation).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Wait-Strategy",
+            "in": "header",
+            "description": "When the page is ready before streaming starts: load, networkidle, or selector.",
+            "schema": { "type": "string", "default": "load" }
+          },
+          {
+            "name": "X-Wait-Selector",
+            "in": "header",
+            "description": "CSS selector to wait for (with X-Wait-Strategy: selector).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Proxy",
+            "in": "header",
+            "description": "Route through a proxy (http:// or socks5://).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Block-Resources",
+            "in": "header",
+            "description": "Comma-separated resource types to block: image, font, stylesheet, media.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "Cookie",
+            "in": "header",
+            "description": "Cookies to inject (name=value; name2=value2).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Cookies",
+            "in": "header",
+            "description": "Cookies as JSON array for full control.",
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XTimeout" }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE event stream. Events: connected, network, ws_open, ws_message, ws_close, dom, console, error, done.",
+            "content": {
+              "text/event-stream": {
+                "schema": { "type": "string" },
+                "example": "event: connected\ndata: {\"type\":\"connected\",\"url\":\"https://example.com\",\"agent_id\":\"scraping-us5\"}\n\nevent: ws_message\ndata: {\"type\":\"ws_message\",\"data\":\"{\\\"price\\\":1.95}\",\"ws_id\":\"1234\"}\n\n"
+              }
+            }
+          },
+          "401": { "description": "Missing API key." },
+          "403": { "description": "Invalid API key." },
+          "429": { "description": "Rate limit exceeded." },
+          "502": { "description": "No healthy agent available." }
+        }
+      }
+    },
     "/amqp": {
       "post": {
         "operationId": "amqp_consume",
