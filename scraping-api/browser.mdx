@@ -33,7 +33,7 @@ Works just like `/fetch` — all parameters are passed via headers.
 | `X-Target-URL` | Yes | — | Target URL to render |
 | `X-Wait-Strategy` | No | `load` | `load`, `networkidle`, or `selector` ([details](#wait-strategies)) |
 | `X-Wait-Selector` | No | — | CSS selector to wait for (with `selector` strategy) |
-| `X-Timeout` | No | `30` | Timeout in seconds (max 120) |
+| `X-Timeout` | No | `30` | Timeout in seconds (max 300 for `/browser`) |
 | `X-JS-Expression` | No | — | JavaScript to evaluate after the page is ready |
 | `X-Screenshot` | No | `false` | Capture screenshot (`1` or `true`) |
 | `X-Expect-Selector` | No | — | CSS selector that must exist — retries on a different node if missing |
@@ -269,7 +269,7 @@ GET https://scraping-api.55-tech.com/browser/stream
 
 ### Headers
 
-Same headers as `/browser`, plus:
+Same headers as `/browser` (except `X-Timeout` defaults to `0` = runs until you disconnect, 24h safety cap), plus:
 
 | Header | Default | Description |
 |--------|---------|-------------|
@@ -291,7 +291,7 @@ Same headers as `/browser`, plus:
 | `dom` | DOM mutation on watched selector |
 | `console` | Console output (warn/error) |
 | `error` | Error, stream ends |
-| `done` | Session ended (timeout or closed) |
+| `done` | Session ended (timeout, if set, or client disconnect) |
 
 ### Example: Capture page WebSocket feed
 

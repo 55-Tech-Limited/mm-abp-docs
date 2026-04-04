@@ -33,7 +33,7 @@ GET https://scraping-api.55-tech.com/browser
 | `X-Target-URL` | 是 | — | 要渲染的目标 URL |
 | `X-Wait-Strategy` | 否 | `load` | `load`、`networkidle` 或 `selector`（[详情](#等待策略)） |
 | `X-Wait-Selector` | 否 | — | 要等待的 CSS 选择器（配合 `selector` 策略） |
-| `X-Timeout` | 否 | `30` | 超时时间，秒（最大 120） |
+| `X-Timeout` | 否 | `30` | 超时时间，秒（`/browser` 最大 300，`/browser/stream` 默认运行至断开连接，24小时安全上限） |
 | `X-JS-Expression` | 否 | — | 页面就绪后执行的 JavaScript |
 | `X-Screenshot` | 否 | `false` | 捕获截图（`1` 或 `true`） |
 | `X-Expect-Selector` | 否 | — | 必须存在的 CSS 选择器 — 缺失时在不同节点重试 |
@@ -236,7 +236,7 @@ GET https://scraping-api.55-tech.com/browser/stream
 | `dom` | 监视选择器的 DOM 变化 |
 | `console` | 控制台输出 |
 | `error` | 错误，流结束 |
-| `done` | 会话结束 |
+| `done` | 会话结束（超时或客户端断开连接） |
 
 ### 示例：捕获页面 WebSocket 数据
 

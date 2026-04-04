@@ -350,7 +350,7 @@
       "get": {
         "operationId": "browser_stream",
         "summary": "Live browser session with event streaming (SSE)",
-        "description": "Open a browser, navigate to the target URL, and stream back events in real-time via Server-Sent Events. Captures network responses (XHR/Fetch), WebSocket frames the page receives, DOM mutations, and console output.\n\nThe session stays open until the timeout is reached or the client disconnects.",
+        "description": "Open a browser, navigate to the target URL, and stream back events in real-time via Server-Sent Events. Captures network responses (XHR/Fetch), WebSocket frames the page receives, DOM mutations, and console output.\n\nThe session runs until the client disconnects (24h safety cap). Set X-Timeout to limit the duration.",
         "tags": ["Browser"],
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
