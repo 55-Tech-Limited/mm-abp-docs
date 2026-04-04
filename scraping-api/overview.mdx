@@ -11,12 +11,12 @@ The **Scraping API** by [55 Tech](https://55-tech.com/) lets you route HTTP, bro
 **What you can do:**
 
 - **HTTP fetch** — GET/POST/PUT/PATCH/DELETE with full header, body, and cookie control
-- **Browser fetch** — Real Chromium rendering with JS execution, Cloudflare bypass, cookies (including httpOnly), screenshots, proxy chaining, and response validation
+- **Browser fetch** — Full JavaScript rendering with cookies, screenshots, and custom JS evaluation
 - **WebSocket relay** — Bidirectional frame relay (Socket.IO, SignalR, Centrifugo, GraphQL-WS, raw WebSocket)
 - **AMQP consumer** — Stream RabbitMQ messages via Server-Sent Events (SSE)
 - **Geo targeting** — Pin requests to specific countries or individual agents
-- **Proxy chaining** — Route browser requests through residential proxies for datacenter speed + residential fingerprint
-- **Response validation** — Verify expected content exists in browser-rendered pages with auto-retry on different agent
+- **Proxy chaining** — Route requests through your own proxy for additional IP flexibility
+- **Response validation** — Verify expected content exists in rendered pages, auto-retry on different node if missing
 - **Block detection** — Responses include a `meta.blocked` flag when access restrictions are detected
 
 ## Base URL
@@ -34,7 +34,7 @@ Pass your API key via the `X-API-Key` header or (for WebSocket/AMQP) the `apiKey
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/fetch` | GET, POST, PUT, PATCH, DELETE | Required | Proxy HTTP requests through the agent network |
-| `/browser` | POST | In body | Render a page with real Chromium (JS, cookies, screenshots, proxy, validation) |
+| `/browser` | POST | In body | Fetch with JavaScript rendering (cookies, screenshots, JS eval) |
 | `/ws` | WebSocket | In connect message | Bidirectional WebSocket relay |
 | `/amqp` | POST | In body or header | AMQP/RabbitMQ consumer relay (SSE stream) |
 | `/usage` | GET | Required | Per-key usage metrics (requests, bytes, top domains) |

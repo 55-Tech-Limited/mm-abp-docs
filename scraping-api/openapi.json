@@ -230,26 +230,77 @@
       }
     },
     "/browser": {
-      "post": {
+      "get": {
         "operationId": "browser_fetch",
-        "summary": "Render a page with a real browser",
-        "description": "Render a page using a real Chromium browser on the proxy node. Executes JavaScript, waits for dynamic content, captures all cookies (including httpOnly), and optionally takes a screenshot or evaluates custom JavaScript.\n\nUse this instead of /fetch when the target page requires JavaScript to render content (SPAs, React, Next.js), or when you need to capture browser-set cookies.\n\nThe response format matches /fetch (meta + raw/raw_json), with additional cookies, screenshot, and js_result fields.\n\nIf expectSelector or expectContains is set and the rendered page doesn't match, the API automatically retries on a different node before returning an error.",
+        "summary": "Fetch with JavaScript rendering",
+        "description": "Fetch a URL with full JavaScript rendering. Works just like /fetch — all parameters via headers.\n\nUse this instead of /fetch when the target requires JavaScript to load content.\n\nIf X-Expect-Selector or X-Expect-Contains is set and the page doesn't match, the API retries on a different node.",
         "tags": ["Browser"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/BrowserFetchBody" },
-              "example": {
-                "apiKey": "YOUR_API_KEY",
-                "url": "https://example.com",
-                "waitStrategy": "networkidle",
-                "timeout": 30,
-                "geo": "US"
-              }
-            }
-          }
-        },
+        "parameters": [
+          { "$ref": "#/components/parameters/XTargetURL" },
+          {
+            "name": "X-Wait-Strategy",
+            "in": "header",
+            "description": "When the page is ready: load (DOMContentLoaded), networkidle (no pending requests), or selector (wait for CSS selector).",
+            "schema": { "type": "string", "enum": ["load", "networkidle", "selector"], "default": "load" }
+          },
+          {
+            "name": "X-Wait-Selector",
+            "in": "header",
+            "description": "CSS selector to wait for (only with X-Wait-Strategy: selector).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Screenshot",
+            "in": "header",
+            "description": "Capture a full-page PNG screenshot. Set to 1 or true.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-JS-Expression",
+            "in": "header",
+            "description": "JavaScript to evaluate after the page is ready. Result returned in js_result.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Expect-Selector",
+            "in": "header",
+            "description": "CSS selector that must exist in the rendered page. Retries on a different node if missing.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Expect-Contains",
+            "in": "header",
+            "description": "Substring that must exist in the page body. Retries on a different node if missing.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Proxy",
+            "in": "header",
+            "description": "Route through a proxy (http:// or socks5://).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Block-Resources",
+            "in": "header",
+            "description": "Comma-separated resource types to block: image, font, stylesheet, media.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "Cookie",
+            "in": "header",
+            "description": "Cookies to inject before navigation (standard format: name=value; name2=value2).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Cookies",
+            "in": "header",
+            "description": "Cookies as JSON array for full control: [{\"name\":\"s\",\"value\":\"v\",\"domain\":\".example.com\"}].",
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/XGeo" },
+          { "$ref": "#/components/parameters/XAgent" },
+          { "$ref": "#/components/parameters/XTimeout" }
+        ],
         "responses": {
           "200": {
             "description": "Rendered page with metadata, cookies, and optional screenshot.",
@@ -290,7 +341,7 @@
           "401": { "description": "Missing API key." },
           "403": { "description": "Invalid API key." },
           "429": { "description": "Rate limit exceeded." },
-          "502": { "description": "No healthy agent available, or browser error, or response validation failed." },
+          "502": { "description": "No healthy agent available, or browser/validation error." },
           "504": { "description": "Browser timeout." }
         }
       }
@@ -928,7 +979,7 @@
   ],
   "tags": [
     { "name": "Fetch", "description": "Proxy HTTP requests through the agent network." },
-    { "name": "Browser", "description": "Render pages with a real Chromium browser. JS execution, cookies, screenshots, proxy chaining, response validation." },
+    { "name": "Browser", "description": "Fetch with full JavaScript rendering, cookies, and screenshots." },
     { "name": "Network", "description": "Agent registry, network status, and domain health." },
     { "name": "AMQP", "description": "AMQP/RabbitMQ consumer relay via SSE." },
     { "name": "Usage", "description": "Per-key usage metrics." },
