@@ -88,6 +88,7 @@
                   "scraping-api/overview",
                   "scraping-api/authentication",
                   "scraping-api/quickstart",
+                  "scraping-api/browser",
                   "scraping-api/websocket",
                   "scraping-api/ws-reference",
                   "scraping-api/errors"

@@ -64,9 +64,14 @@ Use exponential backoff: wait 1s, 2s, 4s, etc. Check `GET /usage` for your curre
 
 No client-side retry needed. The API automatically routes your next request to a different, healthy agent. Just keep making requests normally.
 
+### Browser validation failure (502)
+
+If you use `expectSelector` or `expectContains` on `/browser` and the rendered page doesn't match, the API automatically retries on a different node before returning the error. No client-side retry needed for the first failure.
+
 ### Timeout (504)
 
 - Increase the `timeout` field in your POST body (default: 30 seconds)
+- For `/browser`, note that browser startup adds ~2-5 seconds — set `timeout` accordingly
 - Use `X-Geo` to pick agents geographically closer to the target
 - Use `GET /debug/pick?url=...` to preview which agent would be selected
 

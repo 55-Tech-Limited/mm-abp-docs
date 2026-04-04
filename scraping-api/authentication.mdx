@@ -18,16 +18,16 @@ curl -H "X-API-Key: YOUR_API_KEY" \
   https://scraping-api.55-tech.com/fetch
 ```
 
-**JSON body field (for WebSocket `/ws` and AMQP `/amqp`):**
+**JSON body field (for `/browser`, `/ws`, and `/amqp`):**
 
 ```json
 {
   "apiKey": "YOUR_API_KEY",
-  "url": "wss://target.example.com/stream"
+  "url": "https://example.com"
 }
 ```
 
-For WebSocket `/ws` and AMQP `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
+For `/browser`, `/ws`, and `/amqp`, the key is read from the JSON body field `apiKey` (or `key`), or the `X-API-Key` header.
 
 ## Error responses
 
