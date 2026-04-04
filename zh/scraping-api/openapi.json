@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "55 Tech Scraping API",
-    "description": "Distributed fetch network. Route HTTP, WebSocket, and AMQP requests through 80+ geo-distributed agents with health-aware routing and block detection.",
-    "version": "2.1.0",
+    "description": "Distributed fetch network. Route HTTP, browser, WebSocket, and AMQP requests through 80+ geo-distributed agents with health-aware routing and block detection.",
+    "version": "2.2.0",
     "contact": {
       "name": "55 Tech Support",
       "email": "contact@55-tech.com"
@@ -229,6 +229,72 @@
         }
       }
     },
+    "/browser": {
+      "post": {
+        "operationId": "browser_fetch",
+        "summary": "Render a page with a real browser",
+        "description": "Render a page using a real Chromium browser on the proxy node. Executes JavaScript, waits for dynamic content, captures all cookies (including httpOnly), and optionally takes a screenshot or evaluates custom JavaScript.\n\nUse this instead of /fetch when the target page requires JavaScript to render content (SPAs, React, Next.js), or when you need to capture browser-set cookies.\n\nThe response format matches /fetch (meta + raw/raw_json), with additional cookies, screenshot, and js_result fields.\n\nIf expectSelector or expectContains is set and the rendered page doesn't match, the API automatically retries on a different node before returning an error.",
+        "tags": ["Browser"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BrowserFetchBody" },
+              "example": {
+                "apiKey": "YOUR_API_KEY",
+                "url": "https://example.com",
+                "waitStrategy": "networkidle",
+                "timeout": 30,
+                "geo": "US"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered page with metadata, cookies, and optional screenshot.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BrowserFetchResponse" },
+                "example": {
+                  "meta": {
+                    "status": 200,
+                    "final_url": "https://example.com/",
+                    "http_version": "",
+                    "elapsed_ms": 3200,
+                    "blocked": false,
+                    "headers": { "content-type": "text/html; charset=utf-8" },
+                    "agent": { "id": "scraping-de5" },
+                    "bytes": 45210
+                  },
+                  "raw": "<!DOCTYPE html><html>...</html>",
+                  "raw_json": null,
+                  "cookies": [
+                    {
+                      "name": "session_id",
+                      "value": "a1b2c3...",
+                      "domain": ".example.com",
+                      "path": "/",
+                      "secure": true,
+                      "httpOnly": true,
+                      "sameSite": "Lax",
+                      "expires": 1735689600
+                    }
+                  ],
+                  "screenshot": null,
+                  "js_result": null
+                }
+              }
+            }
+          },
+          "401": { "description": "Missing API key." },
+          "403": { "description": "Invalid API key." },
+          "429": { "description": "Rate limit exceeded." },
+          "502": { "description": "No healthy agent available, or browser error, or response validation failed." },
+          "504": { "description": "Browser timeout." }
+        }
+      }
+    },
     "/amqp": {
       "post": {
         "operationId": "amqp_consume",
@@ -403,7 +469,7 @@
         "in": "header",
         "name": "X-API-Key",
         "description": "API key passed in the X-API-Key header."
-      },
+      }
     },
     "schemas": {
       "MetaInfo": {
@@ -489,6 +555,138 @@
           "allow_redirects": {
             "type": "boolean",
             "description": "Follow redirects. Default: true."
+          }
+        }
+      },
+      "BrowserCookie": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Cookie name." },
+          "value": { "type": "string", "description": "Cookie value." },
+          "domain": { "type": "string", "description": "Cookie domain (e.g. .example.com)." },
+          "path": { "type": "string", "default": "/", "description": "Cookie path." },
+          "secure": { "type": "boolean", "default": false, "description": "Secure flag." },
+          "httpOnly": { "type": "boolean", "default": false, "description": "HttpOnly flag." },
+          "sameSite": { "type": "string", "default": "Lax", "description": "SameSite attribute (Strict, Lax, None)." },
+          "expires": { "type": "number", "default": 0, "description": "Expiry as Unix epoch. 0 = session cookie." }
+        }
+      },
+      "BrowserFetchBody": {
+        "type": "object",
+        "required": ["apiKey", "url"],
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "description": "API key for authentication."
+          },
+          "url": {
+            "type": "string",
+            "description": "Target URL to render."
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Extra HTTP headers sent with the page request."
+          },
+          "cookies": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BrowserCookie" },
+            "description": "Cookies to inject before navigation."
+          },
+          "waitStrategy": {
+            "type": "string",
+            "enum": ["load", "networkidle", "selector"],
+            "default": "load",
+            "description": "When the page is considered ready. load = DOMContentLoaded, networkidle = no pending requests, selector = wait for CSS selector."
+          },
+          "waitSelector": {
+            "type": "string",
+            "default": "",
+            "description": "CSS selector to wait for (only with waitStrategy: selector)."
+          },
+          "timeout": {
+            "type": "number",
+            "default": 30,
+            "description": "Overall timeout in seconds (max 120). Browser startup adds ~2-5s."
+          },
+          "jsExpression": {
+            "type": "string",
+            "default": "",
+            "description": "JavaScript to evaluate after the page is ready. The return value is available in js_result."
+          },
+          "screenshot": {
+            "type": "boolean",
+            "default": false,
+            "description": "Capture a full-page PNG screenshot (returned as base64 in the response)."
+          },
+          "viewportWidth": {
+            "type": "integer",
+            "default": 1440,
+            "description": "Browser viewport width in pixels."
+          },
+          "viewportHeight": {
+            "type": "integer",
+            "default": 900,
+            "description": "Browser viewport height in pixels."
+          },
+          "blockResources": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Resource types to block during loading: image, font, stylesheet, media. Speeds up rendering."
+          },
+          "proxy": {
+            "type": "string",
+            "default": "",
+            "description": "Route through a proxy (http:// or socks5://). Useful for residential IP routing."
+          },
+          "expectSelector": {
+            "type": "string",
+            "default": "",
+            "description": "CSS selector that must exist in the rendered page. If missing, retries on a different node."
+          },
+          "expectContains": {
+            "type": "string",
+            "default": "",
+            "description": "Substring that must exist in the page body. If missing, retries on a different node."
+          },
+          "geo": {
+            "type": "string",
+            "description": "Country filter for node selection (e.g. US, DE,AT)."
+          },
+          "agent": {
+            "type": "string",
+            "description": "Pin to specific node by slug (e.g. de1, us3)."
+          }
+        }
+      },
+      "BrowserFetchResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaInfo"
+          },
+          "raw": {
+            "type": "string",
+            "nullable": true,
+            "description": "Rendered page body as text (when not JSON)."
+          },
+          "raw_json": {
+            "nullable": true,
+            "description": "Parsed JSON body (when response is valid JSON, otherwise null)."
+          },
+          "cookies": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BrowserCookie" },
+            "description": "All cookies captured during rendering, including httpOnly cookies."
+          },
+          "screenshot": {
+            "type": "string",
+            "nullable": true,
+            "description": "Base64-encoded full-page PNG screenshot (null if not requested)."
+          },
+          "js_result": {
+            "nullable": true,
+            "description": "Return value of jsExpression evaluation (null if not provided)."
           }
         }
       },
@@ -730,6 +928,7 @@
   ],
   "tags": [
     { "name": "Fetch", "description": "Proxy HTTP requests through the agent network." },
+    { "name": "Browser", "description": "Render pages with a real Chromium browser. JS execution, cookies, screenshots, proxy chaining, response validation." },
     { "name": "Network", "description": "Agent registry, network status, and domain health." },
     { "name": "AMQP", "description": "AMQP/RabbitMQ consumer relay via SSE." },
     { "name": "Usage", "description": "Per-key usage metrics." },
