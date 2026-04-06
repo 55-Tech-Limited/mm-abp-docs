@@ -242,14 +242,65 @@ GET https://scraping-api.55-tech.com/browser/stream
 
 ### 示例：捕获页面 WebSocket 数据
 
-```bash
+<CodeGroup>
+```bash 请求
 curl -N -H "X-API-Key: YOUR_API_KEY" \
   -H "X-Target-URL: https://example.com/live" \
   -H "X-Capture: ws" \
-  -H "X-Wait-Strategy: networkidle" \
-  -H "X-Timeout: 120" \
   https://scraping-api.55-tech.com/browser/stream
 ```
+
+```text SSE 响应流
+event: connected
+data: {"type":"connected","url":"https://example.com/live","agent_id":"scraping-us5","timestamp":1775511253069}
+
+event: ws_open
+data: {"type":"ws_open","url":"wss://feed.example.com/ws","ws_id":"req-1234","timestamp":1775511254100}
+
+event: ws_message
+data: {"type":"ws_message","data":"{\"price\":1.95,\"event\":\"update\"}","ws_id":"req-1234","timestamp":1775511254500}
+
+event: ws_message
+data: {"type":"ws_message","data":"{\"price\":2.10,\"event\":\"update\"}","ws_id":"req-1234","timestamp":1775511255200}
+```
+</CodeGroup>
+
+<ResponseExample>
+```json connected
+{
+  "type": "connected",
+  "url": "https://example.com/live",
+  "status": 200,
+  "agent_id": "scraping-us5",
+  "timestamp": 1775511253069
+}
+```
+
+```json ws_message
+{
+  "type": "ws_message",
+  "data": "{\"price\":1.95,\"market\":\"moneyline\"}",
+  "ws_id": "req-1234",
+  "timestamp": 1775511254500
+}
+```
+
+```json network
+{
+  "type": "network",
+  "url": "https://api.example.com/v1/odds",
+  "method": "GET",
+  "status": 200,
+  "data": "{\"odds\":[{\"home\":1.95,\"away\":2.10}]}",
+  "content_type": "application/json",
+  "timestamp": 1775511255000
+}
+```
+</ResponseExample>
+
+<Note>
+SSE 流持续运行直到断开连接。每个事件格式为 `event: type\ndata: json\n\n`。使用 `curl -N`（无缓冲）实时查看事件。
+</Note>
 
 ### Python
 
@@ -261,8 +312,6 @@ resp = requests.get("https://scraping-api.55-tech.com/browser/stream", headers={
     "X-API-Key": "YOUR_API_KEY",
     "X-Target-URL": "https://example.com/live",
     "X-Capture": "ws",
-    "X-Wait-Strategy": "networkidle",
-    "X-Timeout": "120",
 }, stream=True)
 
 for line in resp.iter_lines():
