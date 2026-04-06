@@ -39,7 +39,7 @@ Works just like `/fetch` — all parameters are passed via headers.
 | `X-Expect-Selector` | No | — | CSS selector that must exist — retries on a different node if missing |
 | `X-Expect-Contains` | No | — | Substring that must exist in the body — retries if missing |
 | `X-Proxy` | No | — | Route through a proxy (`http://` or `socks5://`) |
-| `X-Block-Resources` | No | — (`/browser`), `image,font,stylesheet,media` (`/browser/stream`) | Resource types to block. Stream blocks by default for bandwidth. Set to `none` to disable |
+| `X-Block-Resources` | No | — | Comma-separated resource types to block: `image,font,stylesheet,media`. No default blocking |
 | `X-Geo` | No | — | Country filter for node selection (e.g. `US`, `DE,AT`) |
 | `X-Agent` | No | — | Pin to a specific node (e.g. `de1`, `us3`) |
 | `Cookie` | No | — | Cookies to inject (`name=value; name2=value2`) |
@@ -256,7 +256,7 @@ console.log(data.cookies.length);    // number of cookies captured
 
 For live, long-running sessions, use `/browser/stream`. Instead of capturing a single snapshot, the browser stays open and streams events in real-time via Server-Sent Events.
 
-Only data-carrying requests (XHR/Fetch API calls) are captured — full HTML pages and JavaScript bundles are filtered out. Images, fonts, stylesheets, and media are blocked by default to minimize bandwidth. All data is gzip-compressed over the wire.
+Only data-carrying requests (XHR/Fetch API calls) are captured — full HTML pages and JavaScript bundles are filtered out. No resources are blocked by default so pages load fully and widgets initialize correctly. Default wait strategy is `networkidle`. All data is gzip-compressed.
 
 **Use cases:**
 - Capture WebSocket frames that the page receives (live data feeds)
@@ -271,7 +271,7 @@ GET https://scraping-api.55-tech.com/browser/stream
 
 ### Headers
 
-Same headers as `/browser` (except `X-Timeout` defaults to `0` = runs until you disconnect, 24h safety cap), plus:
+Same headers as `/browser`, with different defaults: `X-Wait-Strategy` defaults to `networkidle`, `X-Timeout` defaults to `0` (runs until disconnect, 24h safety cap), no resource blocking. Plus:
 
 | Header | Default | Description |
 |--------|---------|-------------|
