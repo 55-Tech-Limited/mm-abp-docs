@@ -274,6 +274,12 @@
             "schema": { "type": "string" }
           },
           {
+            "name": "X-Steps",
+            "in": "header",
+            "description": "JSON array of sequential browser actions (navigate, click, type, wait, evaluate, screenshot, sleep, etc.). Executes after page load, before capture.",
+            "schema": { "type": "string" }
+          },
+          {
             "name": "X-Proxy",
             "in": "header",
             "description": "Route through a proxy (http:// or socks5://).",
@@ -382,6 +388,12 @@
             "name": "X-JS-After-Load",
             "in": "header",
             "description": "JavaScript to execute after page load (e.g. click a button, trigger navigation).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Steps",
+            "in": "header",
+            "description": "JSON array of sequential browser actions (navigate, click, type, wait, etc.). Executes after page load, before streaming starts. Step results arrive as step_ok/step_error SSE events.",
             "schema": { "type": "string" }
           },
           {

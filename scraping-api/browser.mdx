@@ -39,6 +39,7 @@ Works just like `/fetch` — all parameters are passed via headers.
 | `X-Expect-Selector` | No | — | CSS selector that must exist — retries on a different node if missing |
 | `X-Expect-Contains` | No | — | Substring that must exist in the body — retries if missing |
 | `X-Proxy` | No | — | Route through a proxy (`http://` or `socks5://`) |
+| `X-Steps` | No | — | JSON array of sequential browser actions ([details](#steps)) |
 | `X-Block-Resources` | No | — | Comma-separated resource types to block: `image,font,stylesheet,media`. No default blocking |
 | `X-Geo` | No | — | Country filter for node selection (e.g. `US`, `DE,AT`) |
 | `X-Agent` | No | — | Pin to a specific node (e.g. `de1`, `us3`) |
@@ -68,6 +69,75 @@ X-Cookies: [{"name":"session","value":"abc","domain":".example.com","secure":tru
 ```
 
 Cookie object fields: `name`, `value`, `domain`, `path`, `secure`, `httpOnly`, `sameSite`, `expires`.
+
+### Steps
+
+Execute sequential browser actions after the page loads — login flows, multi-page navigation, form filling, clicking through to specific content.
+
+Pass a JSON array via the `X-Steps` header:
+
+```
+X-Steps: [{"action":"type","selector":"#email","value":"user@example.com"},{"action":"click","selector":"#submit"},{"action":"waitNavigation"}]
+```
+
+**Available actions:**
+
+| Action | Params | Description |
+|--------|--------|-------------|
+| `navigate` | `url`, `waitUntil` | Navigate to a new URL |
+| `click` | `selector` | Click an element (human-like mouse movement) |
+| `type` | `selector`, `value`, `delay` | Type text into an input (auto-clears first) |
+| `clear` | `selector` | Clear an input field |
+| `select` | `selector`, `value` | Select a dropdown option by value |
+| `wait` | `selector`, `timeout` | Wait for an element to appear |
+| `waitNavigation` | `waitUntil` | Wait for page navigation to complete |
+| `waitHidden` | `selector` | Wait for an element to disappear |
+| `scroll` | `selector` or `x`, `y` | Scroll to an element or by pixels |
+| `hover` | `selector` | Hover over an element |
+| `press` | `key` | Press a keyboard key (`Enter`, `Tab`, `Escape`) |
+| `focus` | `selector` | Focus an element |
+| `evaluate` | `expression` | Run JavaScript in the page |
+| `screenshot` | `fullPage` | Capture a screenshot (returned in step result) |
+| `sleep` | `ms` | Wait a fixed number of milliseconds |
+
+Each step runs after the previous completes. Add `"continueOnError": true` to a step to keep going if it fails.
+
+**Example: Login → navigate → capture**
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/login" \
+  -H 'X-Steps: [
+    {"action": "wait", "selector": "#login-form"},
+    {"action": "type", "selector": "#email", "value": "user@example.com"},
+    {"action": "type", "selector": "#password", "value": "secret"},
+    {"action": "click", "selector": "#submit"},
+    {"action": "waitNavigation"},
+    {"action": "navigate", "url": "https://example.com/dashboard"},
+    {"action": "wait", "selector": ".data-table"}
+  ]' \
+  -H "X-Timeout: 120" \
+  https://scraping-api.55-tech.com/browser
+```
+
+**Example: Login then stream live data**
+
+```bash
+curl -N -H "X-API-Key: YOUR_API_KEY" \
+  -H "X-Target-URL: https://example.com/login" \
+  -H "X-Capture: ws,network" \
+  -H 'X-Steps: [
+    {"action": "type", "selector": "#email", "value": "user@example.com"},
+    {"action": "type", "selector": "#password", "value": "secret"},
+    {"action": "click", "selector": "#submit"},
+    {"action": "waitNavigation"},
+    {"action": "navigate", "url": "https://example.com/live-feed"},
+    {"action": "wait", "selector": ".feed-container"}
+  ]' \
+  https://scraping-api.55-tech.com/browser/stream
+```
+
+Steps work on both `/browser` (capture after all steps complete) and `/browser/stream` (stream during and after steps — step results arrive as `step_ok` / `step_error` events).
 
 ### Resource blocking
 

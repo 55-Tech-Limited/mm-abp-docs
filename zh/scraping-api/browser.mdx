@@ -39,6 +39,7 @@ GET https://scraping-api.55-tech.com/browser
 | `X-Expect-Selector` | 否 | — | 必须存在的 CSS 选择器 — 缺失时在不同节点重试 |
 | `X-Expect-Contains` | 否 | — | 必须存在于内容中的子字符串 — 缺失时重试 |
 | `X-Proxy` | 否 | — | 通过代理路由（`http://` 或 `socks5://`） |
+| `X-Steps` | 否 | — | 浏览器操作的 JSON 数组（[详情](#steps)） |
 | `X-Block-Resources` | 否 | — | 逗号分隔的阻止资源类型：`image,font,stylesheet,media`。默认不阻止 |
 | `X-Geo` | 否 | — | 节点国家过滤器（如 `US`、`DE,AT`） |
 | `X-Agent` | 否 | — | 固定到特定节点（如 `de1`、`us3`） |
@@ -66,6 +67,35 @@ Cookie: session=abc123; token=xyz
 ```
 X-Cookies: [{"name":"session","value":"abc","domain":".example.com","secure":true}]
 ```
+
+### Steps
+
+页面加载后执行顺序浏览器操作 — 登录流程、多页导航、表单填写。
+
+通过 `X-Steps` 请求头传递 JSON 数组：
+
+```
+X-Steps: [{"action":"type","selector":"#email","value":"user@example.com"},{"action":"click","selector":"#submit"},{"action":"waitNavigation"}]
+```
+
+**可用操作：**
+
+| Action | Params | Description |
+|--------|--------|-------------|
+| `navigate` | `url` | 导航到新 URL |
+| `click` | `selector` | 点击元素（模拟人类鼠标移动） |
+| `type` | `selector`, `value` | 在输入框中输入文本 |
+| `wait` | `selector`, `timeout` | 等待元素出现 |
+| `waitNavigation` | `waitUntil` | 等待页面导航完成 |
+| `scroll` | `selector` 或 `x`, `y` | 滚动到元素或按像素滚动 |
+| `press` | `key` | 按键盘键（`Enter`、`Tab`） |
+| `evaluate` | `expression` | 执行 JavaScript |
+| `screenshot` | `fullPage` | 截图 |
+| `sleep` | `ms` | 等待固定毫秒数 |
+
+每步在前一步完成后执行。添加 `"continueOnError": true` 可在失败时继续。
+
+适用于 `/browser`（步骤完成后捕获）和 `/browser/stream`（步骤期间流式传输，结果以 `step_ok` / `step_error` 事件到达）。
 
 ### 资源阻止
 
