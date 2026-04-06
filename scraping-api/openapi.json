@@ -282,7 +282,7 @@
           {
             "name": "X-Block-Resources",
             "in": "header",
-            "description": "Comma-separated resource types to block: image, font, stylesheet, media.",
+            "description": "Comma-separated resource types to block: image, font, stylesheet, media. No default for /browser.",
             "schema": { "type": "string" }
           },
           {
@@ -350,7 +350,7 @@
       "get": {
         "operationId": "browser_stream",
         "summary": "Live browser session with event streaming (SSE)",
-        "description": "Open a browser, navigate to the target URL, and stream back events in real-time via Server-Sent Events. Captures network responses (XHR/Fetch), WebSocket frames the page receives, DOM mutations, and console output.\n\nThe session runs until the client disconnects (24h safety cap). Set X-Timeout to limit the duration.",
+        "description": "Open a browser, navigate to the target URL, and stream back events in real-time via Server-Sent Events. Only captures XHR/Fetch API responses and WebSocket frames — HTML documents, scripts, images, and fonts are filtered out. Resources (images, fonts, stylesheets, media) are blocked by default to save bandwidth. All data is gzip-compressed.\n\nThe session runs until the client disconnects (24h safety cap). Set X-Timeout to limit the duration.",
         "tags": ["Browser"],
         "parameters": [
           { "$ref": "#/components/parameters/XTargetURL" },
@@ -405,8 +405,8 @@
           {
             "name": "X-Block-Resources",
             "in": "header",
-            "description": "Comma-separated resource types to block: image, font, stylesheet, media.",
-            "schema": { "type": "string" }
+            "description": "Comma-separated resource types to block. Default: image,font,stylesheet,media (saves bandwidth). Set to 'none' to disable.",
+            "schema": { "type": "string", "default": "image,font,stylesheet,media" }
           },
           {
             "name": "Cookie",

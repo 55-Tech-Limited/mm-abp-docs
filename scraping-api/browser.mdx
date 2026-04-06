@@ -39,7 +39,7 @@ Works just like `/fetch` — all parameters are passed via headers.
 | `X-Expect-Selector` | No | — | CSS selector that must exist — retries on a different node if missing |
 | `X-Expect-Contains` | No | — | Substring that must exist in the body — retries if missing |
 | `X-Proxy` | No | — | Route through a proxy (`http://` or `socks5://`) |
-| `X-Block-Resources` | No | — | Comma-separated resource types to block: `image,font,stylesheet,media` |
+| `X-Block-Resources` | No | — (`/browser`), `image,font,stylesheet,media` (`/browser/stream`) | Resource types to block. Stream blocks by default for bandwidth. Set to `none` to disable |
 | `X-Geo` | No | — | Country filter for node selection (e.g. `US`, `DE,AT`) |
 | `X-Agent` | No | — | Pin to a specific node (e.g. `de1`, `us3`) |
 | `Cookie` | No | — | Cookies to inject (`name=value; name2=value2`) |
@@ -256,9 +256,11 @@ console.log(data.cookies.length);    // number of cookies captured
 
 For live, long-running sessions, use `/browser/stream`. Instead of capturing a single snapshot, the browser stays open and streams events in real-time via Server-Sent Events.
 
+Only data-carrying requests (XHR/Fetch API calls) are captured — full HTML pages and JavaScript bundles are filtered out. Images, fonts, stylesheets, and media are blocked by default to minimize bandwidth. All data is gzip-compressed over the wire.
+
 **Use cases:**
 - Capture WebSocket frames that the page receives (live data feeds)
-- Monitor network API calls the page makes (XHR/Fetch responses)
+- Monitor XHR/Fetch API calls the page makes (the actual data endpoints)
 - Watch DOM elements for changes (price updates, content changes)
 
 ### Endpoint

@@ -39,7 +39,7 @@ GET https://scraping-api.55-tech.com/browser
 | `X-Expect-Selector` | 否 | — | 必须存在的 CSS 选择器 — 缺失时在不同节点重试 |
 | `X-Expect-Contains` | 否 | — | 必须存在于内容中的子字符串 — 缺失时重试 |
 | `X-Proxy` | 否 | — | 通过代理路由（`http://` 或 `socks5://`） |
-| `X-Block-Resources` | 否 | — | 逗号分隔的阻止资源类型：`image,font,stylesheet,media` |
+| `X-Block-Resources` | 否 | —（`/browser`），`image,font,stylesheet,media`（`/browser/stream`） | 阻止的资源类型。流模式默认阻止以节省带宽。设置为 `none` 可禁用 |
 | `X-Geo` | 否 | — | 节点国家过滤器（如 `US`、`DE,AT`） |
 | `X-Agent` | 否 | — | 固定到特定节点（如 `de1`、`us3`） |
 | `Cookie` | 否 | — | 注入 Cookie（`name=value; name2=value2`） |
@@ -201,9 +201,11 @@ for c in data["cookies"]:
 
 对于长时间的实时会话，使用 `/browser/stream`。浏览器保持打开状态，通过 SSE 实时流式传输事件。
 
+仅捕获数据请求（XHR/Fetch API 调用）— 完整 HTML 页面和 JavaScript 包会被自动过滤。默认阻止图片、字体、样式表和媒体以节省带宽。所有数据通过 gzip 压缩传输。
+
 **使用场景：**
 - 捕获页面接收的 WebSocket 帧（实时数据流）
-- 监控页面发出的网络 API 调用（XHR/Fetch 响应）
+- 监控页面发出的 XHR/Fetch API 调用（实际数据端点）
 - 监视 DOM 元素变化（价格更新、内容变化）
 
 ### 端点
