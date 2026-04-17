@@ -138,42 +138,18 @@ These cover 1x2 markets, over/under, handicap, correct score, and both sides.
 | **PnL** | `GET /api/v1/pnl` | Profit and loss breakdown |
 | **Accounts** | `GET /api/v1/accounts` | List exchange accounts (no credentials) |
 
-### Admin API (`X-Admin-Key` auth)
-
-| Category | Endpoints | Description |
-|----------|-----------|-------------|
-| **Emergency** | `POST /emergency/trigger` | Trigger system-wide emergency |
-| **Emergency** | `POST /emergency/stop` | Stop all trading system-wide |
-| **Emergency** | `POST /emergency/pause` | **Deprecated** — alias for `/emergency/stop`. Triggers full emergency and cancels all orders |
-| **Emergency** | `POST /emergency/start` | Start trading system-wide |
-| **Emergency** | `POST /emergency/resume` | Resume trading system-wide |
-| **Order Slots** | `GET /admin/poison-slots` | List all poison slots |
-| **Order Slots** | `GET /admin/slot-summary` | Slot state summary counts |
-| **Order Slots** | `POST /admin/reconcile` | Trigger reconciliation |
-| **Order Slots** | `POST /admin/clear-poison` | Clear poison for one exact side |
-| **Order Slots** | `POST /admin/cancel-ghost-orders` | Mark ghost DB orders as CANCELLED |
-| **Monitoring** | `GET /admin/hedge-drift` | Hedge drift summary report |
-| **Monitoring** | `GET /admin/hedge-drift/timeline` | Hedge drift timeline |
-
-### System (no auth)
+### Status (no auth)
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /emergency/status` | Get emergency mode status |
+| `GET /emergency/status` | Check if trading is halted (emergency mode) |
 | `GET /health` | Health check |
-| `GET /ready` | Readiness check |
-| `GET /metrics` | Prometheus metrics |
-| `GET /status` | Full system status |
-| `GET /status/subscriptions` | Active WebSocket subscriptions |
-| `GET /status/latency` | Latency metrics |
-| `GET /config` | Current configuration |
 
 ### WebSocket
 
 | Endpoint | Description |
 |----------|-------------|
 | `WS /ws/subscribe` | Real-time order, bet, account, score, and emergency updates |
-| `GET /ws/subscribe/stats` | WebSocket subscription statistics |
 
 ## Rate limits
 

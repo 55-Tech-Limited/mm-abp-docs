@@ -138,42 +138,18 @@ UNDECIDED → WON / LOST / VOID / HALF_WON / HALF_LOST
 | **盈亏** | `GET /api/v1/pnl` | 盈亏明细 |
 | **账户** | `GET /api/v1/accounts` | 列出交易所账户（无凭证） |
 
-### 管理员API（`X-Admin-Key` 认证）
-
-| 类别 | 端点 | 描述 |
-|------|------|------|
-| **紧急控制** | `POST /emergency/trigger` | 触发全系统紧急状态 |
-| **紧急控制** | `POST /emergency/stop` | 全系统停止交易 |
-| **紧急控制** | `POST /emergency/pause` | **已弃用** — `/emergency/stop` 的别名。触发完全紧急状态并取消所有订单 |
-| **紧急控制** | `POST /emergency/start` | 全系统启动交易 |
-| **紧急控制** | `POST /emergency/resume` | 全系统恢复交易 |
-| **订单槽位** | `GET /admin/poison-slots` | 列出所有中毒槽位 |
-| **订单槽位** | `GET /admin/slot-summary` | 槽位状态汇总 |
-| **订单槽位** | `POST /admin/reconcile` | 触发对账 |
-| **订单槽位** | `POST /admin/clear-poison` | 清除特定方向的中毒状态 |
-| **订单槽位** | `POST /admin/cancel-ghost-orders` | 将幽灵订单标记为已取消 |
-| **监控** | `GET /admin/hedge-drift` | 对冲偏差汇总报告 |
-| **监控** | `GET /admin/hedge-drift/timeline` | 对冲偏差时间线 |
-
-### 系统（无需认证）
+### 状态（无需认证）
 
 | 端点 | 描述 |
 |------|------|
-| `GET /emergency/status` | 获取紧急模式状态 |
+| `GET /emergency/status` | 检查交易是否已暂停（紧急模式） |
 | `GET /health` | 健康检查 |
-| `GET /ready` | 就绪检查 |
-| `GET /metrics` | Prometheus 指标 |
-| `GET /status` | 完整系统状态 |
-| `GET /status/subscriptions` | 活跃 WebSocket 订阅 |
-| `GET /status/latency` | 延迟指标 |
-| `GET /config` | 当前配置 |
 
 ### WebSocket
 
 | 端点 | 描述 |
 |------|------|
 | `WS /ws/subscribe` | 实时订单、投注、账户、比分和紧急更新 |
-| `GET /ws/subscribe/stats` | WebSocket 订阅统计 |
 
 ## 速率限制
 

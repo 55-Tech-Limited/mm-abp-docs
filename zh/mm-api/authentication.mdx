@@ -17,21 +17,6 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 您的API密钥绑定到特定的 `client` 实体。返回的所有数据按您的客户端过滤 — 您只能看到自己的订单、投注和持仓。
 
-## 管理员API身份验证
-
-管理员端点（紧急操作、`/admin/*`）需要 `X-Admin-Key` 头：
-
-```bash
-curl -H "X-Admin-Key: YOUR_ADMIN_KEY" \
-  -X POST https://mmapi.55-tech.com/emergency/trigger
-```
-
-管理员密钥授予对系统级操作的访问权限，包括紧急控制、对账和监控。通常仅限运维人员使用。
-
-<Note>
-`GET /emergency/status` **不需要** 认证 — 可以在没有任何API密钥的情况下调用。
-</Note>
-
 ## WebSocket 身份验证
 
 对于WebSocket连接，在订阅消息中发送您的API密钥：
