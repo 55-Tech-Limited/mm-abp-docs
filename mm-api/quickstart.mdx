@@ -45,7 +45,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 # Open orders for a specific fixture
 curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/orders/open?fixture_id=id1000000861624412"
+  "https://mmapi.55-tech.com/api/v1/orders/open?fixtureId=id1000000861624412"
 ```
 
 Each order includes exchange-specific identifiers, matched amounts, and odds snapshots:
@@ -126,7 +126,7 @@ Filter by date range:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/pnl?from_date=2026-01-01&to_date=2026-01-31"
+  "https://mmapi.55-tech.com/api/v1/pnl?fromDate=2026-01-01&toDate=2026-01-31"
 ```
 
 ## Step 6: View fixtures
@@ -147,7 +147,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 # Filter by tournament
 curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/fixtures?tournament_id=17"
+  "https://mmapi.55-tech.com/api/v1/fixtures?tournamentId=17"
 ```
 
 ## Step 7: List accounts
@@ -167,9 +167,9 @@ curl -H "X-API-Key: YOUR_API_KEY" \
       "username": "0x1234...abcd",
       "exchange": "polymarket",
       "active": true,
-      "max_outcome_stake": 1000.0,
+      "maxOutcomeStake": 1000.0,
       "balance": 50000.0,
-      "created_at": "2026-01-15T12:00:00Z"
+      "createdAt": "2026-01-15T12:00:00Z"
     }
   ],
   "count": 1

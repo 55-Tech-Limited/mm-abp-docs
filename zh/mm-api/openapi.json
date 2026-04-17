@@ -9,7 +9,7 @@
     "/api/v1/me": {
       "get": {
         "tags": [
-          "Trading Controls"
+          "Client API"
         ],
         "summary": "Get current client info",
         "description": "Returns the authenticated client's information based on their API key.",
@@ -52,7 +52,7 @@
     "/api/v1/clients/settings": {
       "patch": {
         "tags": [
-          "Trading Controls"
+          "Client API"
         ],
         "summary": "Update client settings",
         "description": "Update authenticated client preferences.\n\n    Currently supports persisting the preferred odds display format used by the UI.",
@@ -108,7 +108,7 @@
     "/api/v1/trading/status": {
       "get": {
         "tags": [
-          "Trading Controls"
+          "Client API"
         ],
         "summary": "Get trading status",
         "description": "Returns the authenticated client's trading status.\n\n    This includes:\n    - Whether the client is under manual pause\n    - Whether global soft pause or emergency is blocking trading\n    - Whether trading is currently active for this client",
@@ -151,7 +151,7 @@
     "/api/v1/trading/pause": {
       "post": {
         "tags": [
-          "Trading Controls"
+          "Client API"
         ],
         "summary": "Pause trading",
         "description": "Manually pause market making for the authenticated client.\n\n    Behavior:\n    - Existing resting exchange orders are left on the exchange\n    - No new orders are posted for this client\n    - Fill hedging still runs\n    - Hedge-triggered reposts are blocked while paused",
@@ -194,7 +194,7 @@
     "/api/v1/trading/resume": {
       "post": {
         "tags": [
-          "Trading Controls"
+          "Client API"
         ],
         "summary": "Resume trading",
         "description": "Resume market making for the authenticated client after a manual pause.\n\n    Resume clears only the client's manual pause flag. Global soft pause or\n    emergency mode can still block trading if they are active.",
@@ -237,7 +237,7 @@
     "/api/v1/trading/stop": {
       "post": {
         "tags": [
-          "Trading Controls"
+          "Client API"
         ],
         "summary": "Stop trading",
         "description": "Fully stop market making for the authenticated client.\n\n    Behavior:\n    - Cancel all currently open exchange orders for this client\n    - Block new order placement and reposts until `/trading/start`\n    - Fill hedging can still run for any in-flight exchange fills that arrive later",
@@ -280,7 +280,7 @@
     "/api/v1/trading/start": {
       "post": {
         "tags": [
-          "Trading Controls"
+          "Client API"
         ],
         "summary": "Start trading",
         "description": "Start market making for the authenticated client after a manual pause or stop.\n\n    This clears client-scoped manual controls only. Global soft pause or system\n    stop/emergency can still block trading if they are active.",
@@ -320,17 +320,287 @@
         ]
       }
     },
+    "/api/v1/sports": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List available sports",
+        "description": "Returns sports currently in the oddspapi feed for your bookmaker, with live fixture counts.",
+        "operationId": "list_sports_api_v1_sports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Sports Api V1 Sports Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sports/{sport_id}/tournaments": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List tournaments for a sport",
+        "description": "Returns tournaments currently in the oddspapi feed, grouped by category, with activation status.",
+        "operationId": "list_tournaments_for_sport_api_v1_sports__sport_id__tournaments_get",
+        "parameters": [
+          {
+            "name": "sport_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sport Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Tournaments For Sport Api V1 Sports  Sport Id  Tournaments Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sports/{sport_id}/market-types": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List hedgeable market types for a sport with per-client toggle status",
+        "description": "Discovery endpoint backing the markets-page Market types tab. Returns each `(marketType, playerProp)` group that is hedgeable on at least one of the client's configured trading exchanges, joined against the per-client allowlist deny set so the caller can render `enabled` toggles. Hedgeability is empirical: a market type appears if the `odds` table has at least one mapping row for an outcome of that type on one of the client's exchanges (mm-v2-1os). Non-hedgeable types are not returned at all.",
+        "operationId": "list_market_types_for_sport_api_v1_sports__sport_id__market_types_get",
+        "parameters": [
+          {
+            "name": "sport_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sport Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Market Types For Sport Api V1 Sports  Sport Id  Market Types Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/client/market-allowlist": {
+      "patch": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Bulk-toggle market types for the authenticated client",
+        "description": "Upserts allowlist rows for each `(marketType, playerProp)` in `updates`. For any row set to `enabled=false`, immediately cancels open orders owned by this client whose `outcomeId` belongs to that market type for the given sport. Bookmaker is resolved server-side.",
+        "operationId": "patch_market_allowlist_api_v1_client_market_allowlist_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketAllowlistPatchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Patch Market Allowlist Api V1 Client Market Allowlist Patch"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/client/market-allowlist/activate-all": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Restore default-on for every market type in this scope",
+        "description": "Deletes all `client_market_allowlist` rows for `(client, bookmaker, sportId)`. Under the missing-row-equals-enabled contract, this restores every market type to default-on. No order cancellation \u2014 we are enabling, not disabling.",
+        "operationId": "activate_all_market_types_api_v1_client_market_allowlist_activate_all_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateAllBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Activate All Market Types Api V1 Client Market Allowlist Activate All Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/orders": {
       "get": {
         "tags": [
-          "Orders"
+          "Client API"
         ],
         "summary": "List orders",
-        "description": "Retrieve a paginated list of orders for your client account.\n\n    Orders are sorted by creation date (newest first) and can be filtered by:\n    - **fixture_id**: Filter by specific fixture/event\n    - **exchange**: Filter by exchange (polymarket, kalshi, etc.)\n    - **status**: Filter by order status (PLACED, FILLED, CANCELLED, etc.)\n\n    Use pagination parameters to navigate through large result sets.",
+        "description": "Retrieve a paginated list of orders for your client account.\n\n    Orders are sorted by creation date (newest first) and can be filtered by:\n    - **fixtureId**: Filter by specific fixture/event\n    - **exchange**: Filter by exchange (polymarket, kalshi, etc.)\n    - **status**: Filter by order status (PLACED, FILLED, CANCELLED, etc.)\n\n    Use pagination parameters to navigate through large result sets.",
         "operationId": "list_orders_api_v1_orders_get",
         "parameters": [
           {
-            "name": "fixture_id",
+            "name": "fixtureId",
             "in": "query",
             "required": false,
             "schema": {
@@ -343,7 +613,7 @@
                 }
               ],
               "description": "Filter by fixture ID",
-              "title": "Fixture Id"
+              "title": "Fixtureid"
             },
             "description": "Filter by fixture ID"
           },
@@ -384,7 +654,7 @@
             "description": "Filter by order status (PLACED, FILLED, CANCELLED)"
           },
           {
-            "name": "from_date",
+            "name": "fromDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -398,12 +668,12 @@
                 }
               ],
               "description": "Filter orders created on or after this date (YYYY-MM-DD)",
-              "title": "From Date"
+              "title": "Fromdate"
             },
             "description": "Filter orders created on or after this date (YYYY-MM-DD)"
           },
           {
-            "name": "to_date",
+            "name": "toDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -417,7 +687,7 @@
                 }
               ],
               "description": "Filter orders created on or before this date (YYYY-MM-DD)",
-              "title": "To Date"
+              "title": "Todate"
             },
             "description": "Filter orders created on or before this date (YYYY-MM-DD)"
           },
@@ -435,7 +705,7 @@
             "description": "Page number (1-indexed)"
           },
           {
-            "name": "page_size",
+            "name": "pageSize",
             "in": "query",
             "required": false,
             "schema": {
@@ -444,7 +714,7 @@
               "minimum": 1,
               "description": "Items per page (max 2000)",
               "default": 50,
-              "title": "Page Size"
+              "title": "Pagesize"
             },
             "description": "Items per page (max 2000)"
           }
@@ -471,8 +741,8 @@
                   ],
                   "total": 100,
                   "page": 1,
-                  "page_size": 50,
-                  "total_pages": 2
+                  "pageSize": 50,
+                  "totalPages": 2
                 }
               }
             }
@@ -504,14 +774,14 @@
     "/api/v1/orders/open": {
       "get": {
         "tags": [
-          "Orders"
+          "Client API"
         ],
         "summary": "List open orders",
         "description": "Retrieve all currently open (unfilled) orders for your client account.\n\n    Open orders have status PLACED or PENDING_PLACEMENT and are not yet fully matched.\n    This endpoint does not paginate - it returns all open orders at once.",
         "operationId": "list_open_orders_api_v1_orders_open_get",
         "parameters": [
           {
-            "name": "fixture_id",
+            "name": "fixtureId",
             "in": "query",
             "required": false,
             "schema": {
@@ -524,7 +794,7 @@
                 }
               ],
               "description": "Filter by fixture ID",
-              "title": "Fixture Id"
+              "title": "Fixtureid"
             },
             "description": "Filter by fixture ID"
           },
@@ -587,14 +857,14 @@
     "/api/v1/orders/summary": {
       "get": {
         "tags": [
-          "Orders"
+          "Client API"
         ],
         "summary": "Get orders summary",
         "description": "Get aggregated statistics about all orders for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
         "operationId": "get_orders_summary_api_v1_orders_summary_get",
         "parameters": [
           {
-            "name": "from_date",
+            "name": "fromDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -608,12 +878,12 @@
                 }
               ],
               "description": "Filter orders created on or after this date (YYYY-MM-DD)",
-              "title": "From Date"
+              "title": "Fromdate"
             },
             "description": "Filter orders created on or after this date (YYYY-MM-DD)"
           },
           {
-            "name": "to_date",
+            "name": "toDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -627,7 +897,7 @@
                 }
               ],
               "description": "Filter orders created on or before this date (YYYY-MM-DD)",
-              "title": "To Date"
+              "title": "Todate"
             },
             "description": "Filter orders created on or before this date (YYYY-MM-DD)"
           }
@@ -670,7 +940,7 @@
     "/api/v1/orders/{order_id}": {
       "get": {
         "tags": [
-          "Orders"
+          "Client API"
         ],
         "summary": "Get order details",
         "description": "Retrieve detailed information about a specific order by its ID.",
@@ -726,14 +996,14 @@
     "/api/v1/bets": {
       "get": {
         "tags": [
-          "Bets"
+          "Client API"
         ],
         "summary": "List bets",
-        "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **order_id**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (vertex, pinnacle, demo)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
+        "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **orderId**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (vertex, pinnacle, demo)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
         "operationId": "list_bets_api_v1_bets_get",
         "parameters": [
           {
-            "name": "order_id",
+            "name": "orderId",
             "in": "query",
             "required": false,
             "schema": {
@@ -746,7 +1016,7 @@
                 }
               ],
               "description": "Filter by order ID",
-              "title": "Order Id"
+              "title": "Orderid"
             },
             "description": "Filter by order ID"
           },
@@ -787,7 +1057,7 @@
             "description": "Filter by bet status - comma-separated (e.g., 'placed,pending')"
           },
           {
-            "name": "from_date",
+            "name": "fromDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -801,12 +1071,12 @@
                 }
               ],
               "description": "Filter bets created on or after this date (YYYY-MM-DD)",
-              "title": "From Date"
+              "title": "Fromdate"
             },
             "description": "Filter bets created on or after this date (YYYY-MM-DD)"
           },
           {
-            "name": "to_date",
+            "name": "toDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -820,7 +1090,7 @@
                 }
               ],
               "description": "Filter bets created on or before this date (YYYY-MM-DD)",
-              "title": "To Date"
+              "title": "Todate"
             },
             "description": "Filter bets created on or before this date (YYYY-MM-DD)"
           },
@@ -838,7 +1108,7 @@
             "description": "Page number (1-indexed)"
           },
           {
-            "name": "page_size",
+            "name": "pageSize",
             "in": "query",
             "required": false,
             "schema": {
@@ -847,7 +1117,7 @@
               "minimum": 1,
               "description": "Items per page (max 2000)",
               "default": 50,
-              "title": "Page Size"
+              "title": "Pagesize"
             },
             "description": "Items per page (max 2000)"
           }
@@ -890,14 +1160,14 @@
     "/api/v1/bets/summary": {
       "get": {
         "tags": [
-          "Bets"
+          "Client API"
         ],
         "summary": "Get bets summary",
         "description": "Get aggregated statistics about all bets for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
         "operationId": "get_bets_summary_api_v1_bets_summary_get",
         "parameters": [
           {
-            "name": "from_date",
+            "name": "fromDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -911,12 +1181,12 @@
                 }
               ],
               "description": "Filter bets created on or after this date (YYYY-MM-DD)",
-              "title": "From Date"
+              "title": "Fromdate"
             },
             "description": "Filter bets created on or after this date (YYYY-MM-DD)"
           },
           {
-            "name": "to_date",
+            "name": "toDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -930,7 +1200,7 @@
                 }
               ],
               "description": "Filter bets created on or before this date (YYYY-MM-DD)",
-              "title": "To Date"
+              "title": "Todate"
             },
             "description": "Filter bets created on or before this date (YYYY-MM-DD)"
           }
@@ -973,7 +1243,7 @@
     "/api/v1/bets/{bet_id}": {
       "get": {
         "tags": [
-          "Bets"
+          "Client API"
         ],
         "summary": "Get bet details",
         "description": "Retrieve detailed information about a specific bet by its ID.",
@@ -1029,10 +1299,10 @@
     "/api/v1/fixtures": {
       "get": {
         "tags": [
-          "Fixtures & Sports"
+          "Client API"
         ],
         "summary": "List fixtures",
-        "description": "Retrieve a paginated list of fixtures (events/matches).\n\n    Fixtures contain event metadata like participants, start time, and scores.\n\n    Filter by:\n    - **fixtureIds**: Filter by specific fixture IDs (repeated query param)\n    - **tournament_id**: Filter by tournament (e.g., 234 for NHL)\n    - **sport_id**: Filter by sport (e.g., 1 for Soccer)\n    - **live**: Filter by live status (true/false)\n    - **all**: Set to true to see all available fixtures (not just ones with your orders)",
+        "description": "Retrieve a paginated list of fixtures (events/matches).\n\n    Fixtures contain event metadata like participants, start time, and scores.\n\n    Filter by:\n    - **fixtureIds**: Filter by specific fixture IDs (repeated query param)\n    - **tournamentId**: Filter by tournament (e.g., 234 for NHL)\n    - **sportId**: Filter by sport (e.g., 1 for Soccer)\n    - **live**: Filter by live status (true/false)\n    - **all**: Set to true to see all available fixtures (not just ones with your orders)",
         "operationId": "list_fixtures_api_v1_fixtures_get",
         "parameters": [
           {
@@ -1057,7 +1327,7 @@
             "description": "Filter by fixture IDs"
           },
           {
-            "name": "tournament_id",
+            "name": "tournamentId",
             "in": "query",
             "required": false,
             "schema": {
@@ -1070,12 +1340,12 @@
                 }
               ],
               "description": "Filter by tournament ID",
-              "title": "Tournament Id"
+              "title": "Tournamentid"
             },
             "description": "Filter by tournament ID"
           },
           {
-            "name": "sport_id",
+            "name": "sportId",
             "in": "query",
             "required": false,
             "schema": {
@@ -1088,7 +1358,7 @@
                 }
               ],
               "description": "Filter by sport ID",
-              "title": "Sport Id"
+              "title": "Sportid"
             },
             "description": "Filter by sport ID"
           },
@@ -1136,7 +1406,7 @@
             "description": "Page number (1-indexed)"
           },
           {
-            "name": "page_size",
+            "name": "pageSize",
             "in": "query",
             "required": false,
             "schema": {
@@ -1145,7 +1415,7 @@
               "minimum": 1,
               "description": "Items per page (max 2000)",
               "default": 50,
-              "title": "Page Size"
+              "title": "Pagesize"
             },
             "description": "Items per page (max 2000)"
           }
@@ -1188,7 +1458,7 @@
     "/api/v1/markets": {
       "get": {
         "tags": [
-          "Fixtures & Sports"
+          "Client API"
         ],
         "summary": "List markets for sport",
         "description": "Get available markets for a sport from cached odds data.\n\n    **Note:** Markets are global reference data - they describe what market types\n    exist (1x2, Over/Under, etc.) and are not specific to any client. All clients\n    see the same market definitions.\n\n    Markets are aggregated from all active fixtures for the specified sport.\n\n    **Required:**\n    - **sportId**: Get markets for a sport (e.g., 1=Soccer, 14=Ice Hockey)\n\n    **Response fields:**\n    - `marketId`: Market identifier\n    - `outcomeIds`: List of outcome IDs available for this market\n    - `playerIds`: List of player IDs (for player prop markets)\n    - `bookmakers`: Bookmakers offering this market",
@@ -1263,7 +1533,7 @@
     "/api/v1/players": {
       "get": {
         "tags": [
-          "Fixtures & Sports"
+          "Client API"
         ],
         "summary": "List players for sport",
         "description": "Get players for a sport from cached odds data.\n\n    **Note:** Players are global reference data - they describe what players\n    have prop markets available. All clients see the same player data.\n\n    Players are aggregated from all active fixtures for the specified sport\n    where playerId > 0 (player prop markets).\n\n    **Required:**\n    - **sportId**: Get players for a sport (e.g., 1=Soccer, 14=Ice Hockey)\n\n    **Response fields:**\n    - `playerId`: Player identifier\n    - `marketIds`: Markets this player has props in\n    - `outcomeIds`: Outcome IDs for this player\n    - `bookmakers`: Bookmakers offering props for this player",
@@ -1340,14 +1610,14 @@
     "/api/v1/positions": {
       "get": {
         "tags": [
-          "Analytics"
+          "Client API"
         ],
         "summary": "List positions",
         "description": "Get aggregated positions for your client account.\n\n    A position aggregates all orders for a specific fixture/outcome/exchange combination,\n    showing total stake, matched stake, and open stake.\n\n    This gives you a consolidated view of your exposure on each market.\n\n    **Status filters** (supports comma-separated values, e.g., `open,matched`):\n    - `open`: Only positions with open orders (still on exchange, not fully matched)\n    - `matched`: Only positions with matched stake > 0 (excludes cancelled)\n    - `filled`: Only fully matched orders\n    - `cancelled`: Only cancelled orders\n    - `active`: Exclude cancelled orders (default)\n\n    Examples:\n    - `/positions?status=open` - Only open positions\n    - `/positions?status=open,matched` - Open or matched positions\n    - `/positions?status=filled` - Only filled positions\n\n    Optionally filter by date range to see positions from a specific time period.",
         "operationId": "list_positions_api_v1_positions_get",
         "parameters": [
           {
-            "name": "fixture_id",
+            "name": "fixtureId",
             "in": "query",
             "required": false,
             "schema": {
@@ -1360,7 +1630,7 @@
                 }
               ],
               "description": "Filter by fixture ID",
-              "title": "Fixture Id"
+              "title": "Fixtureid"
             },
             "description": "Filter by fixture ID"
           },
@@ -1402,7 +1672,7 @@
             "description": "Filter by status - comma-separated (e.g., 'open,matched'). Options: open, matched, filled, cancelled, active"
           },
           {
-            "name": "from_date",
+            "name": "fromDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -1416,12 +1686,12 @@
                 }
               ],
               "description": "Filter positions from orders created on or after this date (YYYY-MM-DD)",
-              "title": "From Date"
+              "title": "Fromdate"
             },
             "description": "Filter positions from orders created on or after this date (YYYY-MM-DD)"
           },
           {
-            "name": "to_date",
+            "name": "toDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -1435,7 +1705,7 @@
                 }
               ],
               "description": "Filter positions from orders created on or before this date (YYYY-MM-DD)",
-              "title": "To Date"
+              "title": "Todate"
             },
             "description": "Filter positions from orders created on or before this date (YYYY-MM-DD)"
           }
@@ -1480,14 +1750,14 @@
     "/api/v1/positions/summary": {
       "get": {
         "tags": [
-          "Analytics"
+          "Client API"
         ],
         "summary": "Get positions summary",
         "description": "Get aggregated statistics about all positions for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
         "operationId": "get_positions_summary_api_v1_positions_summary_get",
         "parameters": [
           {
-            "name": "from_date",
+            "name": "fromDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -1501,12 +1771,12 @@
                 }
               ],
               "description": "Filter from orders created on or after this date (YYYY-MM-DD)",
-              "title": "From Date"
+              "title": "Fromdate"
             },
             "description": "Filter from orders created on or after this date (YYYY-MM-DD)"
           },
           {
-            "name": "to_date",
+            "name": "toDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -1520,7 +1790,7 @@
                 }
               ],
               "description": "Filter from orders created on or before this date (YYYY-MM-DD)",
-              "title": "To Date"
+              "title": "Todate"
             },
             "description": "Filter from orders created on or before this date (YYYY-MM-DD)"
           }
@@ -1563,14 +1833,14 @@
     "/api/v1/pnl": {
       "get": {
         "tags": [
-          "Analytics"
+          "Client API"
         ],
-        "summary": "Get profit and loss",
-        "description": "Get profit and loss (PnL) statistics for your client account.\n\n    **Realized PnL**: Profit/loss from settled orders\n    - WON orders: profit = matchedStake * (1/probability - 1)\n    - LOST orders: loss = -matchedStake\n    - HALF_WON/HALF_LOST: 50% of the above\n\n    **Unrealized PnL**: Potential profit from open positions (if they win)\n    - Calculated as: matchedStake * (1/probability - 1) for all unsettled matched orders\n\n    Optionally filter by date range to see PnL for a specific time period.",
+        "summary": "Get market-making P&L",
+        "description": "Market-making P&L statistics for your client account.\n\n    The engine quotes on exchanges (Polymarket, Kalshi, ...) and hedges every\n    fill on a bookmaker. P&L is reported in terms of the spread captured across\n    the two legs, not as directional bet P&L.\n\n    **totalTurnover** \u2014 \u03a3 stake successfully laid off on the bookmaker leg.\n    This is the volume the engine actually closed, not the quoted exchange stake.\n\n    **validTurnover** \u2014 Risk-adjusted turnover on the bookmaker leg.\n    Computed as \u03a3 ABS(bet P&L) per settled bet. Accounts for odds: a $100\n    bet at 1.1 contributes less valid turnover than $100 at 3.0.\n\n    **netRealizedSpread** \u2014 \u03a3 (exchange_leg_pnl + bookmaker_leg_pnl) across\n    pairs where both legs have reached a terminal state and at least one hedge\n    was placed successfully. Absolute dollars.\n\n    **nakedPnl** \u2014 Directional P&L from settled exchange fills that never\n    got a successful hedge. Tracked separately so it does not pollute the\n    spread number.\n\n    **unhedgedStake** \u2014 Absolute $ of matched exchange stake that never\n    reached a successful hedge.\n\n    **unhedgedStakePct** \u2014 % of matched exchange stake that never reached a\n    successful hedge (quantity slippage on the hedge leg).\n\n    **avgHedgePriceDrift** \u2014 Stake-weighted mean hedgeOddsDrift on successful\n    hedges, in decimal-odds points (price slippage on the hedge leg).\n\n    Date filter applies to order createdAt.",
         "operationId": "get_pnl_api_v1_pnl_get",
         "parameters": [
           {
-            "name": "from_date",
+            "name": "fromDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -1584,12 +1854,12 @@
                 }
               ],
               "description": "Filter orders created on or after this date (YYYY-MM-DD)",
-              "title": "From Date"
+              "title": "Fromdate"
             },
             "description": "Filter orders created on or after this date (YYYY-MM-DD)"
           },
           {
-            "name": "to_date",
+            "name": "toDate",
             "in": "query",
             "required": false,
             "schema": {
@@ -1603,28 +1873,31 @@
                 }
               ],
               "description": "Filter orders created on or before this date (YYYY-MM-DD)",
-              "title": "To Date"
+              "title": "Todate"
             },
             "description": "Filter orders created on or before this date (YYYY-MM-DD)"
           }
         ],
         "responses": {
           "200": {
-            "description": "PnL statistics",
+            "description": "Market-making P&L statistics",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PnLResponse"
                 },
                 "example": {
-                  "pnl": 54514.93,
-                  "realized_pnl": 50000.0,
-                  "unrealized_pnl": 4514.93,
-                  "total_matched_stake": 100000.0,
-                  "settled_count": 150,
-                  "unsettled_count": 25,
-                  "from_date": "2026-01-29",
-                  "to_date": "2026-02-01"
+                  "totalTurnover": 98350.0,
+                  "validTurnover": 72415.3,
+                  "netRealizedSpread": 1482.55,
+                  "nakedPnl": -220.1,
+                  "unhedgedStake": 1622.78,
+                  "unhedgedStakePct": 1.65,
+                  "avgHedgePriceDrift": 0.0042,
+                  "settledPairCount": 1420,
+                  "nakedSettledCount": 12,
+                  "fromDate": "2026-01-29",
+                  "toDate": "2026-02-01"
                 }
               }
             }
@@ -1656,7 +1929,7 @@
     "/api/v1/accounts": {
       "get": {
         "tags": [
-          "Accounts"
+          "Client API"
         ],
         "summary": "List accounts",
         "description": "List exchange accounts configured for your client.\n\n    Returns account metadata without sensitive credentials.\n    Shows which exchanges you have accounts on and their configuration.",
@@ -1721,10 +1994,10 @@
     "/api/v1/orders/cancel-all": {
       "post": {
         "tags": [
-          "Orders"
+          "Client API"
         ],
         "summary": "Cancel all open orders",
-        "description": "Cancel ALL open orders for your client account across all exchanges.\n\n    **Use with caution** - this will cancel every open order you have.\n\n    Optionally filter by:\n    - **exchange**: Only cancel orders on a specific exchange\n    - **fixture_id**: Only cancel orders for a specific fixture",
+        "description": "Cancel ALL open orders for your client account across all exchanges.\n\n    **Use with caution** - this will cancel every open order you have.\n\n    Optionally filter by:\n    - **exchange**: Only cancel orders on a specific exchange\n    - **fixtureId**: Only cancel orders for a specific fixture",
         "operationId": "cancel_all_client_orders_api_v1_orders_cancel_all_post",
         "parameters": [
           {
@@ -1746,7 +2019,7 @@
             "description": "Filter by exchange"
           },
           {
-            "name": "fixture_id",
+            "name": "fixtureId",
             "in": "query",
             "required": false,
             "schema": {
@@ -1759,7 +2032,7 @@
                 }
               ],
               "description": "Filter by fixture ID",
-              "title": "Fixture Id"
+              "title": "Fixtureid"
             },
             "description": "Filter by fixture ID"
           }
@@ -1804,7 +2077,7 @@
     "/api/v1/orders/{order_id}/cancel": {
       "post": {
         "tags": [
-          "Orders"
+          "Client API"
         ],
         "summary": "Cancel a specific order",
         "description": "Cancel a specific order by its ID.",
@@ -1857,10 +2130,1781 @@
         ]
       }
     },
+    "/api/v1/tournaments/{tournament_id}/activate": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Activate a tournament",
+        "description": "Activate a tournament for trading. Looks up metadata from catalog and validates bookmaker coverage.",
+        "operationId": "activate_tournament_api_v1_tournaments__tournament_id__activate_post",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ActivateTournamentRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Activate Tournament Api V1 Tournaments  Tournament Id  Activate Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/deactivate": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Deactivate a tournament",
+        "description": "Deactivate a tournament. Automatically cancels open orders for this tournament.",
+        "operationId": "deactivate_tournament_api_v1_tournaments__tournament_id__deactivate_post",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Deactivate Tournament Api V1 Tournaments  Tournament Id  Deactivate Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}": {
+      "patch": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Update tournament config",
+        "description": "Update limitRatio and/or priceTicks for an active tournament.",
+        "operationId": "update_tournament_config_api_v1_tournaments__tournament_id__patch",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTournamentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Update Tournament Config Api V1 Tournaments  Tournament Id  Patch"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tournaments": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List tournament configs",
+        "description": "List all tournament configurations for the authenticated client.",
+        "operationId": "list_tournaments_api_v1_tournaments_get",
+        "parameters": [
+          {
+            "name": "sportId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by sport ID",
+              "title": "Sportid"
+            },
+            "description": "Filter by sport ID"
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by active status",
+              "title": "Active"
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Tournaments Api V1 Tournaments Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/verify": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Verify admin API key",
+        "description": "Returns 200 if the admin API key is valid. Used by the frontend auth flow to validate the key before setting a cookie.",
+        "operationId": "verify_admin_key_admin_verify_get",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Verify Admin Key Admin Verify Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "List all clients",
+        "description": "List all clients with masked API keys.",
+        "operationId": "list_clients_admin_clients_get",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Active"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientResponse"
+                  },
+                  "title": "Response List Clients Admin Clients Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Create a new client",
+        "description": "Create a new client. Returns the full API key once.",
+        "operationId": "create_client_admin_clients_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client}": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Get a single client",
+        "description": "Get a single client with masked API key.",
+        "operationId": "get_client_admin_clients__client__get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Update a client",
+        "description": "Update client fields. Setting active=false follows the forced-deactivation\nsafety contract: pause first, check open orders, require force=true if any exist.",
+        "operationId": "update_client_admin_clients__client__patch",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client}/regenerate-key": {
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Regenerate API key",
+        "description": "Regenerate the API key for a client. Returns the new key once.",
+        "operationId": "regenerate_client_key_admin_clients__client__regenerate_key_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRegenerateKeyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client}/pause": {
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Pause a client",
+        "description": "Admin pause \u2014 blocks new order placement for this client.",
+        "operationId": "pause_client_admin_clients__client__pause_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PauseStopRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client}/resume": {
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Resume a paused client",
+        "description": "Resume a paused client \u2014 allows order placement again.",
+        "operationId": "resume_client_admin_clients__client__resume_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client}/stop": {
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Stop a client",
+        "description": "Admin stop \u2014 blocks new order placement and clears pause state.",
+        "operationId": "stop_client_admin_clients__client__stop_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PauseStopRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client}/start": {
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Start a stopped client",
+        "description": "Start a stopped client \u2014 clears the manual stop state.",
+        "operationId": "start_client_admin_clients__client__start_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/exchanges": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "List all exchanges",
+        "description": "List all exchanges.",
+        "operationId": "list_exchanges_admin_exchanges_get",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExchangeResponse"
+                  },
+                  "title": "Response List Exchanges Admin Exchanges Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Create a new exchange",
+        "description": "Create a new exchange.",
+        "operationId": "create_exchange_admin_exchanges_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/exchanges/{exchange}": {
+      "patch": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Update an exchange",
+        "description": "Update exchange fields. Setting active=false follows the forced-deactivation\nsafety contract: check open orders, require force=true if any exist.\nDB-driven client query for cancellation (not config-driven).",
+        "operationId": "update_exchange_admin_exchanges__exchange__patch",
+        "parameters": [
+          {
+            "name": "exchange",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bookmakers": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "List all bookmakers",
+        "description": "List all bookmakers.",
+        "operationId": "list_bookmakers_admin_bookmakers_get",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BookmakerResponse"
+                  },
+                  "title": "Response List Bookmakers Admin Bookmakers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Create a new bookmaker",
+        "description": "Create a new bookmaker.",
+        "operationId": "create_bookmaker_admin_bookmakers_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookmakerCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookmakerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bookmakers/{bookmaker}": {
+      "patch": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Update a bookmaker",
+        "description": "Update bookmaker fields. Warns if deactivating a bookmaker with active accounts.",
+        "operationId": "update_bookmaker_admin_bookmakers__bookmaker__patch",
+        "parameters": [
+          {
+            "name": "bookmaker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bookmaker"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookmakerUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookmakerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/accounts": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "List all accounts",
+        "description": "List accounts with optional client/exchange filters. Passwords never returned.",
+        "operationId": "list_accounts_admin_accounts_get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountResponse"
+                  },
+                  "title": "Response List Accounts Admin Accounts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Create a new account",
+        "description": "Create a new account. Validates FK existence for client and exchange.",
+        "operationId": "create_account_admin_accounts_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/accounts/{exchange}/{username}/{client}": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Get a single account",
+        "description": "Get a single account. Passwords never returned.",
+        "operationId": "get_account_admin_accounts__exchange___username___client__get",
+        "parameters": [
+          {
+            "name": "exchange",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Username"
+            }
+          },
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Update an account",
+        "description": "Update account fields. Setting active=false follows the forced-deactivation\nsafety contract: deactivate first, check open orders, require force=true if any.",
+        "operationId": "update_account_admin_accounts__exchange___username___client__patch",
+        "parameters": [
+          {
+            "name": "exchange",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Username"
+            }
+          },
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tournaments": {
+      "get": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "List tournaments",
+        "description": "List tournament configs with optional filters.",
+        "operationId": "list_tournaments_admin_tournaments_get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "sportId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sportid"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Active"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentResponse"
+                  },
+                  "title": "Response List Tournaments Admin Tournaments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Create a tournament config",
+        "description": "Create a tournament config. tournamentId is auto-generated.",
+        "operationId": "create_tournament_admin_tournaments_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TournamentCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tournaments/{client}/{tournament_id}": {
+      "patch": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Update a tournament config",
+        "description": "Update tournament config (active, limitRatio, priceTicks, oddsPapiTournamentId). Invalidates tournament cache.",
+        "operationId": "update_tournament_admin_tournaments__client___tournament_id__patch",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tournament Id"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TournamentUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin CRUD"
+        ],
+        "summary": "Delete a tournament config",
+        "description": "Hard delete a tournament config. Invalidates tournament cache.",
+        "operationId": "delete_tournament_admin_tournaments__client___tournament_id__delete",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tournament Id"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Delete Tournament Admin Tournaments  Client   Tournament Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
-          "Trading Controls"
+          "Status & Monitoring"
         ],
         "summary": "Health check",
         "description": "Basic health check for container orchestration (Kubernetes liveness probe).",
@@ -1875,6 +3919,50 @@
                   "type": "object",
                   "title": "Response Health Check Health Get"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Readiness check",
+        "description": "Readiness check for container orchestration (Kubernetes readiness probe). Verifies all dependencies are available.",
+        "operationId": "readiness_check_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Readiness Check Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Prometheus metrics",
+        "description": "Prometheus-format metrics endpoint for monitoring.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -1911,10 +3999,269 @@
         }
       }
     },
+    "/ws/subscribe/stats": {
+      "get": {
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "WebSocket subscription statistics",
+        "description": "Get statistics about active WebSocket subscriptions.",
+        "operationId": "websocket_subscribe_stats_ws_subscribe_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Websocket Subscribe Stats Ws Subscribe Stats Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/trigger": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Trigger system-wide emergency",
+        "description": "**\u26a0\ufe0f ADMIN ONLY - AFFECTS ALL CLIENTS**\n\n        **CAUTION: This will cancel ALL open orders for ALL clients across ALL exchanges.**\n\n        Trigger system-wide emergency mode from an external source (monitoring system, dashboard, etc.).\n        This is useful for:\n        - Dashboard \"kill switch\" button\n        - External monitoring detecting issues\n        - Manual intervention from operations team\n\n        When triggered:\n        1. All new order placement is stopped FOR ALL CLIENTS\n        2. All open orders are cancelled on all exchanges FOR ALL CLIENTS\n        3. System enters emergency mode\n\n        To recover, use `/emergency/resume` after resolving the issue.\n\n        **For client-specific cancellation, use `/api/v1/orders/cancel-all` instead.**",
+        "operationId": "emergency_trigger_external_emergency_trigger_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmergencyTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/stop": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Stop all trading system-wide",
+        "description": "**\u26a0\ufe0f ADMIN ONLY - AFFECTS ALL CLIENTS**\n\n        Canonical system-wide stop endpoint.\n\n        This will:\n        1. Stop new order placement for all clients\n        2. Cancel all open orders on all exchanges\n        3. Keep the system stopped until `/emergency/start`",
+        "operationId": "emergency_stop_emergency_stop_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/pause": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Pause all trading system-wide",
+        "description": "**\u26a0\ufe0f ADMIN ONLY - AFFECTS ALL CLIENTS**\n\n        Deprecated alias for `/emergency/stop`.\n\n        This performs a full manual system stop:\n        - blocks new order placement for all clients\n        - cancels all open orders on all exchanges\n        - requires manual resume/start",
+        "operationId": "emergency_pause_emergency_pause_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/start": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Start trading system-wide",
+        "description": "**\u26a0\ufe0f ADMIN ONLY**\n\n        Canonical system-wide start endpoint.\n\n        This clears manual system stop/emergency mode, reloads snapshots, and\n        allows normal order processing to resume.",
+        "operationId": "emergency_start_emergency_start_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/resume": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Resume trading",
+        "description": "**\u26a0\ufe0f ADMIN ONLY**\n\n        Resume trading after emergency/pause.\n\n        This will:\n        1. Clear emergency mode\n        2. Reload initial snapshots from OddsPAPI REST API\n        3. Resume normal order processing\n\n        Only call this after the underlying issue has been resolved.",
+        "operationId": "emergency_resume_emergency_resume_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/emergency/status": {
       "get": {
         "tags": [
-          "Trading Controls"
+          "Emergency Controls"
         ],
         "summary": "Get emergency status",
         "description": "Check current emergency mode status without triggering any action.",
@@ -1933,14 +4280,58 @@
         }
       }
     },
-    "/api/v1/sports": {
+    "/admin/poison-slots": {
       "get": {
         "tags": [
-          "Fixtures & Sports"
+          "Order Slots"
         ],
-        "summary": "List available sports",
-        "description": "Returns sports currently in the oddspapi feed for your bookmaker, with live fixture counts.",
-        "operationId": "list_sports_api_v1_sports_get",
+        "summary": "[ADMIN] List all poison slots",
+        "operationId": "get_poison_slots_admin_poison_slots_get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1950,30 +4341,12 @@
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "properties": {
-                      "sportId": {
-                        "type": "integer"
-                      },
-                      "sportName": {
-                        "type": "string"
-                      },
-                      "tournament_count": {
-                        "type": "integer"
-                      },
-                      "fixture_count": {
-                        "type": "integer"
-                      },
-                      "live_count": {
-                        "type": "integer"
-                      }
-                    }
-                  }
+                    "additionalProperties": true
+                  },
+                  "title": "Response Get Poison Slots Admin Poison Slots Get"
                 }
               }
             }
-          },
-          "401": {
-            "description": "Invalid or missing API key"
           },
           "422": {
             "description": "Validation Error",
@@ -1985,30 +4358,27 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
+        }
       }
     },
-    "/api/v1/sports/{sport_id}/tournaments": {
+    "/admin/slot-summary": {
       "get": {
         "tags": [
-          "Fixtures & Sports"
+          "Order Slots"
         ],
-        "summary": "List tournaments for a sport",
-        "description": "Returns tournaments currently in the oddspapi feed, grouped by category, with activation status.",
-        "operationId": "list_tournaments_for_sport_api_v1_sports__sport_id__tournaments_get",
+        "summary": "[ADMIN] Slot state summary counts",
+        "operationId": "get_slot_summary_admin_slot_summary_get",
         "parameters": [
           {
-            "name": "sport_id",
-            "in": "path",
+            "name": "X-Admin-Key",
+            "in": "header",
             "required": true,
             "schema": {
-              "type": "integer"
-            }
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
           }
         ],
         "responses": {
@@ -2018,60 +4388,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "categories": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "categoryName": {
-                            "type": "string"
-                          },
-                          "tournaments": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "tournamentId": {
-                                  "type": "integer"
-                                },
-                                "tournamentName": {
-                                  "type": "string"
-                                },
-                                "fixture_count": {
-                                  "type": "integer"
-                                },
-                                "live_count": {
-                                  "type": "integer"
-                                },
-                                "tradeable_count": {
-                                  "type": "integer"
-                                },
-                                "activated": {
-                                  "type": "boolean",
-                                  "nullable": true
-                                },
-                                "limitRatio": {
-                                  "type": "number",
-                                  "nullable": true
-                                },
-                                "priceTicks": {
-                                  "type": "integer",
-                                  "nullable": true
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "additionalProperties": true,
+                  "title": "Response Get Slot Summary Admin Slot Summary Get"
                 }
               }
             }
-          },
-          "401": {
-            "description": "Invalid or missing API key"
           },
           "422": {
             "description": "Validation Error",
@@ -2083,180 +4404,125 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
+        }
       }
     },
-    "/api/v1/sports/{sport_id}/market-types": {
-      "get": {
-        "tags": [
-          "Tournaments"
-        ],
-        "summary": "List hedgeable market types for a sport with per-client toggle status",
-        "description": "Discovery endpoint for the markets page. Returns each (marketType, playerProp) group that is hedgeable on at least one of the client's configured exchanges, joined against the per-client allowlist.",
-        "operationId": "list_market_types_for_sport_api_v1_sports__sport_id__market_types_get",
-        "parameters": [
-          {
-            "name": "sport_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "sportId": {
-                      "type": "integer"
-                    },
-                    "bookmaker": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "marketTypes": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "marketType": {
-                            "type": "string"
-                          },
-                          "playerProp": {
-                            "type": "boolean"
-                          },
-                          "marketName": {
-                            "type": "string"
-                          },
-                          "enabled": {
-                            "type": "boolean"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Invalid or missing API key"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
-      }
-    },
-    "/api/v1/client/market-allowlist": {
-      "patch": {
-        "tags": [
-          "Tournaments"
-        ],
-        "summary": "Bulk-toggle market types for the authenticated client",
-        "description": "Upserts allowlist rows for each (marketType, playerProp) in updates. For any row set to enabled=false, immediately cancels open orders owned by this client whose outcomeId belongs to that market type for the given sport.",
-        "operationId": "patch_market_allowlist_api_v1_client_market_allowlist_patch",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MarketAllowlistPatchBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "sportId": {
-                      "type": "integer"
-                    },
-                    "applied": {
-                      "type": "integer",
-                      "description": "Number of rows upserted"
-                    },
-                    "cancelled_orders": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "integer"
-                      },
-                      "description": "Orders cancelled per exchange"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "No bookmaker configured for this client"
-          },
-          "401": {
-            "description": "Invalid or missing API key"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
-      }
-    },
-    "/api/v1/client/market-allowlist/activate-all": {
+    "/admin/reconcile": {
       "post": {
         "tags": [
-          "Tournaments"
+          "Order Slots"
         ],
-        "summary": "Restore default-on for every market type in this scope",
-        "description": "Deletes all allowlist rows for (client, bookmaker, sportId), restoring every market type to default-on. No order cancellation.",
-        "operationId": "activate_all_market_types_api_v1_client_market_allowlist_activate_all_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ActivateAllBody"
-              }
+        "summary": "[ADMIN] Trigger reconciliation",
+        "operationId": "admin_reconcile_admin_reconcile_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
             }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fixture Id"
+            }
+          },
+          {
+            "name": "outcome_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Side"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2264,24 +4530,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "sportId": {
-                      "type": "integer"
-                    },
-                    "deleted": {
-                      "type": "integer",
-                      "description": "Number of deny rows removed"
-                    }
-                  }
+                  "additionalProperties": true,
+                  "title": "Response Admin Reconcile Admin Reconcile Post"
                 }
               }
             }
-          },
-          "400": {
-            "description": "No bookmaker configured for this client"
-          },
-          "401": {
-            "description": "Invalid or missing API key"
           },
           "422": {
             "description": "Validation Error",
@@ -2293,42 +4546,84 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
+        }
       }
     },
-    "/api/v1/tournaments": {
-      "get": {
+    "/admin/clear-poison": {
+      "post": {
         "tags": [
-          "Tournaments"
+          "Order Slots"
         ],
-        "summary": "List tournament configs",
-        "description": "List all tournament configurations for the authenticated client.",
-        "operationId": "list_tournaments_api_v1_tournaments_get",
+        "summary": "[ADMIN] Clear poison for one exact side",
+        "description": "Only clears if both exchange and DB confirm zero open orders for the side.",
+        "operationId": "admin_clear_poison_admin_clear_poison_post",
         "parameters": [
           {
-            "name": "sport_id",
+            "name": "client",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fixture Id"
+            }
+          },
+          {
+            "name": "outcome_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Outcome Id"
+            }
+          },
+          {
+            "name": "player_id",
             "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
-              "nullable": true
-            },
-            "description": "Filter by sport ID"
+              "default": 0,
+              "title": "Player Id"
+            }
           },
           {
-            "name": "active",
+            "name": "side",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "boolean",
-              "nullable": true
+              "type": "string",
+              "default": "buy",
+              "title": "Side"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
             },
-            "description": "Filter by active status"
+            "description": "Admin API key for emergency operations"
           }
         ],
         "responses": {
@@ -2338,23 +4633,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "tournaments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object"
-                      }
-                    },
-                    "count": {
-                      "type": "integer"
-                    }
-                  }
+                  "additionalProperties": true,
+                  "title": "Response Admin Clear Poison Admin Clear Poison Post"
                 }
               }
             }
-          },
-          "401": {
-            "description": "Invalid or missing API key"
           },
           "422": {
             "description": "Validation Error",
@@ -2366,42 +4649,76 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
+        }
       }
     },
-    "/api/v1/tournaments/{tournament_id}/activate": {
+    "/admin/cancel-ghost-orders": {
       "post": {
         "tags": [
-          "Tournaments"
+          "Order Slots"
         ],
-        "summary": "Activate a tournament",
-        "description": "Activate a tournament for trading. Looks up metadata from catalog and validates bookmaker coverage.",
-        "operationId": "activate_tournament_api_v1_tournaments__tournament_id__activate_post",
+        "summary": "[ADMIN] Mark ghost DB orders as CANCELLED",
+        "description": "For orders that are open in DB but gone from exchange. Marks them CANCELLED so clear-poison can proceed.",
+        "operationId": "admin_cancel_ghost_orders_admin_cancel_ghost_orders_post",
         "parameters": [
           {
-            "name": "tournament_id",
-            "in": "path",
+            "name": "client",
+            "in": "query",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "title": "Client"
             }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fixture Id"
+            }
+          },
+          {
+            "name": "outcome_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Outcome Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
           }
         ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ActivateTournamentRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2409,29 +4726,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "activated"
-                      ]
-                    },
-                    "tournament": {
-                      "type": "object"
-                    }
-                  }
+                  "additionalProperties": true,
+                  "title": "Response Admin Cancel Ghost Orders Admin Cancel Ghost Orders Post"
                 }
               }
             }
-          },
-          "400": {
-            "description": "Invalid tournament or bookmaker configuration"
-          },
-          "404": {
-            "description": "Tournament not found in catalog"
-          },
-          "401": {
-            "description": "Invalid or missing API key"
           },
           "422": {
             "description": "Validation Error",
@@ -2443,95 +4742,30 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
+        }
       }
     },
-    "/api/v1/tournaments/{tournament_id}/deactivate": {
+    "/admin/snapshot": {
       "post": {
         "tags": [
-          "Tournaments"
+          "Operations"
         ],
-        "summary": "Deactivate a tournament",
-        "description": "Deactivate a tournament. Automatically cancels open orders for this tournament.",
-        "operationId": "deactivate_tournament_api_v1_tournaments__tournament_id__deactivate_post",
+        "summary": "[ADMIN] Trigger snapshot reload",
+        "description": "Reload fixture and odds snapshots from OddsPAPI REST API. Runs the same pipeline as startup: fetches all fixtures and odds, persists to DB (including categoryName and fixture_bookmakers), and refreshes the in-memory cache.",
+        "operationId": "admin_snapshot_reload_admin_snapshot_post",
         "parameters": [
           {
-            "name": "tournament_id",
-            "in": "path",
+            "name": "X-Admin-Key",
+            "in": "header",
             "required": true,
             "schema": {
-              "type": "integer"
-            }
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Tournament not found"
-          },
-          "401": {
-            "description": "Invalid or missing API key"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
-      }
-    },
-    "/api/v1/tournaments/{tournament_id}": {
-      "patch": {
-        "tags": [
-          "Tournaments"
-        ],
-        "summary": "Update tournament config",
-        "description": "Update limitRatio and/or priceTicks for an active tournament.",
-        "operationId": "update_tournament_config_api_v1_tournaments__tournament_id__patch",
-        "parameters": [
-          {
-            "name": "tournament_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTournamentRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2539,29 +4773,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "updated"
-                      ]
-                    },
-                    "tournament": {
-                      "type": "object"
-                    }
-                  }
+                  "additionalProperties": true,
+                  "title": "Response Admin Snapshot Reload Admin Snapshot Post"
                 }
               }
             }
-          },
-          "400": {
-            "description": "At least one of limitRatio or priceTicks must be provided"
-          },
-          "404": {
-            "description": "No tournament config found"
-          },
-          "401": {
-            "description": "Invalid or missing API key"
           },
           "422": {
             "description": "Validation Error",
@@ -2573,40 +4789,373 @@
               }
             }
           }
-        },
-        "security": [
+        }
+      }
+    },
+    "/admin/hedge-drift": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "[ADMIN] Hedge drift summary report",
+        "description": "Aggregate planned-vs-actual bookmaker odds drift using raw decimal-odds units.",
+        "operationId": "admin_hedge_drift_report_admin_hedge_drift_get",
+        "parameters": [
           {
-            "ApiKeyAuth": []
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From Date"
+            }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To Date"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Admin Hedge Drift Report Admin Hedge Drift Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hedge-drift/timeline": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "[ADMIN] Hedge drift timeline",
+        "description": "Daily hedge drift aggregates using raw decimal-odds units.",
+        "operationId": "admin_hedge_drift_timeline_admin_hedge_drift_timeline_get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From Date"
+            }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To Date"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Admin Hedge Drift Timeline Admin Hedge Drift Timeline Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Full system status",
+        "description": "Get comprehensive system status including trading state, connections, and exchange status.",
+        "operationId": "get_status_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Status Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/subscriptions": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "WebSocket subscriptions",
+        "description": "List all active WebSocket subscriptions.",
+        "operationId": "get_subscriptions_status_subscriptions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Subscriptions Status Subscriptions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/latency": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Latency metrics",
+        "description": "Get latency metrics for OddsPAPI and exchange connections.",
+        "operationId": "get_latency_status_latency_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Latency Status Latency Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "tags": [
+          "Configuration"
+        ],
+        "summary": "Current configuration",
+        "description": "Get current system configuration (non-sensitive values only).",
+        "operationId": "get_config_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Config Config Get"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
   "components": {
     "schemas": {
-      "BetSummary": {
+      "AccountCreateRequest": {
         "properties": {
-          "total_bets": {
+          "exchange": {
+            "type": "string",
+            "title": "Exchange"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "mailNumber": {
             "type": "integer",
-            "title": "Total Bets",
-            "description": "Total number of bets"
+            "title": "Mailnumber",
+            "description": "Required \u2014 BIGINT NOT NULL in schema, no default"
           },
-          "order_count": {
-            "type": "integer",
-            "title": "Order Count",
-            "description": "Number of unique orders"
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
           },
-          "bookmaker_count": {
-            "type": "integer",
-            "title": "Bookmaker Count",
-            "description": "Number of unique bookmakers"
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": false
           },
-          "total_stake": {
-            "type": "number",
-            "title": "Total Stake",
-            "description": "Sum of all bet stakes"
-          },
-          "avg_price": {
+          "balance": {
             "anyOf": [
               {
                 "type": "number"
@@ -2615,50 +5164,745 @@
                 "type": "null"
               }
             ],
-            "title": "Avg Price",
+            "title": "Balance"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "bookmaker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmaker"
+          },
+          "bookmakerUsername": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakerusername"
+          },
+          "bookmakerPassword": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakerpassword"
+          },
+          "startCutOff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startcutoff"
+          },
+          "endCutOff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endcutoff"
+          },
+          "maxOutcomeStake": {
+            "type": "number",
+            "title": "Maxoutcomestake",
+            "default": 10000.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "exchange",
+          "username",
+          "client",
+          "mailNumber"
+        ],
+        "title": "AccountCreateRequest"
+      },
+      "AccountResponse": {
+        "properties": {
+          "exchange": {
+            "type": "string",
+            "title": "Exchange"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "mailNumber": {
+            "type": "integer",
+            "title": "Mailnumber"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "balance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "bookmaker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmaker"
+          },
+          "bookmakerUsername": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakerusername"
+          },
+          "hasPassword": {
+            "type": "boolean",
+            "title": "Haspassword"
+          },
+          "hasBookmakerPassword": {
+            "type": "boolean",
+            "title": "Hasbookmakerpassword"
+          },
+          "startCutOff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startcutoff"
+          },
+          "endCutOff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endcutoff"
+          },
+          "maxOutcomeStake": {
+            "type": "number",
+            "title": "Maxoutcomestake"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exchange",
+          "username",
+          "client",
+          "mailNumber",
+          "active",
+          "balance",
+          "note",
+          "meta",
+          "bookmaker",
+          "bookmakerUsername",
+          "hasPassword",
+          "hasBookmakerPassword",
+          "startCutOff",
+          "endCutOff",
+          "maxOutcomeStake",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "AccountResponse"
+      },
+      "AccountUpdateRequest": {
+        "properties": {
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "balance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "bookmaker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmaker"
+          },
+          "bookmakerUsername": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakerusername"
+          },
+          "bookmakerPassword": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakerpassword"
+          },
+          "startCutOff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startcutoff"
+          },
+          "endCutOff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endcutoff"
+          },
+          "maxOutcomeStake": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxoutcomestake"
+          },
+          "mailNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mailnumber"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "description": "If true, cancel open orders before deactivation",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "AccountUpdateRequest"
+      },
+      "ActivateAllBody": {
+        "properties": {
+          "sportId": {
+            "type": "integer",
+            "title": "Sportid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sportId"
+        ],
+        "title": "ActivateAllBody",
+        "description": "Request body for POST /client/market-allowlist/activate-all."
+      },
+      "ActivateTournamentRequest": {
+        "properties": {
+          "limitRatio": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Limitratio",
+            "description": "Limit ratio (0-1)",
+            "default": 0.8
+          },
+          "priceTicks": {
+            "type": "integer",
+            "title": "Priceticks",
+            "description": "Price tick adjustment (+/- ticks, each tick = 0.01)",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ActivateTournamentRequest",
+        "description": "Optional parameters for tournament activation."
+      },
+      "BetSummary": {
+        "properties": {
+          "totalBets": {
+            "type": "integer",
+            "title": "Totalbets",
+            "description": "Total number of bets"
+          },
+          "orderCount": {
+            "type": "integer",
+            "title": "Ordercount",
+            "description": "Number of unique orders"
+          },
+          "bookmakerCount": {
+            "type": "integer",
+            "title": "Bookmakercount",
+            "description": "Number of unique bookmakers"
+          },
+          "totalStake": {
+            "type": "number",
+            "title": "Totalstake",
+            "description": "Sum of all bet stakes"
+          },
+          "avgPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avgprice",
             "description": "Average bet price"
           },
-          "placed_count": {
+          "placedCount": {
             "type": "integer",
-            "title": "Placed Count",
+            "title": "Placedcount",
             "description": "Number of placed bets"
           },
-          "pending_count": {
+          "pendingCount": {
             "type": "integer",
-            "title": "Pending Count",
+            "title": "Pendingcount",
             "description": "Number of pending bets"
           },
-          "declined_count": {
+          "declinedCount": {
             "type": "integer",
-            "title": "Declined Count",
+            "title": "Declinedcount",
             "description": "Number of declined bets"
           },
-          "won_count": {
+          "wonCount": {
             "type": "integer",
-            "title": "Won Count",
+            "title": "Woncount",
             "description": "Number of won bets"
           },
-          "lost_count": {
+          "lostCount": {
             "type": "integer",
-            "title": "Lost Count",
+            "title": "Lostcount",
             "description": "Number of lost bets"
           }
         },
         "type": "object",
         "required": [
-          "total_bets",
-          "order_count",
-          "bookmaker_count",
-          "total_stake",
-          "avg_price",
-          "placed_count",
-          "pending_count",
-          "declined_count",
-          "won_count",
-          "lost_count"
+          "totalBets",
+          "orderCount",
+          "bookmakerCount",
+          "totalStake",
+          "avgPrice",
+          "placedCount",
+          "pendingCount",
+          "declinedCount",
+          "wonCount",
+          "lostCount"
         ],
         "title": "BetSummary",
         "description": "Summary of bet statistics for a client."
+      },
+      "BookmakerCreateRequest": {
+        "properties": {
+          "bookmaker": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.]{1,50}$",
+            "title": "Bookmaker",
+            "description": "Unique slug (e.g. 'pinnacle')"
+          },
+          "bookmakerName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakername"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "bookmaker"
+        ],
+        "title": "BookmakerCreateRequest"
+      },
+      "BookmakerResponse": {
+        "properties": {
+          "bookmaker": {
+            "type": "string",
+            "title": "Bookmaker"
+          },
+          "bookmakerName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakername"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bookmaker",
+          "bookmakerName",
+          "active",
+          "createdAt"
+        ],
+        "title": "BookmakerResponse"
+      },
+      "BookmakerUpdateRequest": {
+        "properties": {
+          "bookmakerName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookmakername"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "title": "BookmakerUpdateRequest"
+      },
+      "ClientCreateRequest": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,30}$",
+            "title": "Client",
+            "description": "Unique slug"
+          },
+          "clientName": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Clientname"
+          },
+          "oddsFormat": {
+            "type": "string",
+            "title": "Oddsformat",
+            "default": "american"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "clientName"
+        ],
+        "title": "ClientCreateRequest"
+      },
+      "ClientCreateResponse": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "clientName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientname"
+          },
+          "maskedApiKey": {
+            "type": "string",
+            "title": "Maskedapikey"
+          },
+          "oddsFormat": {
+            "type": "string",
+            "title": "Oddsformat"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "manualPaused": {
+            "type": "boolean",
+            "title": "Manualpaused"
+          },
+          "manualPausedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualpausedat"
+          },
+          "manualPauseReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualpausereason"
+          },
+          "manualStopped": {
+            "type": "boolean",
+            "title": "Manualstopped"
+          },
+          "manualStoppedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualstoppedat"
+          },
+          "manualStopReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualstopreason"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "apiKey": {
+            "type": "string",
+            "title": "Apikey"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "clientName",
+          "maskedApiKey",
+          "oddsFormat",
+          "active",
+          "manualPaused",
+          "manualPausedAt",
+          "manualPauseReason",
+          "manualStopped",
+          "manualStoppedAt",
+          "manualStopReason",
+          "createdAt",
+          "apiKey"
+        ],
+        "title": "ClientCreateResponse",
+        "description": "Returned on create \u2014 includes the full API key (shown once)."
       },
       "ClientInfo": {
         "properties": {
@@ -2693,6 +5937,128 @@
         "title": "ClientInfo",
         "description": "Client information from API key lookup."
       },
+      "ClientRegenerateKeyResponse": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "apiKey": {
+            "type": "string",
+            "title": "Apikey"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "apiKey"
+        ],
+        "title": "ClientRegenerateKeyResponse",
+        "description": "Returned on regenerate-key \u2014 includes the new full API key (shown once)."
+      },
+      "ClientResponse": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "clientName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientname"
+          },
+          "maskedApiKey": {
+            "type": "string",
+            "title": "Maskedapikey"
+          },
+          "oddsFormat": {
+            "type": "string",
+            "title": "Oddsformat"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "manualPaused": {
+            "type": "boolean",
+            "title": "Manualpaused"
+          },
+          "manualPausedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualpausedat"
+          },
+          "manualPauseReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualpausereason"
+          },
+          "manualStopped": {
+            "type": "boolean",
+            "title": "Manualstopped"
+          },
+          "manualStoppedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualstoppedat"
+          },
+          "manualStopReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualstopreason"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "clientName",
+          "maskedApiKey",
+          "oddsFormat",
+          "active",
+          "manualPaused",
+          "manualPausedAt",
+          "manualPauseReason",
+          "manualStopped",
+          "manualStoppedAt",
+          "manualStopReason",
+          "createdAt"
+        ],
+        "title": "ClientResponse"
+      },
       "ClientSettingsResponse": {
         "properties": {
           "oddsFormat": {
@@ -2713,6 +6079,51 @@
         ],
         "title": "ClientSettingsResponse",
         "description": "Response body for client preference updates."
+      },
+      "ClientUpdateRequest": {
+        "properties": {
+          "clientName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientname"
+          },
+          "oddsFormat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oddsformat"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "description": "If true, cancel all open orders before deactivation",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ClientUpdateRequest"
       },
       "EmergencyResponse": {
         "properties": {
@@ -2805,6 +6216,118 @@
         "title": "EmergencyTriggerRequest",
         "description": "Request body for emergency trigger."
       },
+      "ExchangeCreateRequest": {
+        "properties": {
+          "exchange": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.]{1,50}$",
+            "title": "Exchange",
+            "description": "Unique slug (e.g. 'polymarket', 'kalshi')"
+          },
+          "exchangeName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exchangename"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "exchange"
+        ],
+        "title": "ExchangeCreateRequest"
+      },
+      "ExchangeResponse": {
+        "properties": {
+          "exchange": {
+            "type": "string",
+            "title": "Exchange"
+          },
+          "exchangeName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exchangename"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exchange",
+          "exchangeName",
+          "active",
+          "createdAt"
+        ],
+        "title": "ExchangeResponse"
+      },
+      "ExchangeUpdateRequest": {
+        "properties": {
+          "exchangeName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exchangename"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "description": "If true, cancel all open orders before deactivation",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ExchangeUpdateRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2818,65 +6341,114 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "MarketAllowlistPatchBody": {
+        "properties": {
+          "sportId": {
+            "type": "integer",
+            "title": "Sportid"
+          },
+          "updates": {
+            "items": {
+              "$ref": "#/components/schemas/MarketTypeUpdate"
+            },
+            "type": "array",
+            "title": "Updates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sportId",
+          "updates"
+        ],
+        "title": "MarketAllowlistPatchBody",
+        "description": "Request body for PATCH /client/market-allowlist."
+      },
+      "MarketTypeUpdate": {
+        "properties": {
+          "marketType": {
+            "type": "string",
+            "title": "Markettype",
+            "description": "Market type, e.g. 'moneyline', 'totals'"
+          },
+          "playerProp": {
+            "type": "boolean",
+            "title": "Playerprop",
+            "description": "True for player prop variants",
+            "default": false
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "True to enable (default-on), False to disable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "marketType",
+          "enabled"
+        ],
+        "title": "MarketTypeUpdate",
+        "description": "One toggle in a PATCH /client/market-allowlist body."
+      },
       "OrderSummary": {
         "properties": {
-          "total_orders": {
+          "totalOrders": {
             "type": "integer",
-            "title": "Total Orders",
+            "title": "Totalorders",
             "description": "Total number of orders"
           },
-          "fixture_count": {
+          "fixtureCount": {
             "type": "integer",
-            "title": "Fixture Count",
+            "title": "Fixturecount",
             "description": "Number of unique fixtures"
           },
-          "exchange_count": {
+          "exchangeCount": {
             "type": "integer",
-            "title": "Exchange Count",
+            "title": "Exchangecount",
             "description": "Number of unique exchanges"
           },
-          "total_stake": {
+          "totalStake": {
             "type": "number",
-            "title": "Total Stake",
+            "title": "Totalstake",
             "description": "Sum of all order stakes"
           },
-          "total_matched": {
+          "totalMatched": {
             "type": "number",
-            "title": "Total Matched",
+            "title": "Totalmatched",
             "description": "Sum of all matched stakes"
           },
-          "total_open": {
+          "totalOpen": {
             "type": "number",
-            "title": "Total Open",
+            "title": "Totalopen",
             "description": "Sum of open (unmatched) stakes"
           },
-          "filled_count": {
+          "filledCount": {
             "type": "integer",
-            "title": "Filled Count",
+            "title": "Filledcount",
             "description": "Number of filled orders"
           },
-          "cancelled_count": {
+          "cancelledCount": {
             "type": "integer",
-            "title": "Cancelled Count",
+            "title": "Cancelledcount",
             "description": "Number of cancelled orders"
           },
-          "open_count": {
+          "openCount": {
             "type": "integer",
-            "title": "Open Count",
+            "title": "Opencount",
             "description": "Number of open orders"
           }
         },
         "type": "object",
         "required": [
-          "total_orders",
-          "fixture_count",
-          "exchange_count",
-          "total_stake",
-          "total_matched",
-          "total_open",
-          "filled_count",
-          "cancelled_count",
-          "open_count"
+          "totalOrders",
+          "fixtureCount",
+          "exchangeCount",
+          "totalStake",
+          "totalMatched",
+          "totalOpen",
+          "filledCount",
+          "cancelledCount",
+          "openCount"
         ],
         "title": "OrderSummary",
         "description": "Summary of order statistics for a client."
@@ -2899,14 +6471,14 @@
             "title": "Page",
             "description": "Current page number (1-indexed)"
           },
-          "page_size": {
+          "pageSize": {
             "type": "integer",
-            "title": "Page Size",
+            "title": "Pagesize",
             "description": "Number of items per page"
           },
-          "total_pages": {
+          "totalPages": {
             "type": "integer",
-            "title": "Total Pages",
+            "title": "Totalpages",
             "description": "Total number of pages"
           }
         },
@@ -2915,45 +6487,78 @@
           "data",
           "total",
           "page",
-          "page_size",
-          "total_pages"
+          "pageSize",
+          "totalPages"
         ],
         "title": "PaginatedResponse",
         "description": "Paginated response wrapper for list endpoints."
       },
+      "PauseStopRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Optional reason for pause/stop"
+          }
+        },
+        "type": "object",
+        "title": "PauseStopRequest"
+      },
       "PnLResponse": {
         "properties": {
-          "pnl": {
+          "totalTurnover": {
             "type": "number",
-            "title": "Pnl",
-            "description": "Total PnL (realized + unrealized)"
+            "title": "Totalturnover",
+            "description": "Total stake successfully laid off on the bookmaker leg"
           },
-          "realized_pnl": {
+          "validTurnover": {
             "type": "number",
-            "title": "Realized Pnl",
-            "description": "PnL from settled orders"
+            "title": "Validturnover",
+            "description": "Risk-adjusted turnover on the bookmaker leg (ABS of P&L per settled bet)"
           },
-          "unrealized_pnl": {
+          "netRealizedSpread": {
             "type": "number",
-            "title": "Unrealized Pnl",
-            "description": "Potential PnL from open positions"
+            "title": "Netrealizedspread",
+            "description": "Net spread captured across fully-settled hedged pairs (absolute $)"
           },
-          "total_matched_stake": {
+          "nakedPnl": {
             "type": "number",
-            "title": "Total Matched Stake",
-            "description": "Total matched stake"
+            "title": "Nakedpnl",
+            "description": "Directional P&L from settled exchange fills that were never hedged"
           },
-          "settled_count": {
+          "unhedgedStake": {
+            "type": "number",
+            "title": "Unhedgedstake",
+            "description": "Absolute $ of matched exchange stake that never reached a successful hedge"
+          },
+          "unhedgedStakePct": {
+            "type": "number",
+            "title": "Unhedgedstakepct",
+            "description": "Percent of matched exchange stake that never reached a successful hedge"
+          },
+          "avgHedgePriceDrift": {
+            "type": "number",
+            "title": "Avghedgepricedrift",
+            "description": "Stake-weighted mean drift between planned and actual hedge odds"
+          },
+          "settledPairCount": {
             "type": "integer",
-            "title": "Settled Count",
-            "description": "Number of settled orders"
+            "title": "Settledpaircount",
+            "description": "Number of fully-settled hedged pairs contributing to net_realized_spread"
           },
-          "unsettled_count": {
+          "nakedSettledCount": {
             "type": "integer",
-            "title": "Unsettled Count",
-            "description": "Number of unsettled orders with matches"
+            "title": "Nakedsettledcount",
+            "description": "Number of settled exchange fills with no successful hedge (naked)"
           },
-          "from_date": {
+          "fromDate": {
             "anyOf": [
               {
                 "type": "string",
@@ -2963,10 +6568,10 @@
                 "type": "null"
               }
             ],
-            "title": "From Date",
+            "title": "Fromdate",
             "description": "Start date filter (if applied)"
           },
-          "to_date": {
+          "toDate": {
             "anyOf": [
               {
                 "type": "string",
@@ -2976,23 +6581,210 @@
                 "type": "null"
               }
             ],
-            "title": "To Date",
+            "title": "Todate",
             "description": "End date filter (if applied)"
           }
         },
         "type": "object",
         "required": [
-          "pnl",
-          "realized_pnl",
-          "unrealized_pnl",
-          "total_matched_stake",
-          "settled_count",
-          "unsettled_count",
-          "from_date",
-          "to_date"
+          "totalTurnover",
+          "validTurnover",
+          "netRealizedSpread",
+          "nakedPnl",
+          "unhedgedStake",
+          "unhedgedStakePct",
+          "avgHedgePriceDrift",
+          "settledPairCount",
+          "nakedSettledCount",
+          "fromDate",
+          "toDate"
         ],
         "title": "PnLResponse",
-        "description": "Profit and Loss response for a client."
+        "description": "Market-making P&L response for a client."
+      },
+      "TournamentCreateRequest": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client",
+            "description": "Client slug (FK to clients table)"
+          },
+          "sportId": {
+            "type": "integer",
+            "title": "Sportid",
+            "description": "Sport ID from OddsPAPI"
+          },
+          "categorySlug": {
+            "type": "string",
+            "title": "Categoryslug",
+            "description": "Category slug (e.g., 'usa', 'england')"
+          },
+          "tournamentSlug": {
+            "type": "string",
+            "title": "Tournamentslug",
+            "description": "Tournament slug (e.g., 'nba', 'premier-league')"
+          },
+          "oddsPapiTournamentId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oddspapitournamentid",
+            "description": "OddsPAPI tournament ID for trading engine lookup"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": false
+          },
+          "limitRatio": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Limitratio",
+            "default": 0.8
+          },
+          "priceTicks": {
+            "type": "integer",
+            "title": "Priceticks",
+            "description": "Tick adjustment: +/- each tick = 0.01",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "sportId",
+          "categorySlug",
+          "tournamentSlug"
+        ],
+        "title": "TournamentCreateRequest"
+      },
+      "TournamentResponse": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "tournamentId": {
+            "type": "integer",
+            "title": "Tournamentid"
+          },
+          "oddsPapiTournamentId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oddspapitournamentid"
+          },
+          "sportId": {
+            "type": "integer",
+            "title": "Sportid"
+          },
+          "categorySlug": {
+            "type": "string",
+            "title": "Categoryslug"
+          },
+          "tournamentSlug": {
+            "type": "string",
+            "title": "Tournamentslug"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "limitRatio": {
+            "type": "number",
+            "title": "Limitratio"
+          },
+          "priceTicks": {
+            "type": "integer",
+            "title": "Priceticks"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "tournamentId",
+          "sportId",
+          "categorySlug",
+          "tournamentSlug",
+          "active",
+          "limitRatio",
+          "priceTicks",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "TournamentResponse"
+      },
+      "TournamentUpdateRequest": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "limitRatio": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limitratio"
+          },
+          "priceTicks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priceticks"
+          },
+          "oddsPapiTournamentId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oddspapitournamentid",
+            "description": "OddsPAPI tournament ID for trading engine lookup"
+          }
+        },
+        "type": "object",
+        "title": "TournamentUpdateRequest"
       },
       "TradingControlResponse": {
         "properties": {
@@ -3022,17 +6814,17 @@
             "title": "Status",
             "description": "Overall trading status: live, manual_paused, manual_stopped, soft_paused, system_stopped, or emergency"
           },
-          "trading_active": {
+          "tradingActive": {
             "type": "boolean",
-            "title": "Trading Active",
+            "title": "Tradingactive",
             "description": "True only when this client is not manually paused/stopped and the system is not globally blocked"
           },
-          "manual_paused": {
+          "manualPaused": {
             "type": "boolean",
-            "title": "Manual Paused",
+            "title": "Manualpaused",
             "description": "Whether this client is manually paused"
           },
-          "manual_paused_at": {
+          "manualPausedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -3042,10 +6834,10 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Paused At",
+            "title": "Manualpausedat",
             "description": "When manual pause was activated"
           },
-          "manual_pause_reason": {
+          "manualPauseReason": {
             "anyOf": [
               {
                 "type": "string"
@@ -3054,15 +6846,15 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Pause Reason",
+            "title": "Manualpausereason",
             "description": "Reason recorded for the manual pause"
           },
-          "manual_stopped": {
+          "manualStopped": {
             "type": "boolean",
-            "title": "Manual Stopped",
+            "title": "Manualstopped",
             "description": "Whether this client is manually stopped"
           },
-          "manual_stopped_at": {
+          "manualStoppedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -3072,10 +6864,10 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Stopped At",
+            "title": "Manualstoppedat",
             "description": "When manual stop was activated"
           },
-          "manual_stop_reason": {
+          "manualStopReason": {
             "anyOf": [
               {
                 "type": "string"
@@ -3084,30 +6876,30 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Stop Reason",
+            "title": "Manualstopreason",
             "description": "Reason recorded for the manual stop"
           },
-          "system_trading_blocked": {
+          "systemTradingBlocked": {
             "type": "boolean",
-            "title": "System Trading Blocked",
+            "title": "Systemtradingblocked",
             "description": "Whether global emergency or soft pause is blocking all clients"
           },
-          "emergency_active": {
+          "emergencyActive": {
             "type": "boolean",
-            "title": "Emergency Active",
+            "title": "Emergencyactive",
             "description": "Whether full emergency mode is active"
           },
-          "system_stopped": {
+          "systemStopped": {
             "type": "boolean",
-            "title": "System Stopped",
+            "title": "Systemstopped",
             "description": "Whether a manual system-wide stop is active"
           },
-          "soft_paused": {
+          "softPaused": {
             "type": "boolean",
-            "title": "Soft Paused",
+            "title": "Softpaused",
             "description": "Whether global soft pause is active"
           },
-          "system_reason": {
+          "systemReason": {
             "anyOf": [
               {
                 "type": "string"
@@ -3116,12 +6908,12 @@
                 "type": "null"
               }
             ],
-            "title": "System Reason",
+            "title": "Systemreason",
             "description": "Global emergency/pause reason, if any"
           },
-          "system_duration_seconds": {
+          "systemDurationSeconds": {
             "type": "number",
-            "title": "System Duration Seconds",
+            "title": "Systemdurationseconds",
             "description": "How long the global emergency/pause has been active"
           },
           "result": {
@@ -3136,19 +6928,19 @@
           "clientName",
           "oddsFormat",
           "status",
-          "trading_active",
-          "manual_paused",
-          "manual_paused_at",
-          "manual_pause_reason",
-          "manual_stopped",
-          "manual_stopped_at",
-          "manual_stop_reason",
-          "system_trading_blocked",
-          "emergency_active",
-          "system_stopped",
-          "soft_paused",
-          "system_reason",
-          "system_duration_seconds",
+          "tradingActive",
+          "manualPaused",
+          "manualPausedAt",
+          "manualPauseReason",
+          "manualStopped",
+          "manualStoppedAt",
+          "manualStopReason",
+          "systemTradingBlocked",
+          "emergencyActive",
+          "systemStopped",
+          "softPaused",
+          "systemReason",
+          "systemDurationSeconds",
           "result"
         ],
         "title": "TradingControlResponse",
@@ -3182,17 +6974,17 @@
             "title": "Status",
             "description": "Overall trading status: live, manual_paused, manual_stopped, soft_paused, system_stopped, or emergency"
           },
-          "trading_active": {
+          "tradingActive": {
             "type": "boolean",
-            "title": "Trading Active",
+            "title": "Tradingactive",
             "description": "True only when this client is not manually paused/stopped and the system is not globally blocked"
           },
-          "manual_paused": {
+          "manualPaused": {
             "type": "boolean",
-            "title": "Manual Paused",
+            "title": "Manualpaused",
             "description": "Whether this client is manually paused"
           },
-          "manual_paused_at": {
+          "manualPausedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -3202,10 +6994,10 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Paused At",
+            "title": "Manualpausedat",
             "description": "When manual pause was activated"
           },
-          "manual_pause_reason": {
+          "manualPauseReason": {
             "anyOf": [
               {
                 "type": "string"
@@ -3214,15 +7006,15 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Pause Reason",
+            "title": "Manualpausereason",
             "description": "Reason recorded for the manual pause"
           },
-          "manual_stopped": {
+          "manualStopped": {
             "type": "boolean",
-            "title": "Manual Stopped",
+            "title": "Manualstopped",
             "description": "Whether this client is manually stopped"
           },
-          "manual_stopped_at": {
+          "manualStoppedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -3232,10 +7024,10 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Stopped At",
+            "title": "Manualstoppedat",
             "description": "When manual stop was activated"
           },
-          "manual_stop_reason": {
+          "manualStopReason": {
             "anyOf": [
               {
                 "type": "string"
@@ -3244,30 +7036,30 @@
                 "type": "null"
               }
             ],
-            "title": "Manual Stop Reason",
+            "title": "Manualstopreason",
             "description": "Reason recorded for the manual stop"
           },
-          "system_trading_blocked": {
+          "systemTradingBlocked": {
             "type": "boolean",
-            "title": "System Trading Blocked",
+            "title": "Systemtradingblocked",
             "description": "Whether global emergency or soft pause is blocking all clients"
           },
-          "emergency_active": {
+          "emergencyActive": {
             "type": "boolean",
-            "title": "Emergency Active",
+            "title": "Emergencyactive",
             "description": "Whether full emergency mode is active"
           },
-          "system_stopped": {
+          "systemStopped": {
             "type": "boolean",
-            "title": "System Stopped",
+            "title": "Systemstopped",
             "description": "Whether a manual system-wide stop is active"
           },
-          "soft_paused": {
+          "softPaused": {
             "type": "boolean",
-            "title": "Soft Paused",
+            "title": "Softpaused",
             "description": "Whether global soft pause is active"
           },
-          "system_reason": {
+          "systemReason": {
             "anyOf": [
               {
                 "type": "string"
@@ -3276,12 +7068,12 @@
                 "type": "null"
               }
             ],
-            "title": "System Reason",
+            "title": "Systemreason",
             "description": "Global emergency/pause reason, if any"
           },
-          "system_duration_seconds": {
+          "systemDurationSeconds": {
             "type": "number",
-            "title": "System Duration Seconds",
+            "title": "Systemdurationseconds",
             "description": "How long the global emergency/pause has been active"
           }
         },
@@ -3291,19 +7083,19 @@
           "clientName",
           "oddsFormat",
           "status",
-          "trading_active",
-          "manual_paused",
-          "manual_paused_at",
-          "manual_pause_reason",
-          "manual_stopped",
-          "manual_stopped_at",
-          "manual_stop_reason",
-          "system_trading_blocked",
-          "emergency_active",
-          "system_stopped",
-          "soft_paused",
-          "system_reason",
-          "system_duration_seconds"
+          "tradingActive",
+          "manualPaused",
+          "manualPausedAt",
+          "manualPauseReason",
+          "manualStopped",
+          "manualStoppedAt",
+          "manualStopReason",
+          "systemTradingBlocked",
+          "emergencyActive",
+          "systemStopped",
+          "softPaused",
+          "systemReason",
+          "systemDurationSeconds"
         ],
         "title": "TradingStatusResponse",
         "description": "Client trading status including manual pause and global safety state."
@@ -3328,6 +7120,39 @@
         ],
         "title": "UpdateClientSettingsRequest",
         "description": "Request body for client preference updates."
+      },
+      "UpdateTournamentRequest": {
+        "properties": {
+          "limitRatio": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limitratio",
+            "description": "Limit ratio (0-1)"
+          },
+          "priceTicks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priceticks",
+            "description": "Price tick adjustment"
+          }
+        },
+        "type": "object",
+        "title": "UpdateTournamentRequest",
+        "description": "Update tournament trading parameters."
       },
       "ValidationError": {
         "properties": {
@@ -3361,91 +7186,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "MarketTypeUpdate": {
-        "type": "object",
-        "required": [
-          "marketType",
-          "enabled"
-        ],
-        "properties": {
-          "marketType": {
-            "type": "string",
-            "description": "Market type, e.g. 'moneyline', 'totals'"
-          },
-          "playerProp": {
-            "type": "boolean",
-            "default": false,
-            "description": "True for player prop variants"
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "True to enable (default-on), False to disable"
-          }
-        }
-      },
-      "MarketAllowlistPatchBody": {
-        "type": "object",
-        "required": [
-          "sportId",
-          "updates"
-        ],
-        "properties": {
-          "sportId": {
-            "type": "integer"
-          },
-          "updates": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MarketTypeUpdate"
-            }
-          }
-        }
-      },
-      "ActivateAllBody": {
-        "type": "object",
-        "required": [
-          "sportId"
-        ],
-        "properties": {
-          "sportId": {
-            "type": "integer"
-          }
-        }
-      },
-      "ActivateTournamentRequest": {
-        "type": "object",
-        "properties": {
-          "limitRatio": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 1.0,
-            "default": 0.8,
-            "description": "Limit ratio (0-1)"
-          },
-          "priceTicks": {
-            "type": "integer",
-            "default": 0,
-            "description": "Price tick adjustment (+/- ticks, each tick = 0.01)"
-          }
-        }
-      },
-      "UpdateTournamentRequest": {
-        "type": "object",
-        "properties": {
-          "limitRatio": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 1.0,
-            "nullable": true,
-            "description": "Limit ratio (0-1)"
-          },
-          "priceTicks": {
-            "type": "integer",
-            "nullable": true,
-            "description": "Price tick adjustment"
-          }
-        }
       }
     },
     "securitySchemes": {
