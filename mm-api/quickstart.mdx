@@ -5,7 +5,7 @@ description: "Step-by-step guide to using the MM Trading API. Verify identity, v
 ---
 
 <Note>
-The MM engine places orders automatically based on bookmaker odds. The client API provides **read access** to all trading activity. You do not place orders through this API — the engine does it for you.
+The MM engine places orders automatically based on bookmaker odds. The client API lets you **monitor** all trading activity and **control** your trading state (pause, resume, stop, start) and cancel orders. You do not place orders through this API — the engine does it for you.
 </Note>
 
 ## Step 1: Verify your identity
@@ -23,7 +23,7 @@ Response:
 {
   "client": "your-client",
   "clientName": "Your Client Name",
-  "active": true
+  "oddsFormat": "decimal"
 }
 ```
 
@@ -160,17 +160,84 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ```
 
 ```json
-[
-  {
-    "exchange": "polymarket",
-    "username": "0x1234...abcd",
-    "client": "your-client",
-    "bookmaker": "vertex",
-    "balance": 50000.0,
-    "maxOutcomeStake": 1000.0,
-    "active": true
-  }
-]
+{
+  "oddsFormat": "decimal",
+  "accounts": [
+    {
+      "username": "0x1234...abcd",
+      "exchange": "polymarket",
+      "active": true,
+      "max_outcome_stake": 1000.0,
+      "balance": 50000.0,
+      "created_at": "2026-01-15T12:00:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+## Step 8: Trading controls
+
+Check your current trading status:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/trading/status
+```
+
+Pause trading (keeps existing orders, stops new ones):
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/trading/pause
+```
+
+Resume after a pause:
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/trading/resume
+```
+
+Stop trading entirely (cancels all open orders):
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/trading/stop
+```
+
+Start trading from a stopped state:
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/trading/start
+```
+
+## Step 9: Cancel orders
+
+Cancel all open orders at once:
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/cancel-all
+```
+
+Cancel a specific order by ID:
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/123/cancel
+```
+
+## Step 10: Update client settings
+
+Update your preferences (e.g. odds display format):
+
+```bash
+curl -X PATCH -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"oddsFormat": "decimal"}' \
+  https://mmapi.55-tech.com/api/v1/clients/settings
 ```
 
 ## Next steps

@@ -2,15 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "MM-V2 Trading API",
-    "description": "\n## High-Frequency Market Making Engine API\n\nThis API powers the MM-V2 market making system, providing:\n\n### For Trading Clients\n- **Orders**: View and track orders placed on exchanges (Polymarket, Kalshi, etc.)\n- **Bets**: View hedge bets placed on bookmakers\n- **Fixtures**: Access event/fixture metadata and scores\n- **Positions**: Get aggregated exposure across markets\n\n### Authentication\nClient endpoints require the `X-API-Key` header with a valid UUID.\n\n### Rate Limits\n- REST API: 100 requests/minute per client\n- WebSocket: 5 connections per API key\n\n### Quick Start\n1. Click **Authorize** button above\n2. Enter your API key (UUID format)\n3. All client endpoints will use this key automatically\n        ",
+    "description": "\n## High-Frequency Market Making Engine API\n\nThis API powers the MM-V2 market making system, providing:\n\n### For Trading Clients\n- **Orders**: View and track orders placed on exchanges (Polymarket, Kalshi, etc.)\n- **Bets**: View hedge bets placed on bookmakers\n- **Fixtures**: Access event/fixture metadata and scores\n- **Positions**: Get aggregated exposure across markets\n\n### For Operations\n- **Emergency Controls**: Cancel all orders, pause/resume trading\n- **Monitoring**: System status, connection health, latency metrics\n- **Real-time Updates**: WebSocket subscriptions for live data\n\n### Authentication\nClient endpoints require the `X-API-Key` header with a valid UUID.\nAdmin endpoints are typically protected at the network level.\n\n### Rate Limits\n- REST API: 2,000 requests/minute per client\n- WebSocket: 5 connections per API key\n\n### Quick Start\n1. Click **Authorize** button above\n2. Enter your API key (UUID format)\n3. All client endpoints will use this key automatically\n        ",
     "version": "1.0.0"
   },
-  "servers": [
-    {
-      "url": "https://mmapi.55-tech.com",
-      "description": "Production"
-    }
-  ],
   "paths": {
     "/api/v1/me": {
       "get": {
@@ -27,6 +21,277 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClientInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clients/settings": {
+      "patch": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Update client settings",
+        "description": "Update authenticated client preferences.\n\n    Currently supports persisting the preferred odds display format used by the UI.",
+        "operationId": "update_client_settings_api_v1_clients_settings_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClientSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSettingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid oddsFormat"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trading/status": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get trading status",
+        "description": "Returns the authenticated client's trading status.\n\n    This includes:\n    - Whether the client is under manual pause\n    - Whether global soft pause or emergency is blocking trading\n    - Whether trading is currently active for this client",
+        "operationId": "get_trading_status_api_v1_trading_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradingStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trading/pause": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Pause trading",
+        "description": "Manually pause market making for the authenticated client.\n\n    Behavior:\n    - Existing resting exchange orders are left on the exchange\n    - No new orders are posted for this client\n    - Fill hedging still runs\n    - Hedge-triggered reposts are blocked while paused",
+        "operationId": "pause_trading_api_v1_trading_pause_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradingControlResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trading/resume": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Resume trading",
+        "description": "Resume market making for the authenticated client after a manual pause.\n\n    Resume clears only the client's manual pause flag. Global soft pause or\n    emergency mode can still block trading if they are active.",
+        "operationId": "resume_trading_api_v1_trading_resume_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradingControlResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trading/stop": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Stop trading",
+        "description": "Fully stop market making for the authenticated client.\n\n    Behavior:\n    - Cancel all currently open exchange orders for this client\n    - Block new order placement and reposts until `/trading/start`\n    - Fill hedging can still run for any in-flight exchange fills that arrive later",
+        "operationId": "stop_trading_api_v1_trading_stop_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradingControlResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trading/start": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Start trading",
+        "description": "Start market making for the authenticated client after a manual pause or stop.\n\n    This clears client-scoped manual controls only. Global soft pause or system\n    stop/emergency can still block trading if they are active.",
+        "operationId": "start_trading_api_v1_trading_start_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradingControlResponse"
                 }
               }
             }
@@ -319,62 +584,6 @@
         ]
       }
     },
-    "/api/v1/orders/{order_id}": {
-      "get": {
-        "tags": [
-          "Client API"
-        ],
-        "summary": "Get order details",
-        "description": "Retrieve detailed information about a specific order by its ID.",
-        "operationId": "get_order_api_v1_orders__order_id__get",
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Order Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Order Api V1 Orders  Order Id  Get"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Invalid or missing API key"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
-      }
-    },
     "/api/v1/orders/summary": {
       "get": {
         "tags": [
@@ -458,13 +667,69 @@
         ]
       }
     },
+    "/api/v1/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Get order details",
+        "description": "Retrieve detailed information about a specific order by its ID.",
+        "operationId": "get_order_api_v1_orders__order_id__get",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Order Api V1 Orders  Order Id  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/bets": {
       "get": {
         "tags": [
           "Client API"
         ],
         "summary": "List bets",
-        "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **order_id**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (e.g., vertex, pinnacle)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
+        "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **order_id**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (vertex, pinnacle, demo)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
         "operationId": "list_bets_api_v1_bets_get",
         "parameters": [
           {
@@ -498,10 +763,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by bookmaker (e.g., vertex, pinnacle)",
+              "description": "Filter by bookmaker (vertex, pinnacle, demo)",
               "title": "Bookmaker"
             },
-            "description": "Filter by bookmaker (e.g., vertex, pinnacle)"
+            "description": "Filter by bookmaker (vertex, pinnacle, demo)"
           },
           {
             "name": "status",
@@ -1592,13 +1857,81 @@
         ]
       }
     },
+    "/health": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Health check",
+        "description": "Basic health check for container orchestration (Kubernetes liveness probe).",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Readiness check",
+        "description": "Readiness check for container orchestration (Kubernetes readiness probe). Verifies all dependencies are available.",
+        "operationId": "readiness_check_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Readiness Check Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Prometheus metrics",
+        "description": "Prometheus-format metrics endpoint for monitoring.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/ws/subscribe": {
       "get": {
         "tags": [
           "WebSocket"
         ],
         "summary": "Real-time Subscription (WebSocket)",
-        "description": "## Real-time Data Subscription (WebSocket)\n\n**URL:** `wss://mmapi.55-tech.com/ws/subscribe`\n\n**Connection Limits:** Maximum 5 concurrent connections per API key.\n\n### Protocol\n\n1. **Connect** to `/ws/subscribe`\n\n2. **Subscribe** (within 30 seconds):\n```json\n{\n  \"type\": \"subscribe\",\n  \"api_key\": \"your-client-api-key-uuid\",\n  \"channels\": [\"orders\", \"bets\", \"accounts\", \"scores\", \"emergency\"]\n}\n```\n\n3. **Confirmation**:\n```json\n{\"type\": \"subscribed\", \"subscription_id\": 1, \"channels\": [\"orders\", \"bets\"]}\n```\n\n4. **Receive broadcasts**:\n```json\n{\n  \"type\": \"broadcast\",\n  \"channel\": \"orders\",\n  \"event\": \"UPDATE\",\n  \"payload\": {\"id\": 123, \"orderStatus\": \"FILLED\"},\n  \"old\": {\"orderStatus\": \"PLACED\"}\n}\n```\n\n5. **Keep-alive**: Send `{\"type\": \"ping\"}` \u2192 Receive `{\"type\": \"pong\"}`\n\n6. **Heartbeat**: Server sends `{\"type\": \"heartbeat\"}` every 60s\n\n7. **Unsubscribe**: Send `{\"type\": \"unsubscribe\"}`\n\n### Channels\n\n| Channel | Description | Filtered |\n|---------|-------------|----------|\n| `orders` | Order placement, updates, fills | By client |\n| `bets` | Hedge bet updates | By client |\n| `accounts` | Balance changes | By client |\n| `scores` | Live score updates | Global |\n| `emergency` | Emergency mode status | Global |\n\n### Error Codes\n\n- `api_key required` - Missing api_key\n- `Invalid api_key format` - Must be UUID\n- `Invalid API key` - Not found or inactive\n- `Connection limit exceeded` - Max 5 per API key",
+        "description": "## Real-time Data Subscription (WebSocket)\n\n**URL:** `ws://localhost:8081/ws/subscribe`\n\n**Connection Limits:** Maximum 5 concurrent connections per API key.\n\n### Protocol\n\n1. **Connect** to `/ws/subscribe`\n\n2. **Subscribe** (within 30 seconds):\n```json\n{\n  \"type\": \"subscribe\",\n  \"api_key\": \"your-client-api-key-uuid\",\n  \"channels\": [\"orders\", \"bets\", \"accounts\", \"scores\", \"emergency\"]\n}\n```\n\n3. **Confirmation**:\n```json\n{\"type\": \"subscribed\", \"subscription_id\": 1, \"channels\": [\"orders\", \"bets\"]}\n```\n\n4. **Receive broadcasts**:\n```json\n{\n  \"type\": \"broadcast\",\n  \"channel\": \"orders\",\n  \"event\": \"UPDATE\",\n  \"payload\": {\"id\": 123, \"orderStatus\": \"FILLED\"},\n  \"old\": {\"orderStatus\": \"PLACED\"}\n}\n```\n\n5. **Keep-alive**: Send `{\"type\": \"ping\"}` \u2192 Receive `{\"type\": \"pong\"}`\n\n6. **Heartbeat**: Server sends `{\"type\": \"heartbeat\"}` every 60s\n\n7. **Unsubscribe**: Send `{\"type\": \"unsubscribe\"}`\n\n### Channels\n\n| Channel | Description | Filtered |\n|---------|-------------|----------|\n| `orders` | Order placement, updates, fills | By client |\n| `bets` | Hedge bet updates | By client |\n| `accounts` | Balance changes | By client |\n| `scores` | Live score updates | Global |\n| `emergency` | Emergency mode status | Global |\n\n### Error Codes\n\n- `api_key required` - Missing api_key\n- `Invalid api_key format` - Must be UUID\n- `Invalid API key` - Not found or inactive\n- `Connection limit exceeded` - Max 5 per API key",
         "operationId": "websocket_subscribe_docs_ws_subscribe_get",
         "responses": {
           "200": {
@@ -1614,12 +1947,1731 @@
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "This endpoint requires a WebSocket connection. Use wss://mmapi.55-tech.com/ws/subscribe"
+                  "detail": "This endpoint requires a WebSocket connection. Use ws://host:port/ws/subscribe"
                 }
               }
             }
           }
         }
+      }
+    },
+    "/ws/subscribe/stats": {
+      "get": {
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "WebSocket subscription statistics",
+        "description": "Get statistics about active WebSocket subscriptions.",
+        "operationId": "websocket_subscribe_stats_ws_subscribe_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Websocket Subscribe Stats Ws Subscribe Stats Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/trigger": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Trigger system-wide emergency",
+        "description": "**\u26a0\ufe0f ADMIN ONLY - AFFECTS ALL CLIENTS**\n\n        **CAUTION: This will cancel ALL open orders for ALL clients across ALL exchanges.**\n\n        Trigger system-wide emergency mode from an external source (monitoring system, dashboard, etc.).\n        This is useful for:\n        - Dashboard \"kill switch\" button\n        - External monitoring detecting issues\n        - Manual intervention from operations team\n\n        When triggered:\n        1. All new order placement is stopped FOR ALL CLIENTS\n        2. All open orders are cancelled on all exchanges FOR ALL CLIENTS\n        3. System enters emergency mode\n\n        To recover, use `/emergency/resume` after resolving the issue.\n\n        **For client-specific cancellation, use `/api/v1/orders/cancel-all` instead.**",
+        "operationId": "emergency_trigger_external_emergency_trigger_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmergencyTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/stop": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Stop all trading system-wide",
+        "description": "**\u26a0\ufe0f ADMIN ONLY - AFFECTS ALL CLIENTS**\n\n        Canonical system-wide stop endpoint.\n\n        This will:\n        1. Stop new order placement for all clients\n        2. Cancel all open orders on all exchanges\n        3. Keep the system stopped until `/emergency/start`",
+        "operationId": "emergency_stop_emergency_stop_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/pause": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Pause all trading system-wide",
+        "description": "**\u26a0\ufe0f ADMIN ONLY - AFFECTS ALL CLIENTS**\n\n        Deprecated alias for `/emergency/stop`.\n\n        This performs a full manual system stop:\n        - blocks new order placement for all clients\n        - cancels all open orders on all exchanges\n        - requires manual resume/start",
+        "operationId": "emergency_pause_emergency_pause_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/start": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Start trading system-wide",
+        "description": "**\u26a0\ufe0f ADMIN ONLY**\n\n        Canonical system-wide start endpoint.\n\n        This clears manual system stop/emergency mode, reloads snapshots, and\n        allows normal order processing to resume.",
+        "operationId": "emergency_start_emergency_start_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/resume": {
+      "post": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "[ADMIN] Resume trading",
+        "description": "**\u26a0\ufe0f ADMIN ONLY**\n\n        Resume trading after emergency/pause.\n\n        This will:\n        1. Clear emergency mode\n        2. Reload initial snapshots from OddsPAPI REST API\n        3. Resume normal order processing\n\n        Only call this after the underlying issue has been resolved.",
+        "operationId": "emergency_resume_emergency_resume_post",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emergency/status": {
+      "get": {
+        "tags": [
+          "Emergency Controls"
+        ],
+        "summary": "Get emergency status",
+        "description": "Check current emergency mode status without triggering any action.",
+        "operationId": "emergency_status_emergency_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmergencyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/poison-slots": {
+      "get": {
+        "tags": [
+          "Order Slots"
+        ],
+        "summary": "[ADMIN] List all poison slots",
+        "operationId": "get_poison_slots_admin_poison_slots_get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Get Poison Slots Admin Poison Slots Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/slot-summary": {
+      "get": {
+        "tags": [
+          "Order Slots"
+        ],
+        "summary": "[ADMIN] Slot state summary counts",
+        "operationId": "get_slot_summary_admin_slot_summary_get",
+        "parameters": [
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Slot Summary Admin Slot Summary Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reconcile": {
+      "post": {
+        "tags": [
+          "Order Slots"
+        ],
+        "summary": "[ADMIN] Trigger reconciliation",
+        "operationId": "admin_reconcile_admin_reconcile_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fixture Id"
+            }
+          },
+          {
+            "name": "outcome_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Side"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Admin Reconcile Admin Reconcile Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clear-poison": {
+      "post": {
+        "tags": [
+          "Order Slots"
+        ],
+        "summary": "[ADMIN] Clear poison for one exact side",
+        "description": "Only clears if both exchange and DB confirm zero open orders for the side.",
+        "operationId": "admin_clear_poison_admin_clear_poison_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fixture Id"
+            }
+          },
+          {
+            "name": "outcome_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Outcome Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "buy",
+              "title": "Side"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Admin Clear Poison Admin Clear Poison Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/cancel-ghost-orders": {
+      "post": {
+        "tags": [
+          "Order Slots"
+        ],
+        "summary": "[ADMIN] Mark ghost DB orders as CANCELLED",
+        "description": "For orders that are open in DB but gone from exchange. Marks them CANCELLED so clear-poison can proceed.",
+        "operationId": "admin_cancel_ghost_orders_admin_cancel_ghost_orders_post",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "fixture_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fixture Id"
+            }
+          },
+          {
+            "name": "outcome_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Outcome Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Admin Cancel Ghost Orders Admin Cancel Ghost Orders Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hedge-drift": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "[ADMIN] Hedge drift summary report",
+        "description": "Aggregate planned-vs-actual bookmaker odds drift using raw decimal-odds units.",
+        "operationId": "admin_hedge_drift_report_admin_hedge_drift_get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From Date"
+            }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To Date"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Admin Hedge Drift Report Admin Hedge Drift Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hedge-drift/timeline": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "[ADMIN] Hedge drift timeline",
+        "description": "Daily hedge drift aggregates using raw decimal-odds units.",
+        "operationId": "admin_hedge_drift_timeline_admin_hedge_drift_timeline_get",
+        "parameters": [
+          {
+            "name": "client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From Date"
+            }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To Date"
+            }
+          },
+          {
+            "name": "X-Admin-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Admin API key for emergency operations",
+              "title": "X-Admin-Key"
+            },
+            "description": "Admin API key for emergency operations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Admin Hedge Drift Timeline Admin Hedge Drift Timeline Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Full system status",
+        "description": "Get comprehensive system status including trading state, connections, and exchange status.",
+        "operationId": "get_status_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Status Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/subscriptions": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "WebSocket subscriptions",
+        "description": "List all active WebSocket subscriptions.",
+        "operationId": "get_subscriptions_status_subscriptions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Subscriptions Status Subscriptions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/latency": {
+      "get": {
+        "tags": [
+          "Status & Monitoring"
+        ],
+        "summary": "Latency metrics",
+        "description": "Get latency metrics for OddsPAPI and exchange connections.",
+        "operationId": "get_latency_status_latency_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Latency Status Latency Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "tags": [
+          "Configuration"
+        ],
+        "summary": "Current configuration",
+        "description": "Get current system configuration (non-sensitive values only).",
+        "operationId": "get_config_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Config Config Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sports": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List available sports",
+        "description": "Returns sports currently in the oddspapi feed for your bookmaker, with live fixture counts.",
+        "operationId": "list_sports_api_v1_sports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sportId": {
+                        "type": "integer"
+                      },
+                      "sportName": {
+                        "type": "string"
+                      },
+                      "tournament_count": {
+                        "type": "integer"
+                      },
+                      "fixture_count": {
+                        "type": "integer"
+                      },
+                      "live_count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sports/{sport_id}/tournaments": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List tournaments for a sport",
+        "description": "Returns tournaments currently in the oddspapi feed, grouped by category, with activation status.",
+        "operationId": "list_tournaments_for_sport_api_v1_sports__sport_id__tournaments_get",
+        "parameters": [
+          {
+            "name": "sport_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "categoryName": {
+                            "type": "string"
+                          },
+                          "tournaments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "tournamentId": {
+                                  "type": "integer"
+                                },
+                                "tournamentName": {
+                                  "type": "string"
+                                },
+                                "fixture_count": {
+                                  "type": "integer"
+                                },
+                                "live_count": {
+                                  "type": "integer"
+                                },
+                                "tradeable_count": {
+                                  "type": "integer"
+                                },
+                                "activated": {
+                                  "type": "boolean",
+                                  "nullable": true
+                                },
+                                "limitRatio": {
+                                  "type": "number",
+                                  "nullable": true
+                                },
+                                "priceTicks": {
+                                  "type": "integer",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sports/{sport_id}/market-types": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List hedgeable market types for a sport with per-client toggle status",
+        "description": "Discovery endpoint for the markets page. Returns each (marketType, playerProp) group that is hedgeable on at least one of the client's configured exchanges, joined against the per-client allowlist.",
+        "operationId": "list_market_types_for_sport_api_v1_sports__sport_id__market_types_get",
+        "parameters": [
+          {
+            "name": "sport_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sportId": {
+                      "type": "integer"
+                    },
+                    "bookmaker": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "marketTypes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "marketType": {
+                            "type": "string"
+                          },
+                          "playerProp": {
+                            "type": "boolean"
+                          },
+                          "marketName": {
+                            "type": "string"
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/client/market-allowlist": {
+      "patch": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Bulk-toggle market types for the authenticated client",
+        "description": "Upserts allowlist rows for each (marketType, playerProp) in updates. For any row set to enabled=false, immediately cancels open orders owned by this client whose outcomeId belongs to that market type for the given sport.",
+        "operationId": "patch_market_allowlist_api_v1_client_market_allowlist_patch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketAllowlistPatchBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sportId": {
+                      "type": "integer"
+                    },
+                    "applied": {
+                      "type": "integer",
+                      "description": "Number of rows upserted"
+                    },
+                    "cancelled_orders": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer"
+                      },
+                      "description": "Orders cancelled per exchange"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No bookmaker configured for this client"
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/client/market-allowlist/activate-all": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Restore default-on for every market type in this scope",
+        "description": "Deletes all allowlist rows for (client, bookmaker, sportId), restoring every market type to default-on. No order cancellation.",
+        "operationId": "activate_all_market_types_api_v1_client_market_allowlist_activate_all_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateAllBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sportId": {
+                      "type": "integer"
+                    },
+                    "deleted": {
+                      "type": "integer",
+                      "description": "Number of deny rows removed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No bookmaker configured for this client"
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tournaments": {
+      "get": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "List tournament configs",
+        "description": "List all tournament configurations for the authenticated client.",
+        "operationId": "list_tournaments_api_v1_tournaments_get",
+        "parameters": [
+          {
+            "name": "sport_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "nullable": true
+            },
+            "description": "Filter by sport ID"
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tournaments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/activate": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Activate a tournament",
+        "description": "Activate a tournament for trading. Looks up metadata from catalog and validates bookmaker coverage.",
+        "operationId": "activate_tournament_api_v1_tournaments__tournament_id__activate_post",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateTournamentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "activated"
+                      ]
+                    },
+                    "tournament": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid tournament or bookmaker configuration"
+          },
+          "404": {
+            "description": "Tournament not found in catalog"
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/deactivate": {
+      "post": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Deactivate a tournament",
+        "description": "Deactivate a tournament. Automatically cancels open orders for this tournament.",
+        "operationId": "deactivate_tournament_api_v1_tournaments__tournament_id__deactivate_post",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tournament not found"
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}": {
+      "patch": {
+        "tags": [
+          "Client API"
+        ],
+        "summary": "Update tournament config",
+        "description": "Update limitRatio and/or priceTicks for an active tournament.",
+        "operationId": "update_tournament_config_api_v1_tournaments__tournament_id__patch",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTournamentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "updated"
+                      ]
+                    },
+                    "tournament": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "At least one of limitRatio or priceTicks must be provided"
+          },
+          "404": {
+            "description": "No tournament config found"
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
       }
     }
   },
@@ -1712,15 +3764,139 @@
             "type": "string",
             "title": "Clientname",
             "description": "Client display name (e.g., 'Demo', 'Pinnacle')"
+          },
+          "oddsFormat": {
+            "type": "string",
+            "enum": [
+              "american",
+              "decimal",
+              "hong_kong",
+              "fractional"
+            ],
+            "title": "Oddsformat",
+            "description": "Preferred odds display format for the client UI"
           }
         },
         "type": "object",
         "required": [
           "client",
-          "clientName"
+          "clientName",
+          "oddsFormat"
         ],
         "title": "ClientInfo",
         "description": "Client information from API key lookup."
+      },
+      "ClientSettingsResponse": {
+        "properties": {
+          "oddsFormat": {
+            "type": "string",
+            "enum": [
+              "american",
+              "decimal",
+              "hong_kong",
+              "fractional"
+            ],
+            "title": "Oddsformat",
+            "description": "Preferred odds display format"
+          }
+        },
+        "type": "object",
+        "required": [
+          "oddsFormat"
+        ],
+        "title": "ClientSettingsResponse",
+        "description": "Response body for client preference updates."
+      },
+      "EmergencyResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Operation result status"
+          },
+          "trading_blocked": {
+            "type": "boolean",
+            "title": "Trading Blocked",
+            "description": "Whether trading is blocked (emergency OR pause)"
+          },
+          "emergency_active": {
+            "type": "boolean",
+            "title": "Emergency Active",
+            "description": "Whether FULL emergency is active (requires manual resume)"
+          },
+          "stopped": {
+            "type": "boolean",
+            "title": "Stopped",
+            "description": "Whether a manual system-wide stop is active"
+          },
+          "paused": {
+            "type": "boolean",
+            "title": "Paused",
+            "description": "Whether soft pause is active (auto-recovers)"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Emergency/pause reason if active"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "title": "Duration Seconds",
+            "description": "How long emergency/pause has been active"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp",
+            "description": "ISO timestamp of the operation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "trading_blocked",
+          "emergency_active",
+          "stopped",
+          "paused",
+          "reason",
+          "duration_seconds",
+          "timestamp"
+        ],
+        "title": "EmergencyResponse",
+        "description": "Response for emergency operations."
+      },
+      "EmergencyTriggerRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Reason for triggering emergency mode",
+            "default": "external_trigger",
+            "example": "High latency detected from monitoring"
+          },
+          "exchange": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exchange",
+            "description": "Specific exchange to cancel orders on (null = all exchanges)",
+            "example": "polymarket"
+          }
+        },
+        "type": "object",
+        "title": "EmergencyTriggerRequest",
+        "description": "Request body for emergency trigger."
       },
       "HTTPValidationError": {
         "properties": {
@@ -1911,6 +4087,341 @@
         "title": "PnLResponse",
         "description": "Profit and Loss response for a client."
       },
+      "TradingControlResponse": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client",
+            "description": "Client identifier"
+          },
+          "clientName": {
+            "type": "string",
+            "title": "Clientname",
+            "description": "Client display name"
+          },
+          "oddsFormat": {
+            "type": "string",
+            "enum": [
+              "american",
+              "decimal",
+              "hong_kong",
+              "fractional"
+            ],
+            "title": "Oddsformat",
+            "description": "Preferred odds display format for the client UI"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Overall trading status: live, manual_paused, manual_stopped, soft_paused, system_stopped, or emergency"
+          },
+          "trading_active": {
+            "type": "boolean",
+            "title": "Trading Active",
+            "description": "True only when this client is not manually paused/stopped and the system is not globally blocked"
+          },
+          "manual_paused": {
+            "type": "boolean",
+            "title": "Manual Paused",
+            "description": "Whether this client is manually paused"
+          },
+          "manual_paused_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Paused At",
+            "description": "When manual pause was activated"
+          },
+          "manual_pause_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Pause Reason",
+            "description": "Reason recorded for the manual pause"
+          },
+          "manual_stopped": {
+            "type": "boolean",
+            "title": "Manual Stopped",
+            "description": "Whether this client is manually stopped"
+          },
+          "manual_stopped_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Stopped At",
+            "description": "When manual stop was activated"
+          },
+          "manual_stop_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Stop Reason",
+            "description": "Reason recorded for the manual stop"
+          },
+          "system_trading_blocked": {
+            "type": "boolean",
+            "title": "System Trading Blocked",
+            "description": "Whether global emergency or soft pause is blocking all clients"
+          },
+          "emergency_active": {
+            "type": "boolean",
+            "title": "Emergency Active",
+            "description": "Whether full emergency mode is active"
+          },
+          "system_stopped": {
+            "type": "boolean",
+            "title": "System Stopped",
+            "description": "Whether a manual system-wide stop is active"
+          },
+          "soft_paused": {
+            "type": "boolean",
+            "title": "Soft Paused",
+            "description": "Whether global soft pause is active"
+          },
+          "system_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Reason",
+            "description": "Global emergency/pause reason, if any"
+          },
+          "system_duration_seconds": {
+            "type": "number",
+            "title": "System Duration Seconds",
+            "description": "How long the global emergency/pause has been active"
+          },
+          "result": {
+            "type": "string",
+            "title": "Result",
+            "description": "pause_applied, already_paused, stop_applied, already_stopped, start_applied, resume_applied, start_required, or already_live"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "clientName",
+          "oddsFormat",
+          "status",
+          "trading_active",
+          "manual_paused",
+          "manual_paused_at",
+          "manual_pause_reason",
+          "manual_stopped",
+          "manual_stopped_at",
+          "manual_stop_reason",
+          "system_trading_blocked",
+          "emergency_active",
+          "system_stopped",
+          "soft_paused",
+          "system_reason",
+          "system_duration_seconds",
+          "result"
+        ],
+        "title": "TradingControlResponse",
+        "description": "Response for pause/resume operations."
+      },
+      "TradingStatusResponse": {
+        "properties": {
+          "client": {
+            "type": "string",
+            "title": "Client",
+            "description": "Client identifier"
+          },
+          "clientName": {
+            "type": "string",
+            "title": "Clientname",
+            "description": "Client display name"
+          },
+          "oddsFormat": {
+            "type": "string",
+            "enum": [
+              "american",
+              "decimal",
+              "hong_kong",
+              "fractional"
+            ],
+            "title": "Oddsformat",
+            "description": "Preferred odds display format for the client UI"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Overall trading status: live, manual_paused, manual_stopped, soft_paused, system_stopped, or emergency"
+          },
+          "trading_active": {
+            "type": "boolean",
+            "title": "Trading Active",
+            "description": "True only when this client is not manually paused/stopped and the system is not globally blocked"
+          },
+          "manual_paused": {
+            "type": "boolean",
+            "title": "Manual Paused",
+            "description": "Whether this client is manually paused"
+          },
+          "manual_paused_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Paused At",
+            "description": "When manual pause was activated"
+          },
+          "manual_pause_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Pause Reason",
+            "description": "Reason recorded for the manual pause"
+          },
+          "manual_stopped": {
+            "type": "boolean",
+            "title": "Manual Stopped",
+            "description": "Whether this client is manually stopped"
+          },
+          "manual_stopped_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Stopped At",
+            "description": "When manual stop was activated"
+          },
+          "manual_stop_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Stop Reason",
+            "description": "Reason recorded for the manual stop"
+          },
+          "system_trading_blocked": {
+            "type": "boolean",
+            "title": "System Trading Blocked",
+            "description": "Whether global emergency or soft pause is blocking all clients"
+          },
+          "emergency_active": {
+            "type": "boolean",
+            "title": "Emergency Active",
+            "description": "Whether full emergency mode is active"
+          },
+          "system_stopped": {
+            "type": "boolean",
+            "title": "System Stopped",
+            "description": "Whether a manual system-wide stop is active"
+          },
+          "soft_paused": {
+            "type": "boolean",
+            "title": "Soft Paused",
+            "description": "Whether global soft pause is active"
+          },
+          "system_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Reason",
+            "description": "Global emergency/pause reason, if any"
+          },
+          "system_duration_seconds": {
+            "type": "number",
+            "title": "System Duration Seconds",
+            "description": "How long the global emergency/pause has been active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client",
+          "clientName",
+          "oddsFormat",
+          "status",
+          "trading_active",
+          "manual_paused",
+          "manual_paused_at",
+          "manual_pause_reason",
+          "manual_stopped",
+          "manual_stopped_at",
+          "manual_stop_reason",
+          "system_trading_blocked",
+          "emergency_active",
+          "system_stopped",
+          "soft_paused",
+          "system_reason",
+          "system_duration_seconds"
+        ],
+        "title": "TradingStatusResponse",
+        "description": "Client trading status including manual pause and global safety state."
+      },
+      "UpdateClientSettingsRequest": {
+        "properties": {
+          "oddsFormat": {
+            "type": "string",
+            "enum": [
+              "american",
+              "decimal",
+              "hong_kong",
+              "fractional"
+            ],
+            "title": "Oddsformat",
+            "description": "Preferred odds display format"
+          }
+        },
+        "type": "object",
+        "required": [
+          "oddsFormat"
+        ],
+        "title": "UpdateClientSettingsRequest",
+        "description": "Request body for client preference updates."
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -1934,13 +4445,6 @@
           "type": {
             "type": "string",
             "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
           }
         },
         "type": "object",
@@ -1950,6 +4454,91 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "MarketTypeUpdate": {
+        "type": "object",
+        "required": [
+          "marketType",
+          "enabled"
+        ],
+        "properties": {
+          "marketType": {
+            "type": "string",
+            "description": "Market type, e.g. 'moneyline', 'totals'"
+          },
+          "playerProp": {
+            "type": "boolean",
+            "default": false,
+            "description": "True for player prop variants"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "True to enable (default-on), False to disable"
+          }
+        }
+      },
+      "MarketAllowlistPatchBody": {
+        "type": "object",
+        "required": [
+          "sportId",
+          "updates"
+        ],
+        "properties": {
+          "sportId": {
+            "type": "integer"
+          },
+          "updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketTypeUpdate"
+            }
+          }
+        }
+      },
+      "ActivateAllBody": {
+        "type": "object",
+        "required": [
+          "sportId"
+        ],
+        "properties": {
+          "sportId": {
+            "type": "integer"
+          }
+        }
+      },
+      "ActivateTournamentRequest": {
+        "type": "object",
+        "properties": {
+          "limitRatio": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "default": 0.8,
+            "description": "Limit ratio (0-1)"
+          },
+          "priceTicks": {
+            "type": "integer",
+            "default": 0,
+            "description": "Price tick adjustment (+/- ticks, each tick = 0.01)"
+          }
+        }
+      },
+      "UpdateTournamentRequest": {
+        "type": "object",
+        "properties": {
+          "limitRatio": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "nullable": true,
+            "description": "Limit ratio (0-1)"
+          },
+          "priceTicks": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Price tick adjustment"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -1957,7 +4546,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "Client API key (UUID format). Contact contact@55-tech.com to obtain your key."
+        "description": "Client API key (UUID format). Get your key from the admin dashboard."
       }
     }
   },
@@ -1967,8 +4556,24 @@
       "description": "Endpoints for trading clients to access orders, bets, fixtures, and positions. Requires `X-API-Key` header authentication."
     },
     {
+      "name": "Emergency Controls",
+      "description": "**ADMIN ONLY** - System-wide emergency controls affecting ALL clients. For client-specific cancellation, use `/api/v1/orders/cancel-all`."
+    },
+    {
+      "name": "Order Slots",
+      "description": "**ADMIN ONLY** - Inspect and manage order slot states, poison recovery, and reconciliation."
+    },
+    {
+      "name": "Status & Monitoring",
+      "description": "System status, health checks, latency metrics, and connection status."
+    },
+    {
       "name": "WebSocket",
       "description": "Real-time data subscriptions for orders, bets, accounts, and scores."
+    },
+    {
+      "name": "Configuration",
+      "description": "View current system configuration (non-sensitive values only)."
     }
   ]
 }

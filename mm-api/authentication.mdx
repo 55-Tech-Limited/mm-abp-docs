@@ -17,6 +17,21 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 Your API key is bound to a specific `client` entity. All data returned is filtered to your client — you only see your own orders, bets, and positions.
 
+## Admin API authentication
+
+Admin endpoints (emergency actions, `/admin/*`) require the `X-Admin-Key` header:
+
+```bash
+curl -H "X-Admin-Key: YOUR_ADMIN_KEY" \
+  -X POST https://mmapi.55-tech.com/emergency/trigger
+```
+
+Admin keys grant access to system-wide operations like emergency controls, reconciliation, and monitoring. These are typically restricted to operations staff.
+
+<Note>
+`GET /emergency/status` does **not** require authentication — it can be called without any API key.
+</Note>
+
 ## WebSocket authentication
 
 For WebSocket connections, send your API key in the subscribe message:
@@ -35,7 +50,7 @@ You must send the subscribe message within **30 seconds** of connecting, or the 
 
 Rate limits are enforced per client:
 
-- **REST API:** 100 requests per minute
+- **REST API:** 2,000 requests per minute
 - **WebSocket:** Maximum 5 concurrent connections per API key
 - **Exceeded:** Returns `429 Too Many Requests`
 

@@ -14,7 +14,7 @@ The **Market Making (MM)** engine is a high-frequency trading system that:
 4. **Automatically hedges** filled positions on bookmakers
 5. **Tracks positions, exposure, and PnL** through the full settlement lifecycle
 
-The client API gives you read access to all trading activity, positions, and analytics for your client.
+The client API lets you monitor all trading activity, control your trading state, manage tournaments and market types, and cancel orders.
 
 ## How market making works
 
@@ -106,28 +106,78 @@ These cover 1x2 markets, over/under, handicap, correct score, and both sides.
 | Category | Endpoints | Description |
 |----------|-----------|-------------|
 | **Identity** | `GET /api/v1/me` | Get your client info |
+| **Settings** | `PATCH /api/v1/clients/settings` | Update client preferences (e.g. odds format) |
+| **Trading Controls** | `GET /api/v1/trading/status` | Get current trading status |
+| **Trading Controls** | `POST /api/v1/trading/pause` | Pause trading (keeps orders, stops new ones) |
+| **Trading Controls** | `POST /api/v1/trading/resume` | Resume trading after pause |
+| **Trading Controls** | `POST /api/v1/trading/stop` | Stop trading and cancel all open orders |
+| **Trading Controls** | `POST /api/v1/trading/start` | Start trading from stopped state |
 | **Orders** | `GET /api/v1/orders` | View exchange orders (paginated, filterable) |
 | **Orders** | `GET /api/v1/orders/{id}` | Get specific order |
 | **Orders** | `GET /api/v1/orders/open` | List open orders for a fixture |
 | **Orders** | `GET /api/v1/orders/summary` | Order statistics |
+| **Orders** | `POST /api/v1/orders/cancel-all` | Cancel all open orders |
+| **Orders** | `POST /api/v1/orders/{id}/cancel` | Cancel a specific order |
 | **Bets** | `GET /api/v1/bets` | View hedge bets (paginated) |
 | **Bets** | `GET /api/v1/bets/{id}` | Get specific bet |
 | **Bets** | `GET /api/v1/bets/summary` | Bet statistics |
 | **Fixtures** | `GET /api/v1/fixtures` | List fixtures with scores |
-| **Fixtures** | `GET /api/v1/fixtures/{id}` | Get specific fixture |
+| **Sports** | `GET /api/v1/sports` | List available sports with fixture counts |
+| **Sports** | `GET /api/v1/sports/{sport_id}/tournaments` | List tournaments for a sport |
+| **Sports** | `GET /api/v1/sports/{sport_id}/market-types` | Market types with per-client toggle status |
+| **Markets** | `GET /api/v1/markets` | List markets for a sport |
+| **Players** | `GET /api/v1/players` | List players for a sport |
+| **Tournaments** | `GET /api/v1/tournaments` | List client tournament configurations |
+| **Tournaments** | `POST /api/v1/tournaments/{id}/activate` | Enable tournament trading |
+| **Tournaments** | `POST /api/v1/tournaments/{id}/deactivate` | Disable tournament trading |
+| **Tournaments** | `PATCH /api/v1/tournaments/{id}` | Update tournament settings |
+| **Market Allowlist** | `PATCH /api/v1/client/market-allowlist` | Bulk-toggle market types |
+| **Market Allowlist** | `POST /api/v1/client/market-allowlist/activate-all` | Re-enable all market types |
 | **Positions** | `GET /api/v1/positions` | Aggregated positions |
 | **Positions** | `GET /api/v1/positions/summary` | Position summary |
+| **PnL** | `GET /api/v1/pnl` | Profit and loss breakdown |
 | **Accounts** | `GET /api/v1/accounts` | List exchange accounts (no credentials) |
+
+### Admin API (`X-Admin-Key` auth)
+
+| Category | Endpoints | Description |
+|----------|-----------|-------------|
+| **Emergency** | `POST /emergency/trigger` | Trigger system-wide emergency |
+| **Emergency** | `POST /emergency/stop` | Stop all trading system-wide |
+| **Emergency** | `POST /emergency/pause` | **Deprecated** — alias for `/emergency/stop`. Triggers full emergency and cancels all orders |
+| **Emergency** | `POST /emergency/start` | Start trading system-wide |
+| **Emergency** | `POST /emergency/resume` | Resume trading system-wide |
+| **Order Slots** | `GET /admin/poison-slots` | List all poison slots |
+| **Order Slots** | `GET /admin/slot-summary` | Slot state summary counts |
+| **Order Slots** | `POST /admin/reconcile` | Trigger reconciliation |
+| **Order Slots** | `POST /admin/clear-poison` | Clear poison for one exact side |
+| **Order Slots** | `POST /admin/cancel-ghost-orders` | Mark ghost DB orders as CANCELLED |
+| **Monitoring** | `GET /admin/hedge-drift` | Hedge drift summary report |
+| **Monitoring** | `GET /admin/hedge-drift/timeline` | Hedge drift timeline |
+
+### System (no auth)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /emergency/status` | Get emergency mode status |
+| `GET /health` | Health check |
+| `GET /ready` | Readiness check |
+| `GET /metrics` | Prometheus metrics |
+| `GET /status` | Full system status |
+| `GET /status/subscriptions` | Active WebSocket subscriptions |
+| `GET /status/latency` | Latency metrics |
+| `GET /config` | Current configuration |
 
 ### WebSocket
 
 | Endpoint | Description |
 |----------|-------------|
 | `WS /ws/subscribe` | Real-time order, bet, account, score, and emergency updates |
+| `GET /ws/subscribe/stats` | WebSocket subscription statistics |
 
 ## Rate limits
 
-- REST API: **100 requests/minute** per client
+- REST API: **2,000 requests/minute** per client
 - WebSocket: **5 concurrent connections** per API key
 
 ## Next steps

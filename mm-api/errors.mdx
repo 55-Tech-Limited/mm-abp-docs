@@ -35,14 +35,16 @@ Validation errors include location details:
 | `200` | Success |
 | `401` | Unauthorized — invalid or missing API key (must be valid UUID) |
 | `404` | Not found — resource does not exist |
+| `409` | Conflict — action blocked by current state (e.g. deactivating with open orders, duplicate resource) |
 | `422` | Validation error — request parameters failed validation |
 | `426` | Upgrade required — WebSocket endpoint called via HTTP |
-| `429` | Rate limited — exceeded 100 requests/minute |
+| `429` | Rate limited — exceeded 2,000 requests/minute |
 | `500` | Internal server error |
+| `502` | Bad gateway — partial failure (e.g. cancel request succeeded for some orders but not all) |
 
 ## Rate limiting
 
-The MM API enforces **100 requests/minute** per client API key.
+The MM API enforces **2,000 requests/minute** per client API key.
 
 When rate limited, the API returns `429 Too Many Requests`. Implement exponential backoff in your retry logic (wait 1s, 2s, 4s, etc.).
 
