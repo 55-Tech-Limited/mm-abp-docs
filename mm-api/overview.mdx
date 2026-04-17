@@ -101,55 +101,16 @@ These cover 1x2 markets, over/under, handicap, correct score, and both sides.
 
 ## Endpoints at a glance
 
-### Client API (`X-API-Key` auth)
-
 | Category | Endpoints | Description |
 |----------|-----------|-------------|
-| **Identity** | `GET /api/v1/me` | Get your client info |
-| **Settings** | `PATCH /api/v1/clients/settings` | Update client preferences (e.g. odds format) |
-| **Trading Controls** | `GET /api/v1/trading/status` | Get current trading status |
-| **Trading Controls** | `POST /api/v1/trading/pause` | Pause trading (keeps orders, stops new ones) |
-| **Trading Controls** | `POST /api/v1/trading/resume` | Resume trading after pause |
-| **Trading Controls** | `POST /api/v1/trading/stop` | Stop trading and cancel all open orders |
-| **Trading Controls** | `POST /api/v1/trading/start` | Start trading from stopped state |
-| **Orders** | `GET /api/v1/orders` | View exchange orders (paginated, filterable) |
-| **Orders** | `GET /api/v1/orders/{id}` | Get specific order |
-| **Orders** | `GET /api/v1/orders/open` | List open orders for a fixture |
-| **Orders** | `GET /api/v1/orders/summary` | Order statistics |
-| **Orders** | `POST /api/v1/orders/cancel-all` | Cancel all open orders |
-| **Orders** | `POST /api/v1/orders/{id}/cancel` | Cancel a specific order |
-| **Bets** | `GET /api/v1/bets` | View hedge bets (paginated) |
-| **Bets** | `GET /api/v1/bets/{id}` | Get specific bet |
-| **Bets** | `GET /api/v1/bets/summary` | Bet statistics |
-| **Fixtures** | `GET /api/v1/fixtures` | List fixtures with scores |
-| **Sports** | `GET /api/v1/sports` | List available sports with fixture counts |
-| **Sports** | `GET /api/v1/sports/{sport_id}/tournaments` | List tournaments for a sport |
-| **Sports** | `GET /api/v1/sports/{sport_id}/market-types` | Market types with per-client toggle status |
-| **Markets** | `GET /api/v1/markets` | List markets for a sport |
-| **Players** | `GET /api/v1/players` | List players for a sport |
-| **Tournaments** | `GET /api/v1/tournaments` | List client tournament configurations |
-| **Tournaments** | `POST /api/v1/tournaments/{id}/activate` | Enable tournament trading |
-| **Tournaments** | `POST /api/v1/tournaments/{id}/deactivate` | Disable tournament trading |
-| **Tournaments** | `PATCH /api/v1/tournaments/{id}` | Update tournament settings |
-| **Market Allowlist** | `PATCH /api/v1/client/market-allowlist` | Bulk-toggle market types |
-| **Market Allowlist** | `POST /api/v1/client/market-allowlist/activate-all` | Re-enable all market types |
-| **Positions** | `GET /api/v1/positions` | Aggregated positions |
-| **Positions** | `GET /api/v1/positions/summary` | Position summary |
-| **PnL** | `GET /api/v1/pnl` | Profit and loss breakdown |
-| **Accounts** | `GET /api/v1/accounts` | List exchange accounts (no credentials) |
-
-### Status (no auth)
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /emergency/status` | Check if trading is halted (emergency mode) |
-| `GET /health` | Health check |
-
-### WebSocket
-
-| Endpoint | Description |
-|----------|-------------|
-| `WS /ws/subscribe` | Real-time order, bet, account, score, and emergency updates |
+| **Trading Controls** | `GET /me`, `PATCH /clients/settings`, `GET/POST /trading/*`, `GET /emergency/status`, `GET /health` | Client identity, preferences, pause/resume/stop/start trading, system status |
+| **Orders** | `GET /orders`, `GET /orders/{id}`, `GET /orders/open`, `GET /orders/summary`, `POST /orders/cancel-all`, `POST /orders/{id}/cancel` | View, filter, and cancel exchange orders |
+| **Bets** | `GET /bets`, `GET /bets/{id}`, `GET /bets/summary` | View hedge bets placed on bookmakers |
+| **Fixtures & Sports** | `GET /fixtures`, `GET /sports`, `GET /sports/{id}/tournaments`, `GET /markets`, `GET /players` | Discover events, sports, tournaments, markets, and players |
+| **Tournaments** | `GET /tournaments`, `POST /tournaments/{id}/activate`, `POST /tournaments/{id}/deactivate`, `PATCH /tournaments/{id}`, `GET /sports/{id}/market-types`, `PATCH /client/market-allowlist`, `POST /client/market-allowlist/activate-all` | Manage tournament trading and market type toggles |
+| **Analytics** | `GET /positions`, `GET /positions/summary`, `GET /pnl` | Aggregated positions and profit & loss |
+| **Accounts** | `GET /accounts` | List exchange accounts (no credentials) |
+| **WebSocket** | `WS /ws/subscribe` | Real-time order, bet, account, score, and emergency updates |
 
 ## Rate limits
 

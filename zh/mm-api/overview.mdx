@@ -101,55 +101,16 @@ UNDECIDED → WON / LOST / VOID / HALF_WON / HALF_LOST
 
 ## 端点一览
 
-### 客户端API（`X-API-Key` 认证）
-
 | 类别 | 端点 | 描述 |
 |------|------|------|
-| **身份** | `GET /api/v1/me` | 获取您的客户信息 |
-| **设置** | `PATCH /api/v1/clients/settings` | 更新客户偏好设置（如赔率格式） |
-| **交易控制** | `GET /api/v1/trading/status` | 获取当前交易状态 |
-| **交易控制** | `POST /api/v1/trading/pause` | 暂停交易（保留订单，停止新订单） |
-| **交易控制** | `POST /api/v1/trading/resume` | 暂停后恢复交易 |
-| **交易控制** | `POST /api/v1/trading/stop` | 停止交易并取消所有未结订单 |
-| **交易控制** | `POST /api/v1/trading/start` | 从停止状态启动交易 |
-| **订单** | `GET /api/v1/orders` | 查看交易所订单（分页、可过滤） |
-| **订单** | `GET /api/v1/orders/{id}` | 获取特定订单 |
-| **订单** | `GET /api/v1/orders/open` | 列出赛事的未结订单 |
-| **订单** | `GET /api/v1/orders/summary` | 订单统计 |
-| **订单** | `POST /api/v1/orders/cancel-all` | 取消所有未结订单 |
-| **订单** | `POST /api/v1/orders/{id}/cancel` | 取消特定订单 |
-| **投注** | `GET /api/v1/bets` | 查看对冲投注（分页） |
-| **投注** | `GET /api/v1/bets/{id}` | 获取特定投注 |
-| **投注** | `GET /api/v1/bets/summary` | 投注统计 |
-| **赛事** | `GET /api/v1/fixtures` | 列出赛事及比分 |
-| **运动** | `GET /api/v1/sports` | 列出可用运动及赛事数量 |
-| **运动** | `GET /api/v1/sports/{sport_id}/tournaments` | 列出运动的锦标赛 |
-| **运动** | `GET /api/v1/sports/{sport_id}/market-types` | 市场类型及客户端开关状态 |
-| **市场** | `GET /api/v1/markets` | 列出运动的市场类型 |
-| **球员** | `GET /api/v1/players` | 列出运动的球员 |
-| **锦标赛** | `GET /api/v1/tournaments` | 列出客户端锦标赛配置 |
-| **锦标赛** | `POST /api/v1/tournaments/{id}/activate` | 启用锦标赛交易 |
-| **锦标赛** | `POST /api/v1/tournaments/{id}/deactivate` | 禁用锦标赛交易 |
-| **锦标赛** | `PATCH /api/v1/tournaments/{id}` | 更新锦标赛设置 |
-| **市场白名单** | `PATCH /api/v1/client/market-allowlist` | 批量切换市场类型 |
-| **市场白名单** | `POST /api/v1/client/market-allowlist/activate-all` | 重新启用所有市场类型 |
-| **持仓** | `GET /api/v1/positions` | 汇总持仓 |
-| **持仓** | `GET /api/v1/positions/summary` | 持仓摘要 |
-| **盈亏** | `GET /api/v1/pnl` | 盈亏明细 |
-| **账户** | `GET /api/v1/accounts` | 列出交易所账户（无凭证） |
-
-### 状态（无需认证）
-
-| 端点 | 描述 |
-|------|------|
-| `GET /emergency/status` | 检查交易是否已暂停（紧急模式） |
-| `GET /health` | 健康检查 |
-
-### WebSocket
-
-| 端点 | 描述 |
-|------|------|
-| `WS /ws/subscribe` | 实时订单、投注、账户、比分和紧急更新 |
+| **交易控制** | `GET /me`、`PATCH /clients/settings`、`GET/POST /trading/*`、`GET /emergency/status`、`GET /health` | 客户身份、偏好设置、暂停/恢复/停止/启动交易、系统状态 |
+| **订单** | `GET /orders`、`GET /orders/{id}`、`GET /orders/open`、`GET /orders/summary`、`POST /orders/cancel-all`、`POST /orders/{id}/cancel` | 查看、过滤和取消交易所订单 |
+| **投注** | `GET /bets`、`GET /bets/{id}`、`GET /bets/summary` | 查看在博彩公司的对冲投注 |
+| **赛事与运动** | `GET /fixtures`、`GET /sports`、`GET /sports/{id}/tournaments`、`GET /markets`、`GET /players` | 发现赛事、运动、锦标赛、市场和球员 |
+| **锦标赛** | `GET /tournaments`、`POST /tournaments/{id}/activate`、`POST /tournaments/{id}/deactivate`、`PATCH /tournaments/{id}`、`GET /sports/{id}/market-types`、`PATCH /client/market-allowlist`、`POST /client/market-allowlist/activate-all` | 管理锦标赛交易和市场类型开关 |
+| **分析** | `GET /positions`、`GET /positions/summary`、`GET /pnl` | 汇总持仓和盈亏 |
+| **账户** | `GET /accounts` | 列出交易所账户（无凭证） |
+| **WebSocket** | `WS /ws/subscribe` | 实时订单、投注、账户、比分和紧急更新 |
 
 ## 速率限制
 

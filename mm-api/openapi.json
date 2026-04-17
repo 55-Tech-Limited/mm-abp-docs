@@ -9,7 +9,7 @@
     "/api/v1/me": {
       "get": {
         "tags": [
-          "Client API"
+          "Trading Controls"
         ],
         "summary": "Get current client info",
         "description": "Returns the authenticated client's information based on their API key.",
@@ -52,7 +52,7 @@
     "/api/v1/clients/settings": {
       "patch": {
         "tags": [
-          "Client API"
+          "Trading Controls"
         ],
         "summary": "Update client settings",
         "description": "Update authenticated client preferences.\n\n    Currently supports persisting the preferred odds display format used by the UI.",
@@ -108,7 +108,7 @@
     "/api/v1/trading/status": {
       "get": {
         "tags": [
-          "Client API"
+          "Trading Controls"
         ],
         "summary": "Get trading status",
         "description": "Returns the authenticated client's trading status.\n\n    This includes:\n    - Whether the client is under manual pause\n    - Whether global soft pause or emergency is blocking trading\n    - Whether trading is currently active for this client",
@@ -151,7 +151,7 @@
     "/api/v1/trading/pause": {
       "post": {
         "tags": [
-          "Client API"
+          "Trading Controls"
         ],
         "summary": "Pause trading",
         "description": "Manually pause market making for the authenticated client.\n\n    Behavior:\n    - Existing resting exchange orders are left on the exchange\n    - No new orders are posted for this client\n    - Fill hedging still runs\n    - Hedge-triggered reposts are blocked while paused",
@@ -194,7 +194,7 @@
     "/api/v1/trading/resume": {
       "post": {
         "tags": [
-          "Client API"
+          "Trading Controls"
         ],
         "summary": "Resume trading",
         "description": "Resume market making for the authenticated client after a manual pause.\n\n    Resume clears only the client's manual pause flag. Global soft pause or\n    emergency mode can still block trading if they are active.",
@@ -237,7 +237,7 @@
     "/api/v1/trading/stop": {
       "post": {
         "tags": [
-          "Client API"
+          "Trading Controls"
         ],
         "summary": "Stop trading",
         "description": "Fully stop market making for the authenticated client.\n\n    Behavior:\n    - Cancel all currently open exchange orders for this client\n    - Block new order placement and reposts until `/trading/start`\n    - Fill hedging can still run for any in-flight exchange fills that arrive later",
@@ -280,7 +280,7 @@
     "/api/v1/trading/start": {
       "post": {
         "tags": [
-          "Client API"
+          "Trading Controls"
         ],
         "summary": "Start trading",
         "description": "Start market making for the authenticated client after a manual pause or stop.\n\n    This clears client-scoped manual controls only. Global soft pause or system\n    stop/emergency can still block trading if they are active.",
@@ -323,7 +323,7 @@
     "/api/v1/orders": {
       "get": {
         "tags": [
-          "Client API"
+          "Orders"
         ],
         "summary": "List orders",
         "description": "Retrieve a paginated list of orders for your client account.\n\n    Orders are sorted by creation date (newest first) and can be filtered by:\n    - **fixture_id**: Filter by specific fixture/event\n    - **exchange**: Filter by exchange (polymarket, kalshi, etc.)\n    - **status**: Filter by order status (PLACED, FILLED, CANCELLED, etc.)\n\n    Use pagination parameters to navigate through large result sets.",
@@ -504,7 +504,7 @@
     "/api/v1/orders/open": {
       "get": {
         "tags": [
-          "Client API"
+          "Orders"
         ],
         "summary": "List open orders",
         "description": "Retrieve all currently open (unfilled) orders for your client account.\n\n    Open orders have status PLACED or PENDING_PLACEMENT and are not yet fully matched.\n    This endpoint does not paginate - it returns all open orders at once.",
@@ -587,7 +587,7 @@
     "/api/v1/orders/summary": {
       "get": {
         "tags": [
-          "Client API"
+          "Orders"
         ],
         "summary": "Get orders summary",
         "description": "Get aggregated statistics about all orders for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
@@ -670,7 +670,7 @@
     "/api/v1/orders/{order_id}": {
       "get": {
         "tags": [
-          "Client API"
+          "Orders"
         ],
         "summary": "Get order details",
         "description": "Retrieve detailed information about a specific order by its ID.",
@@ -726,7 +726,7 @@
     "/api/v1/bets": {
       "get": {
         "tags": [
-          "Client API"
+          "Bets"
         ],
         "summary": "List bets",
         "description": "Retrieve a paginated list of hedge bets placed on your behalf.\n\n    Bets are created when orders are matched on exchanges. They represent\n    the hedging activity on the bookmaker side.\n\n    Filter by:\n    - **order_id**: Get bets for a specific order\n    - **bookmaker**: Filter by bookmaker (vertex, pinnacle, demo)\n    - **status**: Filter by bet status - supports comma-separated values (e.g., `placed,pending`)\n      - `placed`: Successfully placed bets\n      - `pending`: Bets awaiting confirmation\n      - `declined`: Rejected bets",
@@ -890,7 +890,7 @@
     "/api/v1/bets/summary": {
       "get": {
         "tags": [
-          "Client API"
+          "Bets"
         ],
         "summary": "Get bets summary",
         "description": "Get aggregated statistics about all bets for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
@@ -973,7 +973,7 @@
     "/api/v1/bets/{bet_id}": {
       "get": {
         "tags": [
-          "Client API"
+          "Bets"
         ],
         "summary": "Get bet details",
         "description": "Retrieve detailed information about a specific bet by its ID.",
@@ -1029,7 +1029,7 @@
     "/api/v1/fixtures": {
       "get": {
         "tags": [
-          "Client API"
+          "Fixtures & Sports"
         ],
         "summary": "List fixtures",
         "description": "Retrieve a paginated list of fixtures (events/matches).\n\n    Fixtures contain event metadata like participants, start time, and scores.\n\n    Filter by:\n    - **fixtureIds**: Filter by specific fixture IDs (repeated query param)\n    - **tournament_id**: Filter by tournament (e.g., 234 for NHL)\n    - **sport_id**: Filter by sport (e.g., 1 for Soccer)\n    - **live**: Filter by live status (true/false)\n    - **all**: Set to true to see all available fixtures (not just ones with your orders)",
@@ -1188,7 +1188,7 @@
     "/api/v1/markets": {
       "get": {
         "tags": [
-          "Client API"
+          "Fixtures & Sports"
         ],
         "summary": "List markets for sport",
         "description": "Get available markets for a sport from cached odds data.\n\n    **Note:** Markets are global reference data - they describe what market types\n    exist (1x2, Over/Under, etc.) and are not specific to any client. All clients\n    see the same market definitions.\n\n    Markets are aggregated from all active fixtures for the specified sport.\n\n    **Required:**\n    - **sportId**: Get markets for a sport (e.g., 1=Soccer, 14=Ice Hockey)\n\n    **Response fields:**\n    - `marketId`: Market identifier\n    - `outcomeIds`: List of outcome IDs available for this market\n    - `playerIds`: List of player IDs (for player prop markets)\n    - `bookmakers`: Bookmakers offering this market",
@@ -1263,7 +1263,7 @@
     "/api/v1/players": {
       "get": {
         "tags": [
-          "Client API"
+          "Fixtures & Sports"
         ],
         "summary": "List players for sport",
         "description": "Get players for a sport from cached odds data.\n\n    **Note:** Players are global reference data - they describe what players\n    have prop markets available. All clients see the same player data.\n\n    Players are aggregated from all active fixtures for the specified sport\n    where playerId > 0 (player prop markets).\n\n    **Required:**\n    - **sportId**: Get players for a sport (e.g., 1=Soccer, 14=Ice Hockey)\n\n    **Response fields:**\n    - `playerId`: Player identifier\n    - `marketIds`: Markets this player has props in\n    - `outcomeIds`: Outcome IDs for this player\n    - `bookmakers`: Bookmakers offering props for this player",
@@ -1340,7 +1340,7 @@
     "/api/v1/positions": {
       "get": {
         "tags": [
-          "Client API"
+          "Analytics"
         ],
         "summary": "List positions",
         "description": "Get aggregated positions for your client account.\n\n    A position aggregates all orders for a specific fixture/outcome/exchange combination,\n    showing total stake, matched stake, and open stake.\n\n    This gives you a consolidated view of your exposure on each market.\n\n    **Status filters** (supports comma-separated values, e.g., `open,matched`):\n    - `open`: Only positions with open orders (still on exchange, not fully matched)\n    - `matched`: Only positions with matched stake > 0 (excludes cancelled)\n    - `filled`: Only fully matched orders\n    - `cancelled`: Only cancelled orders\n    - `active`: Exclude cancelled orders (default)\n\n    Examples:\n    - `/positions?status=open` - Only open positions\n    - `/positions?status=open,matched` - Open or matched positions\n    - `/positions?status=filled` - Only filled positions\n\n    Optionally filter by date range to see positions from a specific time period.",
@@ -1480,7 +1480,7 @@
     "/api/v1/positions/summary": {
       "get": {
         "tags": [
-          "Client API"
+          "Analytics"
         ],
         "summary": "Get positions summary",
         "description": "Get aggregated statistics about all positions for your client account.\n\n    Optionally filter by date range to see statistics for a specific time period.",
@@ -1563,7 +1563,7 @@
     "/api/v1/pnl": {
       "get": {
         "tags": [
-          "Client API"
+          "Analytics"
         ],
         "summary": "Get profit and loss",
         "description": "Get profit and loss (PnL) statistics for your client account.\n\n    **Realized PnL**: Profit/loss from settled orders\n    - WON orders: profit = matchedStake * (1/probability - 1)\n    - LOST orders: loss = -matchedStake\n    - HALF_WON/HALF_LOST: 50% of the above\n\n    **Unrealized PnL**: Potential profit from open positions (if they win)\n    - Calculated as: matchedStake * (1/probability - 1) for all unsettled matched orders\n\n    Optionally filter by date range to see PnL for a specific time period.",
@@ -1656,7 +1656,7 @@
     "/api/v1/accounts": {
       "get": {
         "tags": [
-          "Client API"
+          "Accounts"
         ],
         "summary": "List accounts",
         "description": "List exchange accounts configured for your client.\n\n    Returns account metadata without sensitive credentials.\n    Shows which exchanges you have accounts on and their configuration.",
@@ -1721,7 +1721,7 @@
     "/api/v1/orders/cancel-all": {
       "post": {
         "tags": [
-          "Client API"
+          "Orders"
         ],
         "summary": "Cancel all open orders",
         "description": "Cancel ALL open orders for your client account across all exchanges.\n\n    **Use with caution** - this will cancel every open order you have.\n\n    Optionally filter by:\n    - **exchange**: Only cancel orders on a specific exchange\n    - **fixture_id**: Only cancel orders for a specific fixture",
@@ -1804,7 +1804,7 @@
     "/api/v1/orders/{order_id}/cancel": {
       "post": {
         "tags": [
-          "Client API"
+          "Orders"
         ],
         "summary": "Cancel a specific order",
         "description": "Cancel a specific order by its ID.",
@@ -1860,7 +1860,7 @@
     "/health": {
       "get": {
         "tags": [
-          "Status & Monitoring"
+          "Trading Controls"
         ],
         "summary": "Health check",
         "description": "Basic health check for container orchestration (Kubernetes liveness probe).",
@@ -1914,7 +1914,7 @@
     "/emergency/status": {
       "get": {
         "tags": [
-          "Emergency Controls"
+          "Trading Controls"
         ],
         "summary": "Get emergency status",
         "description": "Check current emergency mode status without triggering any action.",
@@ -1936,7 +1936,7 @@
     "/api/v1/sports": {
       "get": {
         "tags": [
-          "Client API"
+          "Fixtures & Sports"
         ],
         "summary": "List available sports",
         "description": "Returns sports currently in the oddspapi feed for your bookmaker, with live fixture counts.",
@@ -1996,7 +1996,7 @@
     "/api/v1/sports/{sport_id}/tournaments": {
       "get": {
         "tags": [
-          "Client API"
+          "Fixtures & Sports"
         ],
         "summary": "List tournaments for a sport",
         "description": "Returns tournaments currently in the oddspapi feed, grouped by category, with activation status.",
@@ -2094,7 +2094,7 @@
     "/api/v1/sports/{sport_id}/market-types": {
       "get": {
         "tags": [
-          "Client API"
+          "Tournaments"
         ],
         "summary": "List hedgeable market types for a sport with per-client toggle status",
         "description": "Discovery endpoint for the markets page. Returns each (marketType, playerProp) group that is hedgeable on at least one of the client's configured exchanges, joined against the per-client allowlist.",
@@ -2173,7 +2173,7 @@
     "/api/v1/client/market-allowlist": {
       "patch": {
         "tags": [
-          "Client API"
+          "Tournaments"
         ],
         "summary": "Bulk-toggle market types for the authenticated client",
         "description": "Upserts allowlist rows for each (marketType, playerProp) in updates. For any row set to enabled=false, immediately cancels open orders owned by this client whose outcomeId belongs to that market type for the given sport.",
@@ -2242,7 +2242,7 @@
     "/api/v1/client/market-allowlist/activate-all": {
       "post": {
         "tags": [
-          "Client API"
+          "Tournaments"
         ],
         "summary": "Restore default-on for every market type in this scope",
         "description": "Deletes all allowlist rows for (client, bookmaker, sportId), restoring every market type to default-on. No order cancellation.",
@@ -2304,7 +2304,7 @@
     "/api/v1/tournaments": {
       "get": {
         "tags": [
-          "Client API"
+          "Tournaments"
         ],
         "summary": "List tournament configs",
         "description": "List all tournament configurations for the authenticated client.",
@@ -2377,7 +2377,7 @@
     "/api/v1/tournaments/{tournament_id}/activate": {
       "post": {
         "tags": [
-          "Client API"
+          "Tournaments"
         ],
         "summary": "Activate a tournament",
         "description": "Activate a tournament for trading. Looks up metadata from catalog and validates bookmaker coverage.",
@@ -2454,7 +2454,7 @@
     "/api/v1/tournaments/{tournament_id}/deactivate": {
       "post": {
         "tags": [
-          "Client API"
+          "Tournaments"
         ],
         "summary": "Deactivate a tournament",
         "description": "Deactivate a tournament. Automatically cancels open orders for this tournament.",
@@ -2507,7 +2507,7 @@
     "/api/v1/tournaments/{tournament_id}": {
       "patch": {
         "tags": [
-          "Client API"
+          "Tournaments"
         ],
         "summary": "Update tournament config",
         "description": "Update limitRatio and/or priceTicks for an active tournament.",
