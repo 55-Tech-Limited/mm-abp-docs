@@ -57,14 +57,14 @@ MM API 按客户端API密钥执行 **每分钟2,000个请求** 的限制。
 ```bash
 # 正确
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
+  https://mmapi.55-tech.com/api/v1/trading/status
 
 # 错误的头名 — 返回 401
 curl -H "Authorization: Bearer your-key" \
-  https://mmapi.55-tech.com/api/v1/me
+  https://mmapi.55-tech.com/api/v1/trading/status
 
 # 缺少头 — 返回 401
-curl https://mmapi.55-tech.com/api/v1/me
+curl https://mmapi.55-tech.com/api/v1/trading/status
 ```
 
 ### 未找到 (404)
@@ -72,8 +72,8 @@ curl https://mmapi.55-tech.com/api/v1/me
 请求的资源不存在：
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/orders/999999
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/999999/cancel
 # 返回: 404
 ```
 
@@ -91,8 +91,8 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 | 错误 | 描述 |
 |------|------|
-| `api_key required` | 订阅消息中无 `api_key` 字段 |
-| `Invalid api_key format` | 不是有效的UUID |
+| `apiKey required` | 订阅消息中无 `apiKey` 字段 |
+| `Invalid apiKey format` | 不是有效的UUID |
 | `Invalid API key` | 密钥未找到或客户端未激活 |
 | `Connection limit exceeded` | 此密钥已达5个活跃连接 |
 

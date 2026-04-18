@@ -57,14 +57,14 @@ Your API key is missing, invalid, or not in UUID format.
 ```bash
 # Correct
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
+  https://mmapi.55-tech.com/api/v1/trading/status
 
 # Wrong header name — returns 401
 curl -H "Authorization: Bearer your-key" \
-  https://mmapi.55-tech.com/api/v1/me
+  https://mmapi.55-tech.com/api/v1/trading/status
 
 # Missing header — returns 401
-curl https://mmapi.55-tech.com/api/v1/me
+curl https://mmapi.55-tech.com/api/v1/trading/status
 ```
 
 ### Not found (404)
@@ -72,8 +72,8 @@ curl https://mmapi.55-tech.com/api/v1/me
 The requested resource doesn't exist:
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/orders/999999
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  https://mmapi.55-tech.com/api/v1/orders/999999/cancel
 # Returns: 404
 ```
 
@@ -91,8 +91,8 @@ When subscribing to the WebSocket, these error messages may be returned:
 
 | Error | Description |
 |-------|-------------|
-| `api_key required` | No `api_key` field in subscribe message |
-| `Invalid api_key format` | Not a valid UUID |
+| `apiKey required` | No `apiKey` field in subscribe message |
+| `Invalid apiKey format` | Not a valid UUID |
 | `Invalid API key` | Key not found or client inactive |
 | `Connection limit exceeded` | Already at 5 active connections for this key |
 

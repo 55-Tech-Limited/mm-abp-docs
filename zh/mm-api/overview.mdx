@@ -1,44 +1,17 @@
 ---
 title: "MM API 概述 - 做市引擎"
 sidebarTitle: "概述"
-description: "MM-V2 交易API概述。高频做市引擎在预测市场交易所（Polymarket、Kalshi）上下单，并在博彩公司（Pinnacle、Vertex）上自动对冲。"
+description: "MM-V2 交易API概述。监控并控制做市引擎，引擎在预测市场交易所（Polymarket、Kalshi）上下单，并在博彩公司（Pinnacle、Vertex）上对冲。"
 ---
 
-## 什么是 MM？
+## 此API的功能
 
-**做市（MM）** 引擎是一个高频交易系统：
+MM 引擎自动下单、对冲头寸并跟踪盈亏。
+此API让您可以：
 
-1. **接收实时赔率** — 通过 [OddsPapi v5](https://docs.oddspapi.io/) WebSocket 从博彩公司获取
-2. **在交易所下单** — 以计算的价格在预测市场交易所发布订单
-3. **实时检测成交** — 通过交易所 WebSocket 检测订单成交
-4. **自动对冲** — 对已成交的头寸在博彩公司进行对冲
-5. **跟踪持仓、敞口和盈亏** — 贯穿完整结算生命周期
-
-客户端API让您可以监控所有交易活动、控制交易状态、管理锦标赛和市场类型以及取消订单。
-
-## 做市运作方式
-
-```
-博彩公司赔率（OddsPapi）
-       ↓
-策略引擎（计算交易所价格）
-       ↓
-在交易所下单/替换订单
-       ↓
-检测到交易所成交（WebSocket）
-       ↓
-在博彩公司自动对冲投注
-       ↓
-持仓与盈亏跟踪
-```
-
-### 订单定价
-
-引擎将博彩公司赔率转换为交易所概率价格并相应下单。价格档位和订单大小按每锦标赛配置。
-
-### 对冲
-
-当交易所订单成交时，引擎会自动在指定博彩公司下对应的对冲投注。该过程安全处理并发成交，并将成交金额重新发布到交易所以维持市场存在。
+- **监控** — 实时查看订单、对冲投注、持仓、盈亏和账户余额
+- **控制** — 暂停、恢复、停止和启动您的引擎
+- **配置** — 选择要交易的市场类型和锦标赛
 
 ## 基础URL
 
@@ -46,20 +19,25 @@ description: "MM-V2 交易API概述。高频做市引擎在预测市场交易所
 https://mmapi.55-tech.com
 ```
 
-所有客户端端点以 `/api/v1/` 为前缀。
+所有 REST 端点以 `/api/v1/` 为前缀。WebSocket 端点位于 `/ws/subscribe`。
 
 ## 关键概念
 
-### 客户端
+### 您的客户账户
 
-客户端是配置了特定交易所账户和博彩公司对冲目标的交易实体。
+接入时，我们为您创建客户账户并签发API密钥。该密钥用于所有 API 和 WebSocket 请求的身份验证。您通过此 API 监控引擎活动、控制交易状态，并配置要交易的市场和锦标赛。
 
-- **简单格式：** `"vertex"` — 客户名即博彩公司
-- **复合格式：** `"demo:vertex"` — 客户=demo，在 vertex 对冲
+其他所有内容 — 交易所账户、博彩公司选择、交易参数 — 均在接入阶段由我们配置。
 
-### 交易所
+### 博彩公司（定价源）
 
-下单的目标平台：
+您的引擎连接到一个博彩公司 — 一家其实时赔率驱动您做市活动的体育博彩。当博彩公司的赔率变化时，引擎重新计算订单价格并发布到您已连接的交易所。
+
+您不通过 API 选择或更改博彩公司，它在接入时分配。博彩公司的赔率是输入信号；交易所是您订单落地的地方。
+
+### 交易所与预测市场
+
+引擎代您下单的目标平台。您的交易所账户由我们的团队设置并关联至您的客户。您可通过 `GET /accounts` 查看余额和状态，账户创建、凭证和激活均由我们处理。
 
 | 交易所 | 认证方式 | 订单类型 |
 |--------|---------|---------|
@@ -75,13 +53,29 @@ https://mmapi.55-tech.com
 | 4casters | 令牌认证 | Socket.IO |
 | Predict.fun | JWT + EIP712 | 签名订单 |
 
-### 订单生命周期
+### 您控制的 vs 我们配置的
+
+| 您控制（通过 API） | 我们配置（接入阶段） |
+|-------------------|---------------------|
+| 暂停 / 恢复 / 停止 / 启动您的引擎 | 您的博彩公司（定价源） |
+| 取消未结订单 | 交易所账户和凭证 |
+| 按运动开关市场类型 | 交易参数（限额比、价格档位） |
+| 激活 / 停用锦标赛 | 客户账户创建和API密钥 |
+| 监控订单、投注、持仓、盈亏 | |
+
+### 订单状态
+
+每个订单在 `GET /orders`、`GET /orders/open` 和 WebSocket 事件中都会返回此字段。完整枚举：
 
 ```
-PENDING_PLACEMENT → PLACED → PARTIAL / FILLED / FAILED / CANCELLED / EXPIRED
+PENDING_PLACEMENT → PLACED → FILLED / CANCELLED / FAILED / EXPIRED
 ```
+
+可使用 `?status=PLACED,FILLED` 过滤 `GET /orders`（逗号分隔多个值）。
 
 ### 匹配状态
+
+独立于订单状态 — 跟踪订单在交易所上的撮合进度。
 
 ```
 NOT_MATCHED → PARTIALLY_MATCHED → FULLY_MATCHED
@@ -89,28 +83,24 @@ NOT_MATCHED → PARTIALLY_MATCHED → FULLY_MATCHED
 
 ### 结算状态
 
+赛事结束后，标的市场结算时设置。
+
 ```
 UNDECIDED → WON / LOST / VOID / HALF_WON / HALF_LOST
 ```
 
-### 可交易结果
+### 市场类型
 
-默认结果ID：111, 112, 121, 122, 131, 132, 141, 142, 151, 152, 161, 162, 171, 172
+市场类型自动发现。引擎持续将博彩公司的盘口映射到交易所市场 — 当引擎确认某市场类型可在您已连接的交易所交易时，该类型即可用。
 
-涵盖1x2市场、大小盘、让球盘、比分盘及双方。
+**查看可用市场类型：**
 
-## 端点一览
+```bash
+curl -H "X-API-Key: YOUR_KEY" \
+  https://mmapi.55-tech.com/api/v1/sports/1/market-types
+```
 
-| 类别 | 端点 | 描述 |
-|------|------|------|
-| **交易控制** | `GET /me`、`PATCH /clients/settings`、`GET/POST /trading/*`、`GET /emergency/status`、`GET /health` | 客户身份、偏好设置、暂停/恢复/停止/启动交易、系统状态 |
-| **订单** | `GET /orders`、`GET /orders/{id}`、`GET /orders/open`、`GET /orders/summary`、`POST /orders/cancel-all`、`POST /orders/{id}/cancel` | 查看、过滤和取消交易所订单 |
-| **投注** | `GET /bets`、`GET /bets/{id}`、`GET /bets/summary` | 查看在博彩公司的对冲投注 |
-| **赛事与运动** | `GET /fixtures`、`GET /sports`、`GET /sports/{id}/tournaments`、`GET /markets`、`GET /players` | 发现赛事、运动、锦标赛、市场和球员 |
-| **锦标赛** | `GET /tournaments`、`POST /tournaments/{id}/activate`、`POST /tournaments/{id}/deactivate`、`PATCH /tournaments/{id}`、`GET /sports/{id}/market-types`、`PATCH /client/market-allowlist`、`POST /client/market-allowlist/activate-all` | 管理锦标赛交易和市场类型开关 |
-| **分析** | `GET /positions`、`GET /positions/summary`、`GET /pnl` | 汇总持仓和盈亏 |
-| **账户** | `GET /accounts` | 列出交易所账户（无凭证） |
-| **WebSocket** | `WS /ws/subscribe` | 实时订单、投注、账户、比分和紧急更新 |
+响应中每一项包含 `marketType`、`enabled`（您当前的开关状态）和 `marketName`。使用 `PATCH /client/market-allowlist` 关闭不希望交易的类型，使用 `POST /client/market-allowlist/activate-all` 重新全部启用。
 
 ## 速率限制
 

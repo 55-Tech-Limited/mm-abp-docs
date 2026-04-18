@@ -1,44 +1,17 @@
 ---
 title: "MM API Overview - Market Making Engine"
 sidebarTitle: "Overview"
-description: "MM-V2 Trading API overview. High-frequency market making engine placing orders on prediction market exchanges (Polymarket, Kalshi) and automatically hedging on bookmakers (Pinnacle, Vertex)."
+description: "MM-V2 Trading API overview. Monitor and control the market making engine that posts orders on prediction market exchanges (Polymarket, Kalshi) and hedges on bookmakers (Pinnacle, Vertex)."
 ---
 
-## What is MM?
+## What this API does
 
-The **Market Making (MM)** engine is a high-frequency trading system that:
+The MM engine places orders, hedges positions, and tracks P&L automatically.
+This API lets you:
 
-1. **Receives live odds** from bookmakers via [OddsPapi v5](https://docs.oddspapi.io/) WebSocket
-2. **Posts orders** on prediction market exchanges at calculated prices
-3. **Detects fills** in real-time via exchange WebSockets
-4. **Automatically hedges** filled positions on bookmakers
-5. **Tracks positions, exposure, and PnL** through the full settlement lifecycle
-
-The client API lets you monitor all trading activity, control your trading state, manage tournaments and market types, and cancel orders.
-
-## How market making works
-
-```
-Bookmaker odds (OddsPapi)
-       ↓
-Strategy engine (calculate exchange price)
-       ↓
-Place/replace orders on exchanges
-       ↓
-Exchange fill detected (WebSocket)
-       ↓
-Automatic hedge bet on bookmaker
-       ↓
-Position & PnL tracking
-```
-
-### Order pricing
-
-The engine converts bookmaker odds to exchange probability prices and posts orders accordingly. Price ticks and order sizing are configured per-tournament.
-
-### Hedging
-
-When an exchange order fills, the engine automatically hedges by placing a corresponding bet on the assigned bookmaker. The process handles concurrent fills safely and reposts filled amounts back on the exchange to maintain market presence.
+- **Monitor** — orders, bets, positions, P&L, and account balances in real-time
+- **Control** — pause, resume, stop, and start your engine
+- **Configure** — choose which market types and tournaments to trade
 
 ## Base URL
 
@@ -46,20 +19,25 @@ When an exchange order fills, the engine automatically hedges by placing a corre
 https://mmapi.55-tech.com
 ```
 
-All client endpoints are prefixed with `/api/v1/`.
+All REST endpoints are prefixed with `/api/v1/`. The WebSocket endpoint lives at `/ws/subscribe`.
 
 ## Key concepts
 
-### Clients
+### Your client account
 
-Clients are trading entities configured with specific exchange accounts and bookmaker hedging targets.
+When we onboard you, we create a client account and issue you an API key. This key authenticates every API and WebSocket request. You use the API to monitor your engine's activity, control its trading state, and configure which markets and tournaments to trade.
 
-- **Simple format:** `"vertex"` — client name IS the bookmaker
-- **Compound format:** `"demo:vertex"` — client=demo, hedges on vertex
+Everything else — exchange accounts, bookmaker selection, trading parameters — is configured by our team during setup.
 
-### Exchanges
+### Bookmaker (pricing source)
 
-Target platforms where orders are placed:
+Your engine is connected to a bookmaker — a sportsbook whose live odds feed drives your market-making activity. When the bookmaker's odds change, the engine recomputes order prices and posts them to your connected exchanges.
+
+You don't choose or change your bookmaker through the API. It's assigned during onboarding. The bookmaker's odds are the input signal; the exchanges are where your orders land.
+
+### Exchanges and prediction markets
+
+The platforms where the engine places orders on your behalf. Your exchange accounts are set up by our team and linked to your client. You can view balances and status via `GET /accounts`, but account creation, credentials, and activation are handled on our side.
 
 | Exchange | Auth method | Order type |
 |----------|------------|------------|
@@ -75,13 +53,29 @@ Target platforms where orders are placed:
 | 4casters | Token auth | Socket.IO |
 | Predict.fun | JWT + EIP712 | Signed orders |
 
-### Order lifecycle
+### What you control vs what we configure
+
+| You control (via API) | We configure (during setup) |
+|-----------------------|------------------------------|
+| Pause / resume / stop / start your engine | Your bookmaker (pricing source) |
+| Cancel open orders | Exchange accounts and credentials |
+| Toggle market types on/off per sport | Trading parameters (limit ratios, price ticks) |
+| Activate / deactivate tournaments | Client account creation and API keys |
+| Monitor orders, bets, positions, P&L | |
+
+### Order status
+
+Returned on every order in `GET /orders`, `GET /orders/open`, and WebSocket events. Full enum:
 
 ```
-PENDING_PLACEMENT → PLACED → PARTIAL / FILLED / FAILED / CANCELLED / EXPIRED
+PENDING_PLACEMENT → PLACED → FILLED / CANCELLED / FAILED / EXPIRED
 ```
+
+Filter `GET /orders` with `?status=PLACED,FILLED` (comma-separated for multiple values).
 
 ### Match status
+
+Independent of order status — tracks how much of the order has been matched on the exchange.
 
 ```
 NOT_MATCHED → PARTIALLY_MATCHED → FULLY_MATCHED
@@ -89,28 +83,28 @@ NOT_MATCHED → PARTIALLY_MATCHED → FULLY_MATCHED
 
 ### Settlement status
 
+Set when the underlying market settles after the event finishes.
+
 ```
 UNDECIDED → WON / LOST / VOID / HALF_WON / HALF_LOST
 ```
 
-### Tradeable outcomes
+### Market types
 
-Default outcome IDs: 111, 112, 121, 122, 131, 132, 141, 142, 151, 152, 161, 162, 171, 172
+Market types are discovered automatically. The engine continuously maps bookmaker
+outcomes to exchange markets — a market type becomes available when the engine
+proves it's tradeable on your connected exchanges.
 
-These cover 1x2 markets, over/under, handicap, correct score, and both sides.
+**Discover available market types:**
 
-## Endpoints at a glance
+```bash
+curl -H "X-API-Key: YOUR_KEY" \
+  https://mmapi.55-tech.com/api/v1/sports/1/market-types
+```
 
-| Category | Endpoints | Description |
-|----------|-----------|-------------|
-| **Trading Controls** | `GET /me`, `PATCH /clients/settings`, `GET/POST /trading/*`, `GET /emergency/status`, `GET /health` | Client identity, preferences, pause/resume/stop/start trading, system status |
-| **Orders** | `GET /orders`, `GET /orders/{id}`, `GET /orders/open`, `GET /orders/summary`, `POST /orders/cancel-all`, `POST /orders/{id}/cancel` | View, filter, and cancel exchange orders |
-| **Bets** | `GET /bets`, `GET /bets/{id}`, `GET /bets/summary` | View hedge bets placed on bookmakers |
-| **Fixtures & Sports** | `GET /fixtures`, `GET /sports`, `GET /sports/{id}/tournaments`, `GET /markets`, `GET /players` | Discover events, sports, tournaments, markets, and players |
-| **Tournaments** | `GET /tournaments`, `POST /tournaments/{id}/activate`, `POST /tournaments/{id}/deactivate`, `PATCH /tournaments/{id}`, `GET /sports/{id}/market-types`, `PATCH /client/market-allowlist`, `POST /client/market-allowlist/activate-all` | Manage tournament trading and market type toggles |
-| **Analytics** | `GET /positions`, `GET /positions/summary`, `GET /pnl` | Aggregated positions and profit & loss |
-| **Accounts** | `GET /accounts` | List exchange accounts (no credentials) |
-| **WebSocket** | `WS /ws/subscribe` | Real-time order, bet, account, score, and emergency updates |
+Each item in the response shows `marketType`, `enabled` (your current toggle), and
+`marketName`. Use `PATCH /client/market-allowlist` to disable types you don't want
+to trade, and `POST /client/market-allowlist/activate-all` to re-enable all.
 
 ## Rate limits
 

@@ -45,25 +45,40 @@ function titleFromFrontmatter(mdx) {
   return title ? title[1].trim() : null;
 }
 
-function collectPages(docsJson) {
-  const pages = [];
+function walkGroup(group, onPage, onOpenApi) {
+  if (!group || typeof group !== "object") return;
 
-  // Handle both flat tabs and language-based navigation
-  const languages = docsJson?.navigation?.languages;
-  const tabs = languages
-    ? (languages.find((l) => l.language === "en")?.tabs ?? [])
-    : (docsJson?.navigation?.tabs ?? []);
-
-  for (const tab of tabs) {
-    const groups = tab?.groups ?? [];
-    for (const group of groups) {
-      const groupPages = group?.pages ?? [];
-      for (const p of groupPages) {
-        if (typeof p === "string" && p.length > 0) pages.push(p);
-      }
+  if (group.openapi) {
+    if (typeof group.openapi === "string" && group.openapi.length > 0) {
+      onOpenApi(group.openapi);
+    } else if (typeof group.openapi === "object" && typeof group.openapi.source === "string") {
+      onOpenApi(group.openapi.source);
     }
   }
 
+  for (const entry of group.pages ?? []) {
+    if (typeof entry === "string" && entry.length > 0) {
+      onPage(entry);
+    } else if (typeof entry === "object") {
+      walkGroup(entry, onPage, onOpenApi);
+    }
+  }
+}
+
+function getEnTabs(docsJson) {
+  const languages = docsJson?.navigation?.languages;
+  return languages
+    ? (languages.find((l) => l.language === "en")?.tabs ?? [])
+    : (docsJson?.navigation?.tabs ?? []);
+}
+
+function collectPages(docsJson) {
+  const pages = [];
+  for (const tab of getEnTabs(docsJson)) {
+    for (const group of tab?.groups ?? []) {
+      walkGroup(group, (p) => pages.push(p), () => {});
+    }
+  }
   // de-dupe preserving order
   const seen = new Set();
   const ordered = [];
@@ -78,19 +93,21 @@ function collectPages(docsJson) {
 
 function findOpenApiPaths(docsJson) {
   const paths = [];
-  const languages = docsJson?.navigation?.languages;
-  const tabs = languages
-    ? (languages.find((l) => l.language === "en")?.tabs ?? [])
-    : (docsJson?.navigation?.tabs ?? []);
-
-  for (const tab of tabs) {
+  for (const tab of getEnTabs(docsJson)) {
     for (const group of tab?.groups ?? []) {
-      if (typeof group?.openapi === "string" && group.openapi.length > 0) {
-        paths.push(group.openapi);
-      }
+      walkGroup(group, () => {}, (p) => paths.push(p));
     }
   }
-  return paths;
+  // de-dupe preserving order
+  const seen = new Set();
+  const ordered = [];
+  for (const p of paths) {
+    if (!seen.has(p)) {
+      seen.add(p);
+      ordered.push(p);
+    }
+  }
+  return ordered;
 }
 
 function main() {

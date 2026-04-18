@@ -1,20 +1,20 @@
 ---
 title: "MM Quickstart - First API Calls"
 sidebarTitle: "Quickstart"
-description: "Step-by-step guide to using the MM Trading API. Verify identity, view exchange orders, check positions, monitor hedge bets, and track PnL."
+description: "Step-by-step guide to using the MM Trading API. Check trading state, view exchange orders and hedge bets, monitor positions and PnL, control your engine."
 ---
 
 <Note>
-The MM engine places orders automatically based on bookmaker odds. The client API lets you **monitor** all trading activity and **control** your trading state (pause, resume, stop, start) and cancel orders. You do not place orders through this API — the engine does it for you.
+The MM engine places orders automatically based on bookmaker odds. The client API lets you **monitor** all trading activity, **control** your trading state (pause, resume, stop, start), and cancel orders. You do not place orders through this API — the engine does it for you.
 </Note>
 
-## Step 1: Verify your identity
+## Step 1: Check trading state
 
-Confirm your API key works and see your client info:
+Confirm your API key works and see your engine's current state:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
+  https://mmapi.55-tech.com/api/v1/trading/status
 ```
 
 Response:
@@ -23,134 +23,246 @@ Response:
 {
   "client": "your-client",
   "clientName": "Your Client Name",
-  "oddsFormat": "decimal"
+  "oddsFormat": "decimal",
+  "status": "live",
+  "tradingActive": true,
+  "manualPaused": false,
+  "manualStopped": false,
+  "systemTradingBlocked": false,
+  "emergencyActive": false,
+  "systemStopped": false,
+  "softPaused": false
 }
 ```
+
+**Response fields:**
+
+| Field | Description |
+|-------|-------------|
+| `status` | Summary state: `live`, `manual_paused`, `manual_stopped`, `soft_paused`, `system_stopped`, `emergency` |
+| `tradingActive` | `true` when the engine is actively posting orders |
+| `manualPaused` | `true` if you paused via `POST /trading/pause` |
+| `manualStopped` | `true` if you stopped via `POST /trading/stop` |
+| `systemTradingBlocked` | `true` if the system is globally paused or stopped (not client-specific) |
 
 ## Step 2: View exchange orders
 
-See orders the engine has placed on exchanges:
+Paginated list of orders the engine has placed on exchanges.
+
+**Query parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `fixtureId` | No | Filter by fixture ID |
+| `exchange` | No | Filter by exchange (`polymarket`, `kalshi`, etc.) |
+| `status` | No | Filter by order status, comma-separated (e.g. `PLACED,FILLED`). Values: `PENDING_PLACEMENT`, `PLACED`, `FILLED`, `FAILED`, `CANCELLED`, `EXPIRED` |
+| `fromDate` | No | Orders created on or after this date (`YYYY-MM-DD`) |
+| `toDate` | No | Orders created on or before this date (`YYYY-MM-DD`) |
+| `page` | No | Page number, 1-indexed (default: `1`) |
+| `pageSize` | No | Items per page, max `2000` (default: `50`) |
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/orders
-```
-
-Filter by exchange, fixture, or status:
-
-```bash
-# Filled Polymarket orders
 curl -H "X-API-Key: YOUR_API_KEY" \
   "https://mmapi.55-tech.com/api/v1/orders?exchange=polymarket&status=FILLED"
-
-# Open orders for a specific fixture
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/orders/open?fixtureId=id1000000861624412"
 ```
 
-Each order includes exchange-specific identifiers, matched amounts, and odds snapshots:
+Response:
 
 ```json
 {
-  "orderId": 123,
-  "fixtureId": "id1000000861624412",
-  "outcomeId": 161,
-  "exchange": "polymarket",
-  "exchangeOrderId": "0x1a2b3c...",
-  "exchangeOutcomeId": "12345678",
-  "orderStatus": "FILLED",
-  "matchedStatus": "FULLY_MATCHED",
-  "orderCents": 0.45,
-  "orderStake": 100.0,
-  "matchedStake": 100.0,
-  "settlementStatus": "UNDECIDED",
-  "bookmakerOutcomePrice": 1.808,
-  "bookmakerOutcomeLimit": 5000.0,
-  "createdAt": "2026-02-15T10:30:00Z",
-  "matchedAt": "2026-02-15T10:30:05Z"
+  "data": [
+    {
+      "orderId": 123,
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "playerId": 0,
+      "exchange": "polymarket",
+      "account": "0x1234...abcd",
+      "exchangeOrderId": "0x1a2b3c...",
+      "exchangeOutcomeId": "12345678",
+      "orderStatus": "FILLED",
+      "matchedStatus": "FULLY_MATCHED",
+      "orderCents": 0.45,
+      "orderStake": 100.0,
+      "matchedStake": 100.0,
+      "back": true,
+      "side": "buy",
+      "settlementStatus": "UNDECIDED",
+      "settledAt": null,
+      "bookmakerOutcomePrice": 1.808,
+      "bookmakerOutcomeLimit": 5000.0,
+      "bookmakerOutcomeActive": true,
+      "createdAt": "2026-02-15T10:30:00Z",
+      "matchedAt": "2026-02-15T10:30:05Z",
+      "updatedAt": "2026-02-15T10:30:05Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 50,
+  "totalPages": 1
 }
 ```
 
+**Response fields** (non-obvious only):
+
+| Field | Description |
+|-------|-------------|
+| `playerId` | Player ID for player-prop markets, `0` for non-player-prop |
+| `account` | Exchange account username used for this order |
+| `orderStatus` | `PENDING_PLACEMENT`, `PLACED`, `FILLED`, `FAILED`, `CANCELLED`, `EXPIRED` |
+| `matchedStatus` | `NOT_MATCHED`, `PARTIALLY_MATCHED`, or `FULLY_MATCHED` |
+| `orderCents` | Order price in cents (`0.01`–`0.99` for prediction markets) |
+| `orderStake` | Amount the engine intended to place |
+| `matchedStake` | Amount actually filled on the exchange |
+| `back` | `true` = buy, `false` = sell |
+| `side` | Computed string form: `buy` or `sell` (derived from `back`) |
+| `bookmakerOutcomePrice` | Bookmaker decimal odds that triggered this order |
+| `bookmakerOutcomeLimit` | Bookmaker's available limit at time of order |
+| `bookmakerOutcomeActive` | Whether the bookmaker side was active at order time |
+| `settlementStatus` | `UNDECIDED`, `WON`, `LOST`, `VOID`, `HALF_WON`, `HALF_LOST` |
+| `settledAt` | Timestamp when settlement was applied (null until settled) |
+| `updatedAt` | Last status-change timestamp |
+
+For only currently-resting orders (no pagination), use `GET /orders/open` with optional `fixtureId` and `exchange` filters.
+
 ## Step 3: View hedge bets
 
-See bets placed on bookmakers to hedge exchange fills:
+When an order fills on an exchange, the engine automatically places a hedge bet on the bookmaker. Each bet is linked to its order via `orderId`.
+
+**Query parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `orderId` | No | Filter bets linked to a specific order |
+| `bookmaker` | No | Filter by bookmaker |
+| `status` | No | Bet status, comma-separated (`placed`, `pending`, `declined`) |
+| `fromDate` | No | Bets created on or after this date (`YYYY-MM-DD`) |
+| `toDate` | No | Bets created on or before this date (`YYYY-MM-DD`) |
+| `page` | No | Page number (default: `1`) |
+| `pageSize` | No | Items per page, max `2000` (default: `50`) |
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/bets
+  "https://mmapi.55-tech.com/api/v1/bets?orderId=123"
 ```
 
-Each bet is linked to an exchange order via `orderId`:
+Response:
 
 ```json
 {
-  "betId": 456,
-  "orderId": 123,
-  "client": "your-client",
-  "bookmaker": "vertex",
-  "bookmakerBetId": "789",
-  "placedPrice": 1.808,
-  "placedStake": 100.0,
-  "betStatus": "matched",
-  "settlementStatus": null,
-  "placedAt": "2026-02-15T10:30:08Z"
+  "data": [
+    {
+      "betId": 456,
+      "orderId": 123,
+      "client": "your-client",
+      "bookmaker": "vertex",
+      "bookmakerBetId": "789",
+      "placedPrice": 1.808,
+      "placedStake": 100.0,
+      "betStatus": "placed",
+      "settlementStatus": "undecided",
+      "placedAt": "2026-02-15T10:30:08Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 50,
+  "totalPages": 1
 }
 ```
 
 ## Step 4: Check positions
 
-View aggregated positions across all fixtures and exchanges:
+Aggregated positions across all fixtures and exchanges.
+
+**Query parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `fixtureId` | No | Filter by fixture ID |
+| `exchange` | No | Filter by exchange |
+| `status` | No | Comma-separated: `open`, `matched`, `filled`, `cancelled`, `active` (default: `active`) |
+| `fromDate` | No | Filter from this date (`YYYY-MM-DD`) |
+| `toDate` | No | Filter to this date (`YYYY-MM-DD`) |
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/positions
 ```
 
-Get a position summary:
+Response:
 
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/positions/summary
+```json
+{
+  "positions": [
+    {
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "playerId": 0,
+      "exchange": "polymarket",
+      "orderCount": 3,
+      "totalStake": 100.0,
+      "matchedStake": 100.0,
+      "openStake": 0.0,
+      "avgPrice": 0.45
+    }
+  ],
+  "count": 1
+}
 ```
+
+For a single rolled-up summary across every fixture, use `GET /positions/summary`.
 
 ## Step 5: View profit & loss
 
-Get your PnL breakdown:
+Market-making P&L: spread captured between exchange fills and their bookmaker hedges.
+
+**Query parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `fromDate` | No | Filter orders created on or after this date (`YYYY-MM-DD`) |
+| `toDate` | No | Filter orders created on or before this date (`YYYY-MM-DD`) |
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/pnl
+  "https://mmapi.55-tech.com/api/v1/pnl?fromDate=2026-01-29&toDate=2026-02-01"
 ```
 
-Filter by date range:
+Response:
 
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/pnl?fromDate=2026-01-01&toDate=2026-01-31"
+```json
+{
+  "totalTurnover": 98350.00,
+  "validTurnover": 72415.30,
+  "netRealizedSpread": 1482.55,
+  "nakedPnl": -220.10,
+  "unhedgedStake": 1622.78,
+  "unhedgedStakePct": 1.65,
+  "avgHedgePriceDrift": 0.0042,
+  "settledPairCount": 1420,
+  "nakedSettledCount": 12,
+  "fromDate": "2026-01-29",
+  "toDate": "2026-02-01"
+}
 ```
 
-## Step 6: View fixtures
+**Response fields:**
 
-See which events the engine is trading on:
+| Field | Description |
+|-------|-------------|
+| `totalTurnover` | Total stake hedged on the bookmaker side |
+| `validTurnover` | Risk-adjusted turnover. A $100 bet at 1.1 contributes less than $100 at 3.0 |
+| `netRealizedSpread` | P&L from settled exchange + bookmaker pairs (both legs terminal) |
+| `nakedPnl` | P&L from settled exchange fills that never got a successful hedge |
+| `unhedgedStake` | Dollar amount of matched exchange stake with no successful hedge |
+| `unhedgedStakePct` | Percentage of matched exchange stake with no successful hedge |
+| `avgHedgePriceDrift` | Stake-weighted average hedge slippage (decimal-odds points) |
+| `settledPairCount` | Number of fully-settled exchange + hedge pairs |
+| `nakedSettledCount` | Number of settled exchange fills counted in `nakedPnl` |
 
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/fixtures
-```
-
-Filter by sport, tournament, or live status:
-
-```bash
-# Live fixtures only
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/fixtures?live=true"
-
-# Filter by tournament
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/fixtures?tournamentId=17"
-```
-
-## Step 7: List accounts
+## Step 6: List accounts
 
 View your exchange accounts (credentials are never exposed):
 
@@ -176,68 +288,51 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 }
 ```
 
-## Step 8: Trading controls
+## Step 7: Trading controls
 
-Check your current trading status:
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/trading/status
-```
-
-Pause trading (keeps existing orders, stops new ones):
+Pause keeps existing orders on the exchange but stops new ones. Stop cancels all open orders immediately.
 
 ```bash
+# Pause — keeps existing orders, stops new ones
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/pause
-```
 
-Resume after a pause:
-
-```bash
+# Resume after a pause
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/resume
-```
 
-Stop trading entirely (cancels all open orders):
-
-```bash
+# Stop — cancels every open order
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/stop
-```
 
-Start trading from a stopped state:
-
-```bash
+# Start after a stop
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/start
 ```
 
-## Step 9: Cancel orders
+## Step 8: Cancel orders
 
-Cancel all open orders at once:
+Cancel a single order by ID, or every open order at once.
+
+**Query parameters for `cancel-all`:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `exchange` | No | Only cancel orders on a specific exchange |
+| `fixtureId` | No | Only cancel orders for a specific fixture |
 
 ```bash
+# Cancel everything
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/orders/cancel-all
-```
 
-Cancel a specific order by ID:
+# Cancel only Polymarket orders
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/orders/cancel-all?exchange=polymarket"
 
-```bash
+# Cancel a specific order
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/orders/123/cancel
-```
-
-## Step 10: Update client settings
-
-Update your preferences (e.g. odds display format):
-
-```bash
-curl -X PATCH -H "X-API-Key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"oddsFormat": "decimal"}' \
-  https://mmapi.55-tech.com/api/v1/clients/settings
 ```
 
 ## Next steps

@@ -23,7 +23,7 @@ Send a subscribe message within **30 seconds** of connecting:
 ```json
 {
   "type": "subscribe",
-  "api_key": "your-uuid-api-key",
+  "apiKey": "your-uuid-api-key",
   "channels": ["orders", "bets", "accounts", "scores", "emergency"]
 }
 ```
@@ -35,7 +35,7 @@ On success, the server responds with:
 ```json
 {
   "type": "subscribed",
-  "subscription_id": 1,
+  "subscriptionId": 1,
   "channels": ["orders", "bets", "accounts", "scores", "emergency"]
 }
 ```
@@ -161,7 +161,7 @@ After an order fills, the system automatically places a hedge bet:
     "bookmaker": "vertex",
     "placedPrice": 1.808,
     "placedStake": 100.0,
-    "betStatus": "matched",
+    "betStatus": "placed",
     "sentData": {
       "requestId": "a1b2c3d4",
       "eventId": 98765,
@@ -229,8 +229,8 @@ After an order fills, the system automatically places a hedge bet:
 
 | Error | Description |
 |-------|-------------|
-| `api_key required` | Missing `api_key` field in subscribe message |
-| `Invalid api_key format` | API key must be a valid UUID |
+| `apiKey required` | Missing `apiKey` field in subscribe message |
+| `Invalid apiKey format` | API key must be a valid UUID |
 | `Invalid API key` | API key not found or client is inactive |
 | `Connection limit exceeded` | Already have 5 active connections for this API key |
 
@@ -247,13 +247,13 @@ async def connect():
         # Subscribe
         await ws.send(json.dumps({
             "type": "subscribe",
-            "api_key": "YOUR_API_KEY",
+            "apiKey": "YOUR_API_KEY",
             "channels": ["orders", "bets", "scores"]
         }))
 
         # Wait for confirmation
         sub_resp = json.loads(await ws.recv())
-        print(f"Subscribed (id={sub_resp.get('subscription_id')})")
+        print(f"Subscribed (id={sub_resp.get('subscriptionId')})")
 
         # Keep-alive task
         async def keep_alive():
@@ -286,7 +286,7 @@ const ws = new WebSocket('wss://mmapi.55-tech.com/ws/subscribe');
 ws.on('open', () => {
   ws.send(JSON.stringify({
     type: 'subscribe',
-    api_key: 'YOUR_API_KEY',
+    apiKey: 'YOUR_API_KEY',
     channels: ['orders', 'bets', 'scores']
   }));
 });
@@ -295,7 +295,7 @@ ws.on('message', (raw) => {
   const msg = JSON.parse(raw);
 
   if (msg.type === 'subscribed') {
-    console.log(`Subscribed (id=${msg.subscription_id})`);
+    console.log(`Subscribed (id=${msg.subscriptionId})`);
   }
 
   if (msg.type === 'broadcast') {

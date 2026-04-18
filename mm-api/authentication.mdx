@@ -12,7 +12,7 @@ Pass your API key (UUID format) in the `X-API-Key` header:
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
+  https://mmapi.55-tech.com/api/v1/trading/status
 ```
 
 Your API key is bound to a specific `client` entity. All data returned is filtered to your client — you only see your own orders, bets, and positions.
@@ -24,7 +24,7 @@ For WebSocket connections, send your API key in the subscribe message:
 ```json
 {
   "type": "subscribe",
-  "api_key": "YOUR_API_KEY",
+  "apiKey": "YOUR_API_KEY",
   "channels": ["orders", "bets", "accounts", "scores"]
 }
 ```

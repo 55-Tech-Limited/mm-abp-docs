@@ -23,7 +23,7 @@ wss://mmapi.55-tech.com/ws/subscribe
 ```json
 {
   "type": "subscribe",
-  "api_key": "your-uuid-api-key",
+  "apiKey": "your-uuid-api-key",
   "channels": ["orders", "bets", "accounts", "scores", "emergency"]
 }
 ```
@@ -35,7 +35,7 @@ wss://mmapi.55-tech.com/ws/subscribe
 ```json
 {
   "type": "subscribed",
-  "subscription_id": 1,
+  "subscriptionId": 1,
   "channels": ["orders", "bets", "accounts", "scores", "emergency"]
 }
 ```
@@ -161,7 +161,7 @@ wss://mmapi.55-tech.com/ws/subscribe
     "bookmaker": "vertex",
     "placedPrice": 1.808,
     "placedStake": 100.0,
-    "betStatus": "matched",
+    "betStatus": "placed",
     "sentData": {
       "requestId": "a1b2c3d4",
       "eventId": 98765,
@@ -229,8 +229,8 @@ wss://mmapi.55-tech.com/ws/subscribe
 
 | 错误 | 描述 |
 |------|------|
-| `api_key required` | 订阅消息中缺少 `api_key` 字段 |
-| `Invalid api_key format` | API密钥必须是有效的UUID |
+| `apiKey required` | 订阅消息中缺少 `apiKey` 字段 |
+| `Invalid apiKey format` | API密钥必须是有效的UUID |
 | `Invalid API key` | API密钥未找到或客户端未激活 |
 | `Connection limit exceeded` | 此API密钥已有5个活跃连接 |
 
@@ -247,13 +247,13 @@ async def connect():
         # 订阅
         await ws.send(json.dumps({
             "type": "subscribe",
-            "api_key": "YOUR_API_KEY",
+            "apiKey": "YOUR_API_KEY",
             "channels": ["orders", "bets", "scores"]
         }))
 
         # 等待确认
         sub_resp = json.loads(await ws.recv())
-        print(f"已订阅 (id={sub_resp.get('subscription_id')})")
+        print(f"已订阅 (id={sub_resp.get('subscriptionId')})")
 
         # 保活任务
         async def keep_alive():
@@ -286,7 +286,7 @@ const ws = new WebSocket('wss://mmapi.55-tech.com/ws/subscribe');
 ws.on('open', () => {
   ws.send(JSON.stringify({
     type: 'subscribe',
-    api_key: 'YOUR_API_KEY',
+    apiKey: 'YOUR_API_KEY',
     channels: ['orders', 'bets', 'scores']
   }));
 });
@@ -295,7 +295,7 @@ ws.on('message', (raw) => {
   const msg = JSON.parse(raw);
 
   if (msg.type === 'subscribed') {
-    console.log(`已订阅 (id=${msg.subscription_id})`);
+    console.log(`已订阅 (id=${msg.subscriptionId})`);
   }
 
   if (msg.type === 'broadcast') {

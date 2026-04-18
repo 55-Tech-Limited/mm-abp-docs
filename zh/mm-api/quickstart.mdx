@@ -1,20 +1,20 @@
 ---
 title: "MM 快速入门 - 首次API调用"
 sidebarTitle: "快速入门"
-description: "使用 MM 交易API的分步指南。验证身份、查看交易所订单、检查持仓、监控对冲投注和跟踪盈亏。"
+description: "使用 MM 交易API的分步指南。检查交易状态、查看交易所订单和对冲投注、监控持仓和盈亏、控制您的引擎。"
 ---
 
 <Note>
-MM 引擎根据博彩公司赔率自动下单。客户端API让您可以 **监控** 所有交易活动并 **控制** 交易状态（暂停、恢复、停止、启动）以及取消订单。您不通过此API下单 — 引擎会自动完成。
+MM 引擎根据博彩公司赔率自动下单。客户端API让您可以 **监控** 所有交易活动、**控制** 交易状态（暂停、恢复、停止、启动）以及取消订单。您不通过此API下单 — 引擎会自动完成。
 </Note>
 
-## 步骤1：验证身份
+## 步骤1：检查交易状态
 
-确认您的API密钥有效并查看客户端信息：
+确认您的API密钥有效并查看引擎当前状态：
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/me
+  https://mmapi.55-tech.com/api/v1/trading/status
 ```
 
 响应：
@@ -23,134 +23,243 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 {
   "client": "your-client",
   "clientName": "Your Client Name",
-  "oddsFormat": "decimal"
+  "oddsFormat": "decimal",
+  "status": "live",
+  "tradingActive": true,
+  "manualPaused": false,
+  "manualStopped": false,
+  "systemTradingBlocked": false,
+  "emergencyActive": false,
+  "systemStopped": false,
+  "softPaused": false
 }
 ```
+
+**响应字段：**
+
+| 字段 | 描述 |
+|------|------|
+| `status` | 状态汇总：`live`、`manual_paused`、`manual_stopped`、`soft_paused`、`system_stopped`、`emergency` |
+| `tradingActive` | 引擎正在主动下单时为 `true` |
+| `manualPaused` | 通过 `POST /trading/pause` 暂停时为 `true` |
+| `manualStopped` | 通过 `POST /trading/stop` 停止时为 `true` |
+| `systemTradingBlocked` | 系统全局暂停或停止时为 `true`（非客户端独有） |
 
 ## 步骤2：查看交易所订单
 
-查看引擎在交易所下的订单：
+引擎已在交易所下单的分页列表。
+
+**查询参数：**
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `fixtureId` | 否 | 按赛事ID过滤 |
+| `exchange` | 否 | 按交易所过滤（`polymarket`、`kalshi` 等） |
+| `status` | 否 | 按订单状态过滤，逗号分隔（如 `PLACED,FILLED`）。取值：`PENDING_PLACEMENT`、`PLACED`、`FILLED`、`FAILED`、`CANCELLED`、`EXPIRED` |
+| `fromDate` | 否 | 在此日期或之后创建的订单（`YYYY-MM-DD`） |
+| `toDate` | 否 | 在此日期或之前创建的订单（`YYYY-MM-DD`） |
+| `page` | 否 | 页码，从 1 开始（默认：`1`） |
+| `pageSize` | 否 | 每页条数，最大 `2000`（默认：`50`） |
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/orders
-```
-
-按交易所、赛事或状态过滤：
-
-```bash
-# 已成交的 Polymarket 订单
 curl -H "X-API-Key: YOUR_API_KEY" \
   "https://mmapi.55-tech.com/api/v1/orders?exchange=polymarket&status=FILLED"
-
-# 特定赛事的未结订单
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/orders/open?fixtureId=id1000000861624412"
 ```
 
-每个订单包含交易所特定标识符、成交金额和赔率快照：
+响应：
 
 ```json
 {
-  "orderId": 123,
-  "fixtureId": "id1000000861624412",
-  "outcomeId": 161,
-  "exchange": "polymarket",
-  "exchangeOrderId": "0x1a2b3c...",
-  "exchangeOutcomeId": "12345678",
-  "orderStatus": "FILLED",
-  "matchedStatus": "FULLY_MATCHED",
-  "orderCents": 0.45,
-  "orderStake": 100.0,
-  "matchedStake": 100.0,
-  "settlementStatus": "UNDECIDED",
-  "bookmakerOutcomePrice": 1.808,
-  "bookmakerOutcomeLimit": 5000.0,
-  "createdAt": "2026-02-15T10:30:00Z",
-  "matchedAt": "2026-02-15T10:30:05Z"
+  "data": [
+    {
+      "orderId": 123,
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "playerId": 0,
+      "exchange": "polymarket",
+      "account": "0x1234...abcd",
+      "exchangeOrderId": "0x1a2b3c...",
+      "exchangeOutcomeId": "12345678",
+      "orderStatus": "FILLED",
+      "matchedStatus": "FULLY_MATCHED",
+      "orderCents": 0.45,
+      "orderStake": 100.0,
+      "matchedStake": 100.0,
+      "back": true,
+      "side": "buy",
+      "settlementStatus": "UNDECIDED",
+      "settledAt": null,
+      "bookmakerOutcomePrice": 1.808,
+      "bookmakerOutcomeLimit": 5000.0,
+      "bookmakerOutcomeActive": true,
+      "createdAt": "2026-02-15T10:30:00Z",
+      "matchedAt": "2026-02-15T10:30:05Z",
+      "updatedAt": "2026-02-15T10:30:05Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 50,
+  "totalPages": 1
 }
 ```
 
+**响应字段**（仅列出非自明字段）：
+
+| 字段 | 描述 |
+|------|------|
+| `playerId` | 球员盘市场的球员 ID，非球员盘为 `0` |
+| `account` | 此订单使用的交易所账户用户名 |
+| `orderStatus` | `PENDING_PLACEMENT`、`PLACED`、`FILLED`、`FAILED`、`CANCELLED`、`EXPIRED` |
+| `matchedStatus` | `NOT_MATCHED`、`PARTIALLY_MATCHED` 或 `FULLY_MATCHED` |
+| `orderCents` | 订单价格（美分，预测市场为 `0.01`–`0.99`） |
+| `orderStake` | 引擎计划下单的金额 |
+| `matchedStake` | 在交易所实际成交的金额 |
+| `back` | `true` = 买入，`false` = 卖出 |
+| `side` | 字符串形式：`buy` 或 `sell`（由 `back` 推导） |
+| `bookmakerOutcomePrice` | 触发此订单的博彩公司十进制赔率 |
+| `bookmakerOutcomeLimit` | 下单时博彩公司的可用限额 |
+| `bookmakerOutcomeActive` | 下单时博彩公司侧是否活跃 |
+| `settlementStatus` | `UNDECIDED`、`WON`、`LOST`、`VOID`、`HALF_WON`、`HALF_LOST` |
+| `settledAt` | 应用结算的时间戳（结算前为 null） |
+| `updatedAt` | 最后状态变更时间戳 |
+
+如只查看当前未结订单（无分页），使用 `GET /orders/open`，可选 `fixtureId` 和 `exchange` 过滤。
+
 ## 步骤3：查看对冲投注
 
-查看在博彩公司下的对冲投注：
+订单在交易所成交后，引擎会自动在博彩公司下对冲投注。每个投注通过 `orderId` 与其订单关联。
+
+**查询参数：**
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `orderId` | 否 | 按特定订单关联的投注过滤 |
+| `bookmaker` | 否 | 按博彩公司过滤 |
+| `status` | 否 | 投注状态，逗号分隔（`placed`、`pending`、`declined`） |
+| `fromDate` | 否 | 在此日期或之后创建的投注（`YYYY-MM-DD`） |
+| `toDate` | 否 | 在此日期或之前创建的投注（`YYYY-MM-DD`） |
+| `page` | 否 | 页码（默认：`1`） |
+| `pageSize` | 否 | 每页条数，最大 `2000`（默认：`50`） |
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/bets
+  "https://mmapi.55-tech.com/api/v1/bets?orderId=123"
 ```
 
-每个投注通过 `orderId` 与交易所订单关联：
+响应：
 
 ```json
 {
-  "betId": 456,
-  "orderId": 123,
-  "client": "your-client",
-  "bookmaker": "vertex",
-  "bookmakerBetId": "789",
-  "placedPrice": 1.808,
-  "placedStake": 100.0,
-  "betStatus": "matched",
-  "settlementStatus": null,
-  "placedAt": "2026-02-15T10:30:08Z"
+  "data": [
+    {
+      "betId": 456,
+      "orderId": 123,
+      "client": "your-client",
+      "bookmaker": "vertex",
+      "bookmakerBetId": "789",
+      "placedPrice": 1.808,
+      "placedStake": 100.0,
+      "betStatus": "placed",
+      "settlementStatus": "undecided",
+      "placedAt": "2026-02-15T10:30:08Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 50,
+  "totalPages": 1
 }
 ```
 
 ## 步骤4：查看持仓
 
-查看所有赛事和交易所的汇总持仓：
+按所有赛事和交易所汇总的持仓。
+
+**查询参数：**
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `fixtureId` | 否 | 按赛事ID过滤 |
+| `exchange` | 否 | 按交易所过滤 |
+| `status` | 否 | 逗号分隔：`open`、`matched`、`filled`、`cancelled`、`active`（默认：`active`） |
+| `fromDate` | 否 | 从此日期开始过滤（`YYYY-MM-DD`） |
+| `toDate` | 否 | 至此日期为止过滤（`YYYY-MM-DD`） |
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/positions
 ```
 
-获取持仓摘要：
+响应：
 
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/positions/summary
+```json
+{
+  "positions": [
+    {
+      "fixtureId": "id1000000861624412",
+      "outcomeId": 161,
+      "exchange": "polymarket",
+      "totalStake": 100.0,
+      "matchedStake": 100.0,
+      "avgPrice": 0.45
+    }
+  ],
+  "count": 1
+}
 ```
+
+如需跨所有赛事的单一汇总摘要，使用 `GET /positions/summary`。
 
 ## 步骤5：查看盈亏
 
-获取盈亏明细：
+做市盈亏：交易所成交与对应博彩公司对冲之间捕获的价差。
+
+**查询参数：**
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `fromDate` | 否 | 在此日期或之后创建的订单（`YYYY-MM-DD`） |
+| `toDate` | 否 | 在此日期或之前创建的订单（`YYYY-MM-DD`） |
 
 ```bash
 curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/pnl
+  "https://mmapi.55-tech.com/api/v1/pnl?fromDate=2026-01-29&toDate=2026-02-01"
 ```
 
-按日期范围过滤：
+响应：
 
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/pnl?fromDate=2026-01-01&toDate=2026-01-31"
+```json
+{
+  "totalTurnover": 98350.00,
+  "validTurnover": 72415.30,
+  "netRealizedSpread": 1482.55,
+  "nakedPnl": -220.10,
+  "unhedgedStake": 1622.78,
+  "unhedgedStakePct": 1.65,
+  "avgHedgePriceDrift": 0.0042,
+  "settledPairCount": 1420,
+  "nakedSettledCount": 12,
+  "fromDate": "2026-01-29",
+  "toDate": "2026-02-01"
+}
 ```
 
-## 步骤6：查看赛事
+**响应字段：**
 
-查看引擎正在交易的赛事：
+| 字段 | 描述 |
+|------|------|
+| `totalTurnover` | 在博彩公司侧对冲的总下注额 |
+| `validTurnover` | 风险调整后的成交量。1.1 赔率下的 100 美元贡献小于 3.0 赔率下的 100 美元 |
+| `netRealizedSpread` | 已结算的交易所 + 博彩公司配对的盈亏（双腿都已终态） |
+| `nakedPnl` | 已结算但从未成功对冲的交易所成交盈亏 |
+| `unhedgedStake` | 未成功对冲的已成交交易所下注金额（美元） |
+| `unhedgedStakePct` | 未成功对冲的已成交交易所下注百分比 |
+| `avgHedgePriceDrift` | 按下注额加权的平均对冲价格滑点（十进制赔率点） |
+| `settledPairCount` | 完全结算的交易所 + 对冲配对数量 |
+| `nakedSettledCount` | 计入 `nakedPnl` 的已结算交易所成交数量 |
 
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/fixtures
-```
-
-按运动、锦标赛或直播状态过滤：
-
-```bash
-# 仅直播赛事
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/fixtures?live=true"
-
-# 按锦标赛过滤
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://mmapi.55-tech.com/api/v1/fixtures?tournamentId=17"
-```
-
-## 步骤7：列出账户
+## 步骤6：列出账户
 
 查看您的交易所账户（凭证永远不会暴露）：
 
@@ -176,68 +285,51 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 }
 ```
 
-## 步骤8：交易控制
+## 步骤7：交易控制
 
-查看当前交易状态：
-
-```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  https://mmapi.55-tech.com/api/v1/trading/status
-```
-
-暂停交易（保留现有订单，停止新订单）：
+暂停会保留交易所上的现有订单但停止新订单。停止会立即取消所有未结订单。
 
 ```bash
+# 暂停 — 保留现有订单，停止新订单
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/pause
-```
 
-暂停后恢复：
-
-```bash
+# 暂停后恢复
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/resume
-```
 
-完全停止交易（取消所有未结订单）：
-
-```bash
+# 停止 — 取消所有未结订单
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/stop
-```
 
-从停止状态启动交易：
-
-```bash
+# 停止后启动
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/trading/start
 ```
 
-## 步骤9：取消订单
+## 步骤8：取消订单
 
-一次取消所有未结订单：
+按ID取消单个订单，或一次取消所有未结订单。
+
+**`cancel-all` 查询参数：**
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `exchange` | 否 | 仅取消特定交易所上的订单 |
+| `fixtureId` | 否 | 仅取消特定赛事的订单 |
 
 ```bash
+# 取消全部
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/orders/cancel-all
-```
 
-按ID取消特定订单：
+# 仅取消 Polymarket 订单
+curl -X POST -H "X-API-Key: YOUR_API_KEY" \
+  "https://mmapi.55-tech.com/api/v1/orders/cancel-all?exchange=polymarket"
 
-```bash
+# 取消特定订单
 curl -X POST -H "X-API-Key: YOUR_API_KEY" \
   https://mmapi.55-tech.com/api/v1/orders/123/cancel
-```
-
-## 步骤10：更新客户设置
-
-更新您的偏好设置（如赔率显示格式）：
-
-```bash
-curl -X PATCH -H "X-API-Key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"oddsFormat": "decimal"}' \
-  https://mmapi.55-tech.com/api/v1/clients/settings
 ```
 
 ## 下一步
