@@ -31,7 +31,8 @@ wss://scraping-api.55-tech.com/ws
   "cookies": { "session": "abc123" },
   "geo": "US,DE",
   "agent": "de1",
-  "idle_timeout": 0
+  "idle_timeout": 0,
+  "proxy": "socks5://user:pass@host:1080"
 }
 ```
 
@@ -44,6 +45,8 @@ wss://scraping-api.55-tech.com/ws
 | `geo` | string | No | — | 代理节点选择的国家过滤（例如 `US,DE`） |
 | `agent` | string | No | — | 通过标识固定到特定代理节点（例如 `de1` 或 `de1,at5`） |
 | `idle_timeout` | float | No | `0` | 等待目标消息的超时时间（秒）。`0` = 不超时 |
+| `subprotocols` | array | No | `[]` | WS 子协议协商（例如 `["centrifuge-protobuf"]`、`["graphql-ws"]`） |
+| `proxy` | string | No | `""` | WebSocket 连接的代理 URL（`http://` 或 `socks5://`） |
   </Step>
   <Step title="接收连接确认">
     网关选择代理节点，代理节点连接到目标 WebSocket，然后网关响应：

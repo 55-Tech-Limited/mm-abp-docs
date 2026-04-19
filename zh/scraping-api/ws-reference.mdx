@@ -58,7 +58,8 @@ wscat -c wss://scraping-api.55-tech.com/ws
   },
   "geo": "US,DE",
   "agent": "de1",
-  "idle_timeout": 0
+  "idle_timeout": 0,
+  "proxy": "socks5://user:pass@host:1080"
 }
 ```
 
@@ -73,6 +74,8 @@ wscat -c wss://scraping-api.55-tech.com/ws
 | `geo` | string | No | — | 将代理节点选择限制到特定国家。逗号分隔的 ISO 代码（例如 `US,DE,AT`）。 |
 | `agent` | string | No | — | 通过标识固定到特定代理节点（例如 `de1`），或逗号分隔进行随机选择（`de1,at5,us3`）。 |
 | `idle_timeout` | float | No | `0` | 如果 > 0，在指定秒数内未收到目标消息后断开连接。`0` = 不超时。 |
+| `subprotocols` | array | No | `[]` | WS 子协议协商。作为 `Sec-WebSocket-Protocol` 请求头发送。例如 `["centrifuge-protobuf"]` |
+| `proxy` | string | No | `""` | WebSocket 连接的代理 URL（`http://` 或 `socks5://`）。适用于通过住宅或 ISP 代理进行路由。 |
 
 ## 响应消息（网关 → 客户端）
 

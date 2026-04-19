@@ -31,7 +31,8 @@ wss://scraping-api.55-tech.com/ws
   "cookies": { "session": "abc123" },
   "geo": "US,DE",
   "agent": "de1",
-  "idle_timeout": 0
+  "idle_timeout": 0,
+  "proxy": "socks5://user:pass@host:1080"
 }
 ```
 
@@ -44,6 +45,8 @@ wss://scraping-api.55-tech.com/ws
 | `geo` | string | No | — | Country filter for agent selection (e.g., `US,DE`) |
 | `agent` | string | No | — | Pin to specific agent(s) by slug (e.g., `de1` or `de1,at5`) |
 | `idle_timeout` | float | No | `0` | Seconds to wait for a target message before disconnect. `0` = no timeout |
+| `subprotocols` | array | No | `[]` | WS sub-protocol negotiation (e.g. `["centrifuge-protobuf"]`, `["graphql-ws"]`) |
+| `proxy` | string | No | `""` | Proxy URL for the WebSocket connection (`http://` or `socks5://`) |
   </Step>
   <Step title="Receive connected confirmation">
     The gateway picks an agent, the agent connects to the target WebSocket, and the gateway responds with:

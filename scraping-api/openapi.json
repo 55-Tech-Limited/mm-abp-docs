@@ -3,7 +3,7 @@
   "info": {
     "title": "55 Tech Scraping API",
     "description": "Distributed fetch network. Route HTTP, browser, WebSocket, and AMQP requests through 80+ geo-distributed agents with health-aware routing and block detection.",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "contact": {
       "name": "55 Tech Support",
       "email": "contact@55-tech.com"

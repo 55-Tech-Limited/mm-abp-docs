@@ -58,7 +58,8 @@ Must be sent as JSON text within **10 seconds** of connecting.
   },
   "geo": "US,DE",
   "agent": "de1",
-  "idle_timeout": 0
+  "idle_timeout": 0,
+  "proxy": "socks5://user:pass@host:1080"
 }
 ```
 
@@ -73,6 +74,8 @@ Must be sent as JSON text within **10 seconds** of connecting.
 | `geo` | string | No | — | Restrict agent selection to specific countries. Comma-separated ISO codes (e.g. `US,DE,AT`). |
 | `agent` | string | No | — | Pin to specific agent(s) by slug (e.g. `de1`) or comma-separated for random pick (`de1,at5,us3`). |
 | `idle_timeout` | float | No | `0` | If > 0, disconnect after this many seconds without receiving a message from the target. `0` = no idle timeout. |
+| `subprotocols` | array | No | `[]` | WS sub-protocol negotiation. Sent as `Sec-WebSocket-Protocol` header during upgrade. E.g. `["centrifuge-protobuf"]` |
+| `proxy` | string | No | `""` | Proxy URL for the WebSocket connection (`http://` or `socks5://`). Useful for routing through residential or ISP proxies. |
 
 ## Response messages (gateway → client)
 
