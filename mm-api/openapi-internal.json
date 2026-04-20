@@ -1717,7 +1717,89 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "additionalProperties": true,
+                  "properties": {
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fixtureId": {
+                            "type": "string",
+                            "description": "Unique fixture identifier"
+                          },
+                          "outcomeId": {
+                            "type": "integer",
+                            "description": "Outcome/market option ID"
+                          },
+                          "playerId": {
+                            "type": "integer",
+                            "description": "Player ID for player-prop markets, 0 for non-player-prop"
+                          },
+                          "exchange": {
+                            "type": "string",
+                            "description": "Exchange name (e.g., polymarket)"
+                          },
+                          "orderCount": {
+                            "type": "integer",
+                            "description": "Number of orders in this position"
+                          },
+                          "totalStake": {
+                            "type": "number",
+                            "description": "Total stake amount"
+                          },
+                          "matchedStake": {
+                            "type": "number",
+                            "description": "Amount actually filled on the exchange"
+                          },
+                          "openStake": {
+                            "type": "number",
+                            "description": "Unmatched/resting stake"
+                          },
+                          "avgPrice": {
+                            "type": "number",
+                            "description": "Average fill price"
+                          },
+                          "participant1Name": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }],
+                            "description": "Home/first participant name (null if fixture metadata unavailable)"
+                          },
+                          "participant2Name": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }],
+                            "description": "Away/second participant name (null if fixture metadata unavailable)"
+                          },
+                          "sportId": {
+                            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+                            "description": "Sport ID"
+                          },
+                          "sportName": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }],
+                            "description": "Sport display name"
+                          },
+                          "tournamentId": {
+                            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+                            "description": "Tournament/league ID"
+                          },
+                          "tournamentName": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }],
+                            "description": "Tournament display name"
+                          },
+                          "categoryName": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }],
+                            "description": "Category (e.g., country)"
+                          },
+                          "startTime": {
+                            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+                            "description": "Fixture start time (epoch seconds)"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Total number of positions returned"
+                    }
+                  },
                   "title": "Response List Positions Api V1 Positions Get"
                 }
               }

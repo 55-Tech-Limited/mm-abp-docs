@@ -205,12 +205,22 @@ Response:
       "totalStake": 100.0,
       "matchedStake": 100.0,
       "openStake": 0.0,
-      "avgPrice": 0.45
+      "avgPrice": 0.45,
+      "participant1Name": "Los Angeles Lakers",
+      "participant2Name": "Houston Rockets",
+      "sportId": 2,
+      "sportName": "Basketball",
+      "tournamentId": 132,
+      "tournamentName": "NBA",
+      "categoryName": "USA",
+      "startTime": 1712000000
     }
   ],
   "count": 1
 }
 ```
+
+Each position now includes fixture metadata resolved from the database. The fixture fields (`participant1Name`, `participant2Name`, `sportId`, `sportName`, `tournamentId`, `tournamentName`, `categoryName`, `startTime`) are **nullable** — they will be `null` if the fixture was never seen by the backend.
 
 For a single rolled-up summary across every fixture, use `GET /positions/summary`.
 
