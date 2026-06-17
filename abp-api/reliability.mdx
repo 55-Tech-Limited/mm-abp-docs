@@ -6,7 +6,7 @@ keywords: "abp reliability, rate limits, requests per second, 429 too many reque
 ---
 
 <Info>
-ABP is built for production trading. Per-bookmaker circuit breakers, automatic retries, and a two-tier emergency system keep a single failing bookmaker from cascading into a wider outage. This page explains the behaviours that can affect your integration and how to respond to them.
+ABP is built for production trading. Per-account and per-bookmaker circuit breakers, automatic retries, and a two-tier emergency system keep a single failing account or bookmaker from cascading into a wider outage. This page explains the behaviours that can affect your integration and how to respond to them.
 </Info>
 
 ## System status
@@ -72,13 +72,18 @@ To stay under the limit: **batch placements** (`POST /place-orders` accepts many
 
 ## Circuit breakers
 
-ABP runs a **per-bookmaker circuit breaker**. If a bookmaker starts failing, its breaker opens and orders targeting it are declined (`Bookmaker not available`) instead of hanging.
+ABP runs circuit breakers at **two tiers** so that one failing account or bookmaker can't cascade into a wider outage:
 
-- **Opens** after consecutive failures to a bookmaker.
+- **Per-account breaker** — the placement path checks this first. If a specific account (one `bookmaker` + `username`) starts failing, its breaker opens and orders routed to that account are declined with `Circuit breaker open - account temporarily unavailable` instead of hanging. This isolates a single bad account (blocked credentials, suspension, auth failures) without affecting other accounts at the same bookmaker.
+- **Per-bookmaker breaker** — the outer tier. Infrastructure failures (timeouts, HTTP 5xx, 429) escalate here and decline every account at that bookmaker. Account-specific errors (unauthorized, blocked, suspended) deliberately do **not** escalate.
+
+A request is rejected if **either** tier is open. Each breaker:
+
+- **Opens** after consecutive infrastructure failures (account tier is more sensitive — fewer failures, longer cooldown).
 - **Half-opens** automatically after a cooldown to test recovery.
-- **Closes** and resumes normal routing once the bookmaker responds successfully.
+- **Closes** and resumes normal routing once requests succeed again.
 
-Because breakers are per-bookmaker, multi-bookmaker orders continue routing to healthy bookmakers while an unhealthy one is isolated.
+Because the bookmaker tier is per-bookmaker, multi-bookmaker orders continue routing to healthy bookmakers while an unhealthy one is isolated.
 
 ## Retry with backoff
 
