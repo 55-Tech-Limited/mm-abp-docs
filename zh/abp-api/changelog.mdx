@@ -1,0 +1,35 @@
+---
+title: "ABP 更新日志"
+sidebarTitle: "更新日志"
+description: "ABP API 更新日志——各版本的新功能、变更、破坏性变更与修复。"
+keywords: "abp 更新日志, api 更新日志, 发布说明, abp api 更新, 破坏性变更"
+---
+
+<Note>
+所有时间戳均为 **UTC**。破坏性变更会被显式标注——升级前请订阅 `status` WebSocket 频道并关注本页。
+</Note>
+
+## 2026-06-17
+
+### 🔁 变更
+
+- **币种的唯一真实来源。**账户的交易币种现在仅来自 `accounts.currencyId`；已移除默认币种猜测。订单金额以 `orderCurrency`（默认 `USD`）计价，而投注与余额使用账户的原生币种。参见[币种与额度](/zh/abp-api/currency)。
+- **REST 赔率单路径与 WebSocket 路径对齐**，两种传输返回相同的赔率/额度结构。
+
+### 🔧 改进
+
+- 扩充文档：新增[核心概念](/zh/abp-api/concepts)、[订单下注](/zh/abp-api/order-placement)（含可复制范例）、[币种与额度](/zh/abp-api/currency)、[额度与可靠性](/zh/abp-api/reliability)、[博彩商](/zh/abp-api/bookmakers)等指南，并将完整的消息/负载参考并入 [WebSocket](/zh/abp-api/websocket) 指南。
+
+## 早期
+
+### ✨ 新增
+
+- **32 家博彩商集成**，统一在一套 API 之后——体育博彩、博彩交易所、预测市场与 punter 平台。参见[博彩商](/zh/abp-api/bookmakers)。
+- **智能订单路由**，支持单家与多家博彩商下注、部分成交与交易所扫单模式。
+- **WebSocket 可靠投递**——可选启用的至少一次投递，含 `ack` / `ack_batch` / `replay` 及 100 条消息缓冲。
+- **请求去重**——按订单的 `requestUuid` 幂等，TTL 为 30 分钟。
+- **分析**——`GET /positions` 与 `GET /pnl` 提供聚合敞口与盈亏。
+
+### 🚧 即将推出
+
+- **期货 / 冠军盘**，通过 `futureId` + `participantId`。数据模型已就位；订单下注与赔率单获取目前返回 `501 Not Implemented`。

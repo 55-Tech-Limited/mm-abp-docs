@@ -2,19 +2,28 @@
 title: "ABP 错误处理"
 sidebarTitle: "错误"
 description: "ABP API 错误码、验证错误、订单拒绝原因和可靠性模式。了解如何在集成中处理错误。"
+keywords: "abp 错误, 错误码, 验证错误, 订单拒绝原因, 409 冲突, 429 速率限制, 可靠性, 熔断器"
 ---
 
 ## 错误响应格式
 
-所有API错误返回JSON正文：
+ABP 返回两种格式的错误，取决于错误来源：
 
-```json
-{
-  "detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}
-}
-```
+- **身份验证 / 速率限制中间件** 错误使用 `error` 键：
 
-验证错误包含字段级详情：
+  ```json
+  { "error": "Invalid or inactive API key" }
+  ```
+
+- **应用 / 路由** 错误（验证、未找到等）使用 FastAPI 标准的 `detail` 键：
+
+  ```json
+  { "detail": "No odds found for given parameters" }
+  ```
+
+请在客户端同时处理这两种格式。
+
+请求体验证错误（`422`）包含带 `loc` 路径的字段级详情：
 
 ```json
 {
@@ -35,14 +44,15 @@ description: "ABP API 错误码、验证错误、订单拒绝原因和可靠性�
 | `200` | 成功 |
 | `201` | 资源已创建 |
 | `204` | 资源已删除（无内容） |
-| `400` | 错误请求 — 参数无效 |
-| `401` | 未授权 — 缺少或无效的API密钥 |
-| `403` | 禁止 — API密钥已停用/过期，或资源属于其他客户 |
+| `400` | 错误请求 — 参数无效或缺失 |
+| `401` | 未授权 — 无效或停用的API密钥 |
+| `403` | 禁止 — 缺少API密钥头，或资源属于其他客户 |
 | `404` | 未找到 — 资源不存在 |
-| `409` | 冲突 — `requestUuid` 重复，已在处理中 |
+| `409` | 冲突 — 请求中的每个订单都是重复的（见下文） |
 | `422` | 验证错误 — 请求体验证失败 |
-| `429` | 速率限制 — 超出每分钟请求数 |
+| `429` | 速率限制 — 超出每秒请求数 |
 | `500` | 内部服务器错误 |
+| `501` | 未实现 — 期货市场（`futureId`）尚不支持 |
 | `503` | 服务不可用 — 数据库或依赖服务不可用 |
 
 ## 订单拒绝原因
@@ -57,7 +67,11 @@ description: "ABP API 错误码、验证错误、订单拒绝原因和可靠性�
 | 无活跃账户 | 此市场无可用的活跃博彩公司账户 |
 | 货币转换失败 | 无法在订单货币和博彩公司货币之间转换 |
 | 博彩公司不可用 | 指定的博彩公司没有此赛事/结果的赔率 |
-| requestUuid重复 | 此 `requestUuid` 已在处理中（5分钟去重窗口） |
+| 赔率暂时不可用 | 无法及时获取赔率；请重试 |
+
+<Note>
+重复的 `requestUuid` 不会作为拒绝原因返回。重复项会被静默跳过；如果请求中的**每个**订单都是重复的，则请求改为返回 `409`（见下文）。
+</Note>
 
 **被拒订单响应示例：**
 
@@ -70,7 +84,8 @@ description: "ABP API 错误码、验证错误、订单拒绝原因和可靠性�
       "requestUuid": "fb5f2dd9-c855-4ba9-8ef9-4c2278ca2f1d",
       "fixtureId": "id1000000861624412",
       "outcomeId": 161,
-      "declineReason": "Order stake 15000.00 USD exceeds available limit 5000.00 USD"
+      "declineReason": "Order stake 15000.00 USD exceeds available limit 5000.00 USD",
+      "bets": []
     }
   ]
 }
@@ -78,37 +93,38 @@ description: "ABP API 错误码、验证错误、订单拒绝原因和可靠性�
 
 ## 常见错误
 
-### 身份验证 (401)
-
-缺少或无效的API密钥。
+### 身份验证 (401 / 403)
 
 ```bash
-# 缺少头 → 401 {"detail": {"message": "Missing X-API-Key header", "code": "UNAUTHORIZED"}}
+# 缺少头 → 403 {"detail": "Missing API key header: x-api-key"}
 curl https://v2.55-tech.com/accounts
 
-# 无效密钥 → 401 {"detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}}
-curl -H "X-API-Key: wrong-key" https://v2.55-tech.com/accounts
+# 无效或停用的密钥 → 401 {"error": "Invalid or inactive API key"}
+curl -H "x-api-key: wrong-key" https://v2.55-tech.com/accounts
 ```
 
 ### 禁止访问 (403)
 
-两种情况下返回：
-
-- **API密钥已停用或过期** — 密钥存在但已禁用或超过有效期
-- **客户不匹配** — 尝试访问属于其他客户的资源
+当缺少API密钥头、密钥不允许访问所请求的端点/运动项目/博彩公司，或尝试访问属于其他客户的资源时返回。
 
 ```json
-{"detail": {"message": "API key is inactive", "code": "FORBIDDEN"}}
-{"detail": {"message": "API key has expired", "code": "FORBIDDEN"}}
-{"detail": {"message": "Access denied to this order", "code": "FORBIDDEN"}}
+{"detail": "Missing API key header: x-api-key"}
+{"error": "Access denied to endpoint"}
+{"detail": "Access denied: client not resolved"}
 ```
 
 ### 重复请求 (409)
 
-`requestUuid` 在过去5分钟内已使用。
+仅当请求中的**每个**订单都是重复时返回 — 每个 `requestUuid` 在过去 **30 分钟** 内已被处理或正在处理中。如果只有部分订单是重复的，那些会被跳过，其余正常处理。
 
 ```json
-{"detail": "Duplicate request - requestUuid already in-flight"}
+{
+  "detail": {
+    "error": "All orders are duplicates",
+    "duplicateUuids": ["eb45b192-317b-42d5-9f65-af497b9fa8c1"],
+    "inProgressUuids": []
+  }
+}
 ```
 
 ### 验证错误 (422)
@@ -129,13 +145,17 @@ curl -H "X-API-Key: wrong-key" https://v2.55-tech.com/accounts
 
 ### 速率限制 (429)
 
-超出您API密钥的每分钟请求数。默认限制：60/分钟。
+超出您客户的每**秒**请求数。默认限制：100/秒（每客户可配置）。
 
 ```json
-{"detail": "Rate limit exceeded"}
+{
+  "detail": "Rate limit exceeded",
+  "limit": "100",
+  "retry_after": 1
+}
 ```
 
-实施指数退避：重试前等待1秒、2秒、4秒等。
+窗口每秒重置 — 重试前等待 `retry_after` 间隔。
 
 ## 可靠性模式
 
@@ -153,4 +173,16 @@ ABP 实施了多种可靠性机制，可能影响您的集成：
 
 ### 订单过期
 
-订单默认 `expiresAt` 为创建后5秒。如果在此窗口内未下注，订单状态变为 `EXPIRED`。可设置自定义 `expiresAt` 用于更长时效的订单。
+订单默认 `expiresAt` 为创建后5秒（最长上限为24小时）。如果在此窗口内未下注，订单状态变为 `EXPIRED`。可设置自定义 `expiresAt` 用于更长时效的订单。
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="订单下注" icon="bullseye-arrow" href="/zh/abp-api/order-placement">
+    了解成交、部分下注与拒绝原因。
+  </Card>
+
+  <Card title="WebSocket" icon="bolt" href="/zh/abp-api/websocket">
+    实时跟踪订单与投注状态。
+  </Card>
+</Columns>

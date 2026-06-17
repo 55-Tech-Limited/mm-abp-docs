@@ -2,6 +2,7 @@
 title: "ABP Quickstart - Place Your First Bet"
 sidebarTitle: "Quickstart"
 description: "Step-by-step guide to placing your first bet through the ABP API. From account setup to order placement, tracking, and settlement."
+keywords: "abp quickstart, place first bet, place-orders, betslip, requestUuid, testOrder, track bets, positions, pnl"
 ---
 
 ## Step 1: List your accounts
@@ -9,7 +10,7 @@ description: "Step-by-step guide to placing your first bet through the ABP API. 
 Check which bookmaker accounts are configured for your API key:
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
@@ -31,7 +32,9 @@ Response includes each account's bookmaker, balance, priority, stake limits, and
     "verifyBetslip": false,
     "meta": {},
     "createdAt": "2026-01-01T00:00:00Z",
-    "updatedAt": "2026-02-01T12:00:00Z"
+    "updatedAt": "2026-02-01T12:00:00Z",
+    "multiLimitAllowed": true,
+    "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
   }
 ]
 ```
@@ -40,17 +43,33 @@ Response includes each account's bookmaker, balance, priority, stake limits, and
 
 Before placing a bet, retrieve current odds and limits. You need a `fixtureId`, `outcomeId`, and `playerId`:
 
+<Tabs>
+  <Tab title="cURL">
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/betslip?fixtureId=id1000002361061419&outcomeId=101&playerId=0"
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=id1000004461512432&outcomeId=103&playerId=0"
 ```
+  </Tab>
+  <Tab title="Python">
+```python
+import requests
+
+resp = requests.get(
+    "https://v2.55-tech.com/betslip",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    params={"fixtureId": "id1000004461512432", "outcomeId": 103, "playerId": 0},
+)
+print(resp.json()["odds"])
+```
+  </Tab>
+</Tabs>
 
 The betslip returns live odds from every bookmaker that has this market, with fixture and outcome metadata:
 
 ```json
 {
-  "fixtureId": "id1000002361061419",
-  "outcomeId": 101,
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
   "playerId": 0,
   "client": "your-client",
   "fixtureInfo": {
@@ -63,28 +82,33 @@ The betslip returns live odds from every bookmaker that has this market, with fi
   },
   "outcomeInfo": {
     "marketName": "Full Time Result",
-    "outcomeName": "1"
+    "outcomeName": "2"
   },
   "odds": {
     "pinnacle": {
-      "id1000002361061419:pinnacle:101:0": {
-        "price": 1.5,
+      "id1000004461512432:pinnacle:103:0": {
+        "price": 1.98,
         "limit": 15000,
         "limitMin": 5,
         "limitCurrency": "USD",
+        "limitUsd": 15000,
+        "limitMinUsd": 5,
         "active": true,
-        "account": "pinnacle_main"
+        "account": "pinnacle_main",
+        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
       }
     },
     "sharpbet": {
-      "id1000002361061419:sharpbet:101:0": {
-        "price": 1.52,
+      "id1000004461512432:sharpbet:103:0": {
+        "price": 2.0,
         "limit": 751.34,
         "limitMin": 1,
         "limitCurrency": "EUR",
         "limitUsd": 886.13,
+        "limitMinUsd": 1.18,
         "active": true,
-        "account": "sharpbet_user"
+        "account": "sharpbet_user",
+        "currencyInfo": { "currency": "EUR", "currencyValue": 0.84788876, "updatedAt": "2026-02-07T17:29:32+00:00" }
       }
     }
   }
@@ -99,9 +123,11 @@ Use the [OddsPapi API](https://docs.oddspapi.io/) to discover fixture IDs and ou
 
 Place a bet order with minimum price protection. Each order needs a unique `requestUuid` for idempotency:
 
+<Tabs>
+  <Tab title="cURL">
 ```bash
 curl -X POST \
-  -H "X-API-Key: YOUR_API_KEY" \
+  -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "orders": [
@@ -119,12 +145,61 @@ curl -X POST \
   }' \
   https://v2.55-tech.com/place-orders
 ```
+  </Tab>
+  <Tab title="Python">
+```python
+import uuid, requests
+
+resp = requests.post(
+    "https://v2.55-tech.com/place-orders",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    json={"orders": [{
+        "requestUuid": str(uuid.uuid4()),
+        "fixtureId": "id1000004461512432",
+        "outcomeId": 103,
+        "playerId": 0,
+        "orderStake": 10.0,
+        "orderPrice": 1.95,
+        "userRef": "my-strategy-1",
+        "testOrder": False,
+    }]},
+)
+print(resp.json())
+```
+  </Tab>
+  <Tab title="JavaScript">
+```javascript
+import { randomUUID } from "crypto";
+
+const resp = await fetch("https://v2.55-tech.com/place-orders", {
+  method: "POST",
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    orders: [{
+      requestUuid: randomUUID(),
+      fixtureId: "id1000004461512432",
+      outcomeId: 103,
+      playerId: 0,
+      orderStake: 10.0,
+      orderPrice: 1.95,
+      userRef: "my-strategy-1",
+      testOrder: false,
+    }],
+  }),
+});
+console.log(await resp.json());
+```
+  </Tab>
+</Tabs>
 
 **Key fields:**
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `requestUuid` | Yes | Unique UUID for idempotency (duplicates within 5 min return 409) |
+| `requestUuid` | Yes | Unique UUID for idempotency (a duplicate within 30 min is skipped; 409 only if every order is a duplicate) |
 | `fixtureId` | Yes | OddsPapi fixture ID |
 | `outcomeId` | Yes | Market outcome (e.g., 103 = away win) |
 | `playerId` | Yes | Set to `0` for non-player-prop markets |
@@ -187,19 +262,23 @@ Orders that fail validation appear in `declinedOrders` with a `declineReason`:
 }
 ```
 
+<Tip>
+**Test without staking real money.** Set `testOrder: true` to run the full validation and routing path (limits, price checks, account selection) **without** sending a bet to the bookmaker. It's the fastest way to confirm your payloads and IDs are correct before going live.
+</Tip>
+
 ## Step 4: Track your order
 
 Query orders by `userRef`, `orderIds`, or `requestUuids` (at least one filter required):
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   "https://v2.55-tech.com/orders?userRef=my-strategy-1"
 ```
 
 View individual bets for specific orders:
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   "https://v2.55-tech.com/bets?orderIds=327"
 ```
 
@@ -234,7 +313,7 @@ Each bet includes the bookmaker, placed price, placed stake, bet status, and set
 View your aggregated open positions (grouped by bookmaker by default):
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/positions
 ```
 
@@ -254,7 +333,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 View profit and loss:
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/pnl
 ```
 
@@ -275,11 +354,19 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ## Next steps
 
 <Columns cols={2}>
-  <Card title="WebSocket updates" icon="bolt" href="/abp-api/websocket">
-    Get real-time order, bet, and settlement updates.
+  <Card title="Core Concepts" icon="lightbulb" href="/abp-api/concepts">
+    Orders vs bets, identifiers, idempotency, and lifecycles.
   </Card>
 
-  <Card title="API reference" icon="terminal" href="/abp-api/overview">
-    Explore all available endpoints.
+  <Card title="Order Placement" icon="bullseye-arrow" href="/abp-api/order-placement">
+    Fills, pricing, and the limit cascade.
+  </Card>
+
+  <Card title="WebSocket updates" icon="bolt" href="/abp-api/websocket">
+    Real-time order, bet, and settlement updates.
+  </Card>
+
+  <Card title="Recipes" icon="book-open" href="/abp-api/order-placement#recipes">
+    Copy-paste patterns for common integrations.
   </Card>
 </Columns>

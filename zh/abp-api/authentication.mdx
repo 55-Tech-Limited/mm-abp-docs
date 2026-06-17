@@ -1,36 +1,37 @@
 ---
 title: "ABP 身份验证 - API密钥设置"
 sidebarTitle: "身份验证"
-description: "了解如何使用 X-API-Key 头进行 ABP API 请求身份验证。API密钥解析、速率限制和WebSocket身份验证。"
+description: "了解如何使用 x-api-key 头进行 ABP API 请求身份验证。API密钥解析、速率限制和WebSocket身份验证。"
+keywords: "abp 身份验证, x-api-key, api 密钥, websocket 鉴权, 速率限制, clientName, 密钥解析"
 ---
 
-所有 ABP 端点都需要通过 `X-API-Key` 头进行身份验证。
+所有 ABP 端点都需要通过 `x-api-key` 头进行身份验证，但无需身份验证的基础设施端点（`/health`、`/ready`、`/status`、`/metrics`）除外。
 
 ## 如何验证
 
-在 `X-API-Key` 请求头中传入您的API密钥：
+在 `x-api-key` 请求头中传入您的API密钥：
 
 ```bash
-curl -H "X-API-Key: your-api-key" \
+curl -H "x-api-key: your-api-key" \
   https://v2.55-tech.com/accounts
 ```
 
 ## API密钥元数据
 
-每个API密钥关联以下信息：
+每个API密钥解析为一个客户及其访问规则：
 
 | 字段 | 描述 |
 |------|------|
-| `clientName` | 您的客户标识符（用于数据过滤） |
-| `bookmakers` | 允许的博彩公司标识（空=全部） |
-| `rateLimit` | 每分钟请求数（默认：60） |
-| `enabled` | 此密钥是否激活 |
+| `clientName` | 您的客户标识符 — 所有账户、订单和投注均按此过滤 |
+| `bookmakers` | 允许的博彩公司标识（空=全部博彩公司） |
+| `rps` | 此客户允许的每秒请求数（默认：100） |
+| `active` | 此密钥是否激活 |
 
 您的API密钥决定您可以访问哪些账户、订单和投注。所有数据按您的 `clientName` 过滤。
 
 ## WebSocket 身份验证
 
-对于WebSocket连接，在连接后通过登录消息进行身份验证：
+对于WebSocket连接，在连接后通过登录消息进行身份验证（`/ws` 端点本身不需要 `x-api-key` 头）：
 
 ```json
 {
@@ -44,33 +45,29 @@ curl -H "X-API-Key: your-api-key" \
 
 ## 速率限制
 
-速率限制使用滑动窗口按API密钥执行。
-
-- **默认：** 每分钟60个请求
-- **超限：** 返回 `429 Too Many Requests`
-- **WebSocket：** 每API密钥最多5个并发连接
-
-收到 `429` 响应时请实施指数退避。
+请求**按客户端**限流——默认每秒 100 个请求，每个 API 密钥最多 5 个并发 WebSocket 连接。完整细节、响应头与退避指引见[速率限制](/zh/abp-api/reliability#速率限制)。
 
 ## 错误响应
 
-| 状态码 | 含义 |
-|--------|------|
-| `401` | 缺少或无效的API密钥 |
-| `403` | API密钥已停用或过期；或资源属于其他客户 |
-| `429` | 超出速率限制 |
+<Note>
+身份验证中间件在 `error` 键下返回错误，而应用层错误（验证、未找到等）使用 FastAPI 标准的 `detail` 键。请同时处理这两种格式。
+</Note>
 
-**401 — 缺少密钥：**
-```json
-{"detail": {"message": "Missing X-API-Key header", "code": "UNAUTHORIZED"}}
-```
+| 情况 | 状态码 | 正文 |
+|------|--------|------|
+| 缺少头 | `403` | `{"detail": "Missing API key header: x-api-key"}` |
+| 密钥无效 / 停用 / 过期 | `401` | `{"error": "Invalid or inactive API key"}` |
+| 密钥有效但不允许访问该端点 / 运动项目 / 博彩公司 | `403` | `{"error": "Access denied to endpoint"}` |
+| 超出速率限制 | `429` | `{"detail": "Rate limit exceeded", "limit": "100", "retry_after": 1}` |
 
-**401 — 无效密钥：**
-```json
-{"detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}}
-```
+## 后续步骤
 
-**403 — 密钥已停用/过期：**
-```json
-{"detail": {"message": "API key is inactive", "code": "FORBIDDEN"}}
-```
+<Columns cols={2}>
+  <Card title="快速开始" icon="rocket" href="/zh/abp-api/quickstart">
+    5 步完成首次下注。
+  </Card>
+
+  <Card title="额度与可靠性" icon="gauge-high" href="/zh/abp-api/reliability">
+    按客户端的限制、熔断器与紧急模式。
+  </Card>
+</Columns>

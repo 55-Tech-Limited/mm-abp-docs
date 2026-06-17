@@ -2,6 +2,7 @@
 title: "ABP WebSocket - Real-Time Updates"
 sidebarTitle: "WebSocket"
 description: "Connect to the ABP WebSocket for real-time order, bet, settlement, account, and system updates. Server-backed with message ordering and reliable delivery."
+keywords: "abp websocket, real-time updates, orders bets settlements channel, reliable delivery, ack replay, balance, betslip subscription"
 ---
 
 ## Endpoint
@@ -92,10 +93,12 @@ Data messages follow this format:
 | `type` | Always `"data"` for data messages |
 | `channel` | Which channel this message belongs to |
 | `event` | Event type: `INSERT`, `UPDATE`, `DELETE`, `SETTLED`, `STATUS` |
-| `payload` | The full updated object (see per-channel payload schemas below) |
+| `payload` | The full updated object (see [payload schemas](#payload-schemas)) |
 | `ts` | Server timestamp (milliseconds since epoch) |
 | `seq` | Per-subscription monotonically increasing sequence number |
 | `requireAck` | Present and `true` only when reliable delivery is enabled |
+
+Full per-channel payload schemas are in [Payload schemas](#payload-schemas) below.
 
 ### 5. Keep alive
 
@@ -139,175 +142,58 @@ All subscribers receive these:
 | `status` | STATUS | System status changes |
 | `emergency` | STATUS | Emergency mode activation/deactivation |
 
-## Payload schemas
+## Reliable delivery & acknowledgments
 
-### Orders payload
-
-Full database row from the `orders` table:
+By default, messages are fire-and-forget — fast, but a message dropped during a disconnect is gone. Enable **reliable delivery** at login to get at-least-once delivery with acknowledgments and replay:
 
 ```json
-{
-  "orderId": 327,
-  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-  "client": "demo",
-  "clientName": "demo",
-  "fixtureId": "id1000004461512432",
-  "outcomeId": 103,
-  "playerId": 0,
-  "orderPrice": 1.95,
-  "orderStake": 10.0,
-  "filledStake": 10.0,
-  "remainingStake": 0.0,
-  "orderStatus": "FILLED",
-  "statusReason": null,
-  "userRef": "bettor1234",
-  "testOrder": false,
-  "acceptBetterOdds": true,
-  "acceptPartialStake": true,
-  "orderCurrency": "USD",
-  "back": true,
-  "allowedBookmakers": "*",
-  "oddsInfo": null,
-  "meta": {},
-  "expiresAt": "2026-02-07T17:29:37+00:00",
-  "filledAt": "2026-02-07T17:29:32+00:00",
-  "createdAt": "2026-02-07T17:29:32+00:00",
-  "updatedAt": "2026-02-07T17:29:32+00:00"
-}
+{ "type": "login", "apiKey": "YOUR_API_KEY", "channels": ["orders", "bets"], "reliableDelivery": true }
 ```
 
-### Bets / settlements payload
-
-Full database row from the `bets` table:
+When enabled, each `data` message carries `requireAck: true`, and you must acknowledge it so the server can release it from its buffer:
 
 ```json
-{
-  "betId": 73,
-  "orderId": 327,
-  "bookmaker": "pinnacle",
-  "bookmakerBetId": "3332684214",
-  "betStatus": "CONFIRMED",
-  "settlementStatus": "UNSETTLED",
-  "placedStake": 10.0,
-  "placedPrice": 1.98,
-  "placedCurrency": "USD",
-  "account": "pinnacle_main",
-  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-  "userRef": "bettor1234",
-  "testBet": false,
-  "client": "demo",
-  "clientName": "demo",
-  "sentData": { "stake": 10.0, "price": 1.95 },
-  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
-  "settlementAmount": null,
-  "settlementReason": null,
-  "settledAt": null,
-  "declineReason": null,
-  "betRequestId": null,
-  "oddsInfo": null,
-  "meta": {},
-  "placedAt": "2026-02-07T17:29:32+00:00",
-  "createdAt": "2026-02-07T17:29:32+00:00",
-  "updatedAt": "2026-02-07T17:29:32+00:00"
-}
+{ "type": "ack", "seq": 42 }
 ```
 
-### Balance payload
+Or acknowledge a range in one message (recommended for throughput):
 
 ```json
-{
-  "clientName": "demo",
-  "bookmaker": "pinnacle",
-  "username": "pinnacle_main",
-  "balance": 4990.0,
-  "currency": "USD",
-  "ts": 1771183910123
-}
+{ "type": "ack_batch", "upToSeq": 50 }
 ```
 
-### Emergency payload
+**How it works:**
+
+- The server buffers up to **100 unacknowledged messages** per subscription and re-sends any not acked within **30 seconds**.
+- `seq` is per-subscription and strictly increasing, so a gap in `seq` means you missed a message.
+- To recover missed messages after a reconnect, request a replay from the last `seq` you processed:
 
 ```json
-{
-  "active": true,
-  "reason": "Upstream provider maintenance",
-  "ts": 1771183910123
-}
+{ "type": "replay", "fromSeq": 40 }
 ```
 
-### Betslip payload
+<Warning>
+If you fall further behind than the 100-message buffer, the oldest unacked messages are dropped. Ack promptly (or use `ack_batch`) and treat any `seq` gap that a `replay` can't fill as a signal to reconcile via the REST endpoints (`GET /orders`, `GET /bets`).
+</Warning>
 
-Real-time odds updates pushed while a betslip subscription is active. Calling `GET /betslip` registers a **60-second sliding window** — during this window, price changes are broadcast in the same shape as the betslip REST response. Each poll resets the timer.
+## Changing subscriptions
 
-This applies to both fixture-based and futures-based betslip subscriptions. For futures, the payload includes `futureId` and `participantId` instead of (or in addition to) `fixtureId`.
-
-**Fixture betslip example:**
+Change channels without reconnecting:
 
 ```json
-{
-  "fixtureId": "id1000004461512432",
-  "outcomeId": 103,
-  "playerId": 0,
-  "client": "demo",
-  "userRef": null,
-  "odds": {
-    "pinnacle": {
-      "odds_12345": {
-        "price": 1.98,
-        "limit": 500.0,
-        "limitMin": 1.0,
-        "limitCurrency": "USD",
-        "limitUsd": 500.0,
-        "limitMinUsd": 1.0,
-        "active": true,
-        "account": "pinnacle_main"
-      }
-    }
-  }
-}
+{ "type": "update_channels", "channels": ["orders", "bets", "settlements"] }
 ```
 
-**Futures betslip example (coming soon):**
+The server replies with `channels_updated`.
 
-```json
-{
-  "futureId": "fut_123456",
-  "outcomeId": 0,
-  "playerId": 0,
-  "participantId": 5,
-  "client": "demo",
-  "userRef": null,
-  "odds": {
-    "pinnacle": {
-      "fut_123456:pinnacle:0:0:5": {
-        "price": 3.50,
-        "limit": 1000.0,
-        "limitMin": 5.0,
-        "limitCurrency": "USD",
-        "limitUsd": 1000.0,
-        "limitMinUsd": 5.0,
-        "active": true,
-        "account": "pinnacle_main"
-      }
-    }
-  }
-}
-```
+## Betslip subscriptions
 
-<Note>
-Futures betslip WebSocket broadcasting is not yet enabled. The subscription infrastructure is in place and will be activated in an upcoming release.
-</Note>
+The `betslip` channel pushes real-time odds for selections you're watching. There are two ways to subscribe:
 
-## Connection limits
+1. **Via REST** — calling `GET /betslip` registers a **60-second sliding window**; each call resets the timer and immediately broadcasts a snapshot over the WebSocket.
+2. **Via WebSocket** — send a `subscribe_betslip` message with an explicit `ttl` (10–3600s) and bookmaker list for finer control, and `unsubscribe_betslip` to cancel early.
 
-| Setting | Value |
-|---------|-------|
-| Max connections per API key | 5 |
-| Auth timeout | 30 seconds |
-| Server ping interval | 30 seconds |
-| Pong timeout (disconnect) | 120 seconds |
-| Message buffer (reliable delivery) | 100 messages |
-| Output queue per client | 2000 messages |
+A maximum of **20** active betslip subscriptions per client (REST + WS combined) is enforced. Message shapes and the `subscribed_betslip` confirmation are documented in [Betslip subscription messages](#betslip-subscription-messages) below.
 
 ## Example: Python client
 
@@ -372,3 +258,264 @@ ws.on('message', (raw) => {
   }
 });
 ```
+
+## Message types
+
+### Client → Server
+
+| Type | Example | Purpose |
+|------|---------|---------|
+| `login` | `{"type": "login", "apiKey": "...", "channels": []}` | Authenticate and subscribe. Optional `reliableDelivery: true`. |
+| `update_channels` | `{"type": "update_channels", "channels": ["orders"]}` | Change channel subscriptions after login. |
+| `pong` | `{"type": "pong"}` | Reply to a server `ping`. |
+| `ping` | `{"type": "ping"}` | Liveness check; server replies with `pong`. |
+| `ack` | `{"type": "ack", "seq": 42}` | Acknowledge one message (reliable delivery). |
+| `ack_batch` | `{"type": "ack_batch", "upToSeq": 50}` | Acknowledge all messages up to and including `upToSeq`. |
+| `replay` | `{"type": "replay", "fromSeq": 40}` | Request re-send of buffered messages from `fromSeq`. |
+| `subscribe_betslip` | see [below](#betslip-subscription-messages) | Open a betslip price subscription with a custom TTL. |
+| `unsubscribe_betslip` | see [below](#betslip-subscription-messages) | Cancel a betslip subscription early. |
+
+### Server → Client
+
+| Type | Purpose |
+|------|---------|
+| `login_ok` | Login succeeded; echoes channels, access scopes, and enabled features. |
+| `channels_updated` | Confirms an `update_channels` change. |
+| `data` | A channel event (see [payload schemas](#payload-schemas)). |
+| `ping` | Server keep-alive; reply with `pong`. |
+| `subscribed_betslip` | Confirms a `subscribe_betslip`, with effective `expiresAt`. |
+| `error` | A problem with a client message; includes a `ref` to the offending request. |
+
+## Betslip subscription messages
+
+The `betslip` channel must be in your subscriptions (add it via `login` or `update_channels`) before subscribing.
+
+### `subscribe_betslip`
+
+```json
+{
+  "type": "subscribe_betslip",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "bookmakers": ["pinnacle", "sharpbet"],
+  "ttl": 300
+}
+```
+
+- `bookmakers` must be a non-empty list.
+- `ttl` is optional (seconds), clamped to **10–3600s**; defaults to **60s** if omitted.
+- Re-subscribing to the same selection refreshes the TTL and updates the bookmaker set (idempotent).
+
+Server confirms:
+
+```json
+{
+  "type": "subscribed_betslip",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "bookmakers": ["pinnacle", "sharpbet"],
+  "expiresAt": "2026-02-07T17:34:37+00:00"
+}
+```
+
+Bookmakers you have no account for are dropped from the subscription and returned in a `skipped` array. A maximum of **20** active betslip subscriptions per client (REST + WS combined) is enforced.
+
+### `unsubscribe_betslip`
+
+```json
+{
+  "type": "unsubscribe_betslip",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0
+}
+```
+
+## Payload schemas
+
+Data messages wrap channel payloads in the envelope `{type, channel, event, payload, ts, seq}`. The `orders`, `bets`, and `settlements` channels deliver the **full database row** (`row_to_json`); `balance`, `emergency`, and `betslip` use custom shapes.
+
+### Orders
+
+Full row from the `orders` table:
+
+```json
+{
+  "orderId": 327,
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "client": "demo",
+  "clientName": "demo",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "orderPrice": 1.95,
+  "orderStake": 10.0,
+  "filledStake": 10.0,
+  "remainingStake": 0.0,
+  "orderStatus": "FILLED",
+  "statusReason": null,
+  "userRef": "bettor1234",
+  "testOrder": false,
+  "acceptBetterOdds": true,
+  "acceptPartialStake": true,
+  "orderCurrency": "USD",
+  "back": true,
+  "allowedBookmakers": "*",
+  "oddsInfo": null,
+  "meta": {},
+  "expiresAt": "2026-02-07T17:29:37+00:00",
+  "filledAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+### Bets / settlements
+
+Full row from the `bets` table (the `settlements` channel uses the same shape):
+
+```json
+{
+  "betId": 73,
+  "orderId": 327,
+  "bookmaker": "pinnacle",
+  "bookmakerBetId": "3332684214",
+  "betStatus": "CONFIRMED",
+  "settlementStatus": "UNSETTLED",
+  "placedStake": 10.0,
+  "placedPrice": 1.98,
+  "placedCurrency": "USD",
+  "account": "pinnacle_main",
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "userRef": "bettor1234",
+  "testBet": false,
+  "client": "demo",
+  "clientName": "demo",
+  "sentData": { "stake": 10.0, "price": 1.95 },
+  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
+  "settlementAmount": null,
+  "settlementReason": null,
+  "settledAt": null,
+  "declineReason": null,
+  "betRequestId": null,
+  "oddsInfo": null,
+  "meta": {},
+  "placedAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+<Note>
+Subscribing to both `bets` and `settlements` delivers settlement updates **twice** — once on each channel. Use `settlements` alone if you want a dedicated settlement feed.
+</Note>
+
+### Balance
+
+```json
+{
+  "clientName": "demo",
+  "bookmaker": "pinnacle",
+  "username": "pinnacle_main",
+  "balance": 4990.0,
+  "currency": "USD",
+  "ts": 1771183910123
+}
+```
+
+### Emergency
+
+```json
+{
+  "active": true,
+  "reason": "Upstream provider maintenance",
+  "ts": 1771183910123
+}
+```
+
+### Betslip
+
+Pushed while a betslip subscription is active. For futures the payload carries `futureId` and `participantId` instead of `fixtureId`.
+
+**Fixture:**
+
+```json
+{
+  "clientName": "demo",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "odds": {
+    "pinnacle": {
+      "id1000004461512432:pinnacle:103:0": {
+        "price": 1.98,
+        "limit": 500.0,
+        "limitMin": 1.0,
+        "limitCurrency": "USD",
+        "limitUsd": 500.0,
+        "limitMinUsd": 1.0,
+        "active": true,
+        "account": "pinnacle_main",
+        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
+      }
+    }
+  }
+}
+```
+
+**Futures (coming soon):**
+
+```json
+{
+  "clientName": "demo",
+  "futureId": "fut_123456",
+  "outcomeId": 0,
+  "playerId": 0,
+  "participantId": 5,
+  "odds": {
+    "pinnacle": {
+      "fut_123456:pinnacle:0:0:5": {
+        "price": 3.50,
+        "limit": 1000.0,
+        "limitMin": 5.0,
+        "limitCurrency": "USD",
+        "limitUsd": 1000.0,
+        "limitMinUsd": 5.0,
+        "active": true,
+        "account": "pinnacle_main",
+        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
+      }
+    }
+  }
+}
+```
+
+<Note>
+Futures betslip WebSocket broadcasting is not yet enabled. The subscription infrastructure is in place and will be activated in an upcoming release.
+</Note>
+
+## Connection limits
+
+| Setting | Value |
+|---------|-------|
+| Max connections per API key | 5 |
+| Auth timeout | 30 seconds |
+| Server ping interval | 30 seconds |
+| Pong timeout (disconnect) | 120 seconds |
+| Message buffer (reliable delivery) | 100 messages |
+| Output queue per client | 2000 messages |
+| Max betslip subscriptions per client | 20 |
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Currency & Limits" icon="coins" href="/abp-api/currency">
+    How values are denominated and converted across currencies.
+  </Card>
+
+  <Card title="Errors" icon="triangle-exclamation" href="/abp-api/errors">
+    Handle error responses and decline reasons.
+  </Card>
+</Columns>

@@ -1,0 +1,35 @@
+---
+title: "ABP Changelog"
+sidebarTitle: "Changelog"
+description: "Changelog for the ABP API — new features, changes, breaking changes, and fixes across releases."
+keywords: "abp changelog, api changelog, release notes, abp api updates, breaking changes"
+---
+
+<Note>
+All timestamps are **UTC**. Breaking changes are called out explicitly — subscribe to the `status` WebSocket channel and watch this page before upgrading.
+</Note>
+
+## 2026-06-17
+
+### 🔁 Changed
+
+- **Single source of truth for currency.** An account's trading currency now comes solely from `accounts.currencyId`; default-currency guessing has been removed. Order stakes are denominated in `orderCurrency` (default `USD`), while bets and balances use the account's native currency. See [Currency & Limits](/abp-api/currency).
+- **REST betslip path aligned with the WebSocket path** so both transports return identical odds/limit shapes.
+
+### 🔧 Improved
+
+- Expanded documentation: new [Core Concepts](/abp-api/concepts), [Order Placement](/abp-api/order-placement) (with copy-paste recipes), [Currency & Limits](/abp-api/currency), [Limits & Reliability](/abp-api/reliability), and [Bookmakers](/abp-api/bookmakers) guides, plus a full message/payload reference folded into the [WebSocket](/abp-api/websocket) guide.
+
+## Earlier
+
+### ✨ Added
+
+- **32 bookmaker integrations** behind a single API — sportsbooks, betting exchanges, prediction markets, and punter platforms. See [Bookmakers](/abp-api/bookmakers).
+- **Smart order routing** with single and multi-bookmaker placement, partial fills, and exchange sweep mode.
+- **Reliable WebSocket delivery** — opt-in at-least-once delivery with `ack` / `ack_batch` / `replay` and a 100-message buffer.
+- **Request deduplication** — per-order `requestUuid` idempotency with a 30-minute TTL.
+- **Analytics** — `GET /positions` and `GET /pnl` for aggregated exposure and profit/loss.
+
+### 🚧 Coming soon
+
+- **Futures / outright markets** via `futureId` + `participantId`. The data model is in place; order placement and betslip retrieval currently return `501 Not Implemented`.

@@ -1,0 +1,276 @@
+---
+title: "ABP Order Placement - Modes, Pricing & Limits"
+sidebarTitle: "Order Placement"
+description: "How ABP fills orders: the four placement modes, the first-bet and weighted-average price rules, the stake-limit cascade, retries, expiry, and cancellation."
+keywords: "abp order placement, placement modes, weighted average price, limit cascade, first-bet rule, exchange sweep, order expiry, cancel orders, partial fills"
+---
+
+This page explains exactly how ABP turns an **order** (your instruction) into one or more **bets** (actual wagers at bookmakers): which bookmaker(s) it picks, how it respects your price, how stake limits are resolved, and when it retries or gives up.
+
+## The two inputs that decide behavior
+
+Placement behavior is determined by two things on each order:
+
+1. **How many bookmakers you target** — one (`bookmakers: ["pinnacle"]`) or many (`bookmakers: ["pinnacle", "sharpbet"]`, or `*` for all allowed).
+2. **`acceptPartialStake`** (default `true`) — whether ABP may split your stake across multiple bets to fill more of it.
+
+These combine into four placement modes:
+
+| Mode | Bookmakers | `acceptPartialStake` | Fill strategy |
+|------|------------|----------------------|---------------|
+| **1** | Single | `false` | All-or-nothing at one book. Declines immediately if `orderStake` exceeds the limit. |
+| **2** | Single | `true` | Multiple bets at one book until the stake is filled or the limit/price is exhausted. |
+| **3** | Multiple | `false` | One bet per bookmaker, placed in parallel. |
+| **4** | Multiple | `true` | Sequential by best price — exhaust each bookmaker before moving to the next. |
+
+<Note>
+You don't select a mode explicitly — ABP infers it from your `bookmakers` list and `acceptPartialStake`. Leaving `bookmakers` empty (or `*`) lets ABP route across every bookmaker your key is allowed to use.
+</Note>
+
+## Price rules
+
+### First-bet rule (all modes)
+
+The **first** bet of an order must always be placed at a price **`>= orderPrice`**. If no bookmaker currently offers a good enough price, ABP waits and retries (it does not place a worse first bet) until the order expires.
+
+### Weighted-average rule (modes 2, 3, 4)
+
+After at least one bet is filled, subsequent bets may be placed **below** `orderPrice`, as long as the running **weighted-average price** of the order stays `>= orderPrice`:
+
+```
+weighted_avg = Σ(stake × price) / Σ(stake)
+```
+
+The maximum stake ABP will place at a below-target price is:
+
+```
+max_stake = (weighted_sum − orderPrice × filled_stake) / (orderPrice − bookmaker_price)
+```
+
+If `max_stake <= 0`, that bookmaker is **exhausted** for this order. This lets ABP capture extra liquidity at slightly worse prices without ever breaching your average target.
+
+### Mode 1 exception
+
+In **Mode 1** (single book, no partial), *every* bet must clear `orderPrice` — the weighted-average relaxation does not apply.
+
+<Tip>
+Set `acceptBetterOdds: true` (the default) to allow fills at prices **better** than `orderPrice`. This never hurts you — it only ever improves the average.
+</Tip>
+
+## Worked example (Mode 2)
+
+Order: `orderStake = 1000`, `orderPrice = 2.00`, `bookmakers = ["pinnacle"]`, `acceptPartialStake = true`.
+
+| Pass | Market price | Limit | Action | Filled | Weighted avg |
+|------|--------------|-------|--------|--------|--------------|
+| 1 | 2.10 | 400 | Place 400 @ 2.10 (first bet ≥ 2.00 ✓) | 400 | 2.10 |
+| 2 | 1.95 | 300 | `max_stake` keeps avg ≥ 2.00 → place 300 @ 1.95 | 700 | 2.04 |
+| 3 | 1.90 | 500 | `max_stake = 280` → place 280 @ 1.90 | 980 | 2.00 |
+| 4 | price moved | — | `max_stake ≤ 0` → exhausted | 980 | 2.00 |
+
+Result: order is `PARTIALLY_FILLED` with **980** staked at an average of **2.00** — never below your target.
+
+## Exchange sweep mode
+
+For prediction-market exchanges (`betfair-ex`, `polymarket`, `polymarket.us`, `kalshi`, `predict.fun`, `sx.bet`, `novig.us`, `4casters`) with partial fills enabled, ABP sends a **single** order for the full stake with `orderPrice` as the minimum, and lets the exchange sweep its own order book in one shot. This is faster and more accurate than ABP's multi-pass logic, and there are no per-pass retries — the exchange fills everything available at or above your price immediately.
+
+## Stake-limit cascade
+
+The effective min/max stake for each placement is resolved in priority order (first non-null wins):
+
+```
+effective max = account.maxStake  →  bookmaker.maxStake  →  odds.limit
+effective min = account.minStake  →  bookmaker.minStake  →  odds.limitMin  →  0
+```
+
+For example, if your account has `maxStake: 500`, the bookmaker default is `1000`, and the live odds limit is `300`, the effective max is **500** (the account override wins, even though it is lower than the bookmaker default).
+
+You can preview the effective limits for any selection with `GET /betslip` before placing — it returns the resolved `limit`/`limitMin` (and their USD equivalents) per bookmaker. See [Currency & Limits](/abp-api/currency).
+
+## Account priority
+
+When you target a bookmaker that has several accounts, ABP picks the **highest-`priority`** active account first. Configure priority per account via `POST`/`PATCH /accounts`.
+
+## Retries & expiry
+
+- **Retry throttle:** ABP retries a failing `(order, bookmaker)` pair no more than once every **2 seconds**.
+- **Fresh odds:** before each retry pass, ABP re-fetches live odds so placement always uses current market prices, not stale data.
+- **Expiry:** every order has an `expiresAt` (default **5 seconds** from creation, max **24 hours**). When it's reached, ABP stops trying. Whatever filled so far determines the final status.
+
+## Final order status
+
+| Status | Meaning |
+|--------|---------|
+| `FILLED` | Entire stake placed. |
+| `PARTIALLY_FILLED` | Some stake placed; the rest expired or ran out of price/limit. |
+| `REJECTED` | Failed validation (e.g. stake above limit in Mode 1, invalid fixture). |
+| `EXPIRED` | `expiresAt` reached before anything could be placed. |
+| `CANCELLED` | You cancelled it (see below). |
+| `FAILED` | Internal error during placement. |
+
+The `POST /place-orders` response summarizes a batch as `accepted` (all placed), `partial-success` (some declined), or `declined` (all declined), with per-order detail in `acceptedOrders` / `declinedOrders`.
+
+## Cancellation
+
+`POST /cancel-orders` (by `orderIds`, `requestUuids`, or `userRef`) or `POST /cancel-all-orders` cancels orders that are still `PENDING` or `PARTIALLY_FILLED`. Cancellation is **asynchronous and cooperative**:
+
+1. The order's status is set to `CANCELLED` and its `expiresAt` is moved to now.
+2. A cross-request signal is set so any in-flight placement loop stops at its next pass.
+3. Pending bets already sent to bookmakers are cancelled where the bookmaker supports it.
+
+Bets that were already **confirmed** at a bookmaker cannot be cancelled — only un-filled remainder is stopped.
+
+## Recipes
+
+<Info>
+Each recipe uses the same running selection — fixture `id1000004461512432`, outcome `103`, player `0`. Swap in your own IDs (discover them via [OddsPapi v5](https://docs.oddspapi.io/)) and your `x-api-key`. Base URL: `https://v2.55-tech.com`.
+</Info>
+
+### Place across multiple bookmakers (best price)
+
+List several bookmakers and let ABP route to the best price/limits. With `acceptPartialStake: true`, ABP sweeps the cheapest first and moves on until the stake is filled (Mode 4 above).
+
+<Tabs>
+  <Tab title="cURL">
+```bash
+curl -X POST https://v2.55-tech.com/place-orders \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orders": [{
+      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+      "fixtureId": "id1000004461512432",
+      "outcomeId": 103,
+      "playerId": 0,
+      "orderPrice": 1.95,
+      "orderStake": 5000.0,
+      "bookmakers": ["pinnacle", "betfair-ex", "polymarket"],
+      "acceptPartialStake": true,
+      "userRef": "user1"
+    }]
+  }'
+```
+  </Tab>
+  <Tab title="Python">
+```python
+import uuid, requests
+
+resp = requests.post(
+    "https://v2.55-tech.com/place-orders",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    json={"orders": [{
+        "requestUuid": str(uuid.uuid4()),
+        "fixtureId": "id1000004461512432",
+        "outcomeId": 103,
+        "playerId": 0,
+        "orderPrice": 1.95,
+        "orderStake": 5000.0,
+        "bookmakers": ["pinnacle", "betfair-ex", "polymarket"],
+        "acceptPartialStake": True,
+        "userRef": "user1",
+    }]},
+)
+data = resp.json()
+for order in data["acceptedOrders"]:
+    print(order["orderId"], "→", len(order["bets"]), "bets")
+```
+  </Tab>
+</Tabs>
+
+The response splits orders into `acceptedOrders` and `declinedOrders`. An accepted order may carry multiple `bets` (one per bookmaker it filled against).
+
+### Allow partial fills, reject the rest
+
+To fill *only* what's available at your price and never chase, set `acceptPartialStake: true` on a single bookmaker. The order ends `PARTIALLY_FILLED` if liquidity runs out — no bets are placed above your `orderPrice` floor beyond the weighted-average rule.
+
+<Accordion title="What happens to the unfilled remainder?">
+The order's `remainingStake` stays unplaced and the order settles to `PARTIALLY_FILLED` once `expiresAt` is reached. No further bets are attempted. If you instead want all-or-nothing, set `acceptPartialStake: false` — the order is declined entirely if the full stake can't clear at `orderPrice`.
+</Accordion>
+
+### Reconnect & replay missed messages
+
+Enable `reliableDelivery` so you can recover anything dropped during a disconnect. Track the last `seq` you processed per subscription; on reconnect, `replay` from there.
+
+```python
+import asyncio, json, websockets
+
+LAST_SEQ = 0  # persist this across reconnects
+
+async def run():
+    global LAST_SEQ
+    async with websockets.connect("wss://v2.55-tech.com/ws") as ws:
+        await ws.send(json.dumps({
+            "type": "login",
+            "apiKey": "YOUR_API_KEY",
+            "channels": ["orders", "bets", "settlements"],
+            "reliableDelivery": True,
+        }))
+        if LAST_SEQ:
+            await ws.send(json.dumps({"type": "replay", "fromSeq": LAST_SEQ}))
+
+        async for raw in ws:
+            msg = json.loads(raw)
+            if msg["type"] == "ping":
+                await ws.send(json.dumps({"type": "pong"}))
+            elif msg["type"] == "data":
+                LAST_SEQ = msg["seq"]
+                # ... handle msg["payload"] ...
+                await ws.send(json.dumps({"type": "ack_batch", "upToSeq": LAST_SEQ}))
+
+asyncio.run(run())
+```
+
+<Warning>
+A gap in `seq` means you missed a message. If a `replay` can't fill the gap (you fell behind the 100-message buffer), reconcile via `GET /orders` and `GET /bets`. See [WebSocket → reliable delivery](/abp-api/websocket#reliable-delivery-acknowledgments).
+</Warning>
+
+### Reconcile settlements
+
+Subscribe to `settlements` for push updates, and periodically sweep `GET /bets` as a backstop. Settlement statuses are `WON`, `LOST`, `VOID`, `HALF_WON`, `HALF_LOST`, `PUSH`, `CASHOUT` (see [Core Concepts](/abp-api/concepts#settlement-lifecycle)).
+
+```python
+import requests
+
+resp = requests.get(
+    "https://v2.55-tech.com/bets",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    params={"settlementStatus": "WON", "limit": 100},
+)
+for bet in resp.json().get("bets", []):
+    print(bet["betId"], bet["settlementStatus"], bet["settlementAmount"])
+```
+
+### Cancel orders
+
+Cancellation is asynchronous: ABP marks the order, cancels any pending bets at the bookmaker, and the placement loop stops at its next pass (see [Cancellation](#cancellation) above). Already-confirmed bets are not recalled.
+
+<Tabs>
+  <Tab title="Cancel specific">
+```bash
+curl -X POST https://v2.55-tech.com/cancel-orders \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"orderIds": [123456]}'
+```
+  </Tab>
+  <Tab title="Cancel all">
+```bash
+curl -X POST https://v2.55-tech.com/cancel-all-orders \
+  -H "x-api-key: YOUR_API_KEY"
+```
+  </Tab>
+</Tabs>
+
+Watch the `orders` channel for the resulting `CANCELLED` (or `PARTIALLY_FILLED`) status.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Currency & Limits" icon="coins" href="/abp-api/currency">
+    How stakes, balances, and limits are denominated and converted.
+  </Card>
+
+  <Card title="WebSocket" icon="bolt" href="/abp-api/websocket">
+    Track fills and settlements in real time.
+  </Card>
+</Columns>

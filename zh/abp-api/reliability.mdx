@@ -1,0 +1,139 @@
+---
+title: "ABP 额度与可靠性"
+sidebarTitle: "可靠性"
+description: "ABP 的速率限制与生产级可靠性：按客户端的每秒请求数限制与 429 退避、熔断器、带退避的重试、紧急模式、订单过期、系统状态，以及事件升级。"
+keywords: "abp 可靠性, 速率限制, 每秒请求数, 429 too many requests, X-RateLimit 响应头, 熔断器, 紧急模式, 订单过期, 重试退避, 系统状态, 事件升级"
+---
+
+<Info>
+ABP 为生产级交易而构建。按博彩商的熔断器、自动重试与两级紧急系统，可防止单个失败的博彩商级联拖垮整体。本页解释会影响你集成的行为及应对方式。
+</Info>
+
+## 系统状态
+
+<Card title="状态与可用性" icon="signal" href="https://v2.55-tech.com/status">
+  实时系统状态通过 `GET /status`（无需鉴权）暴露。可轮询它，或订阅 `status` 与 `emergency` WebSocket 频道以接收推送。
+</Card>
+
+无需鉴权的基础设施端点：
+
+| 端点 | 用途 |
+|------|------|
+| `GET /health` | 存活性——进程是否运行 |
+| `GET /ready` | 就绪性——依赖项（DB、缓存、OddsPapi）是否已连接 |
+| `GET /status` | 系统状态，含紧急模式状态 |
+| `GET /metrics` | Prometheus 指标 |
+
+## 速率限制
+
+速率限制**按客户端**（由你的 `x-api-key` 解析）使用滑动窗口实施。默认值为**每秒 100 个请求**，可通过 `rps` 字段按客户端配置。
+
+| 属性 | 取值 |
+|------|------|
+| 默认限制 | **每秒 100 个请求**（按客户端可配置） |
+| 窗口 | 1 秒，滑动 |
+| 范围 | 按客户端（`clientName`） |
+| 超限响应 | `429 Too Many Requests` |
+
+每个被限流的响应都包含标准响应头，便于你调整客户端节奏：
+
+| 响应头 | 说明 |
+|--------|------|
+| `X-RateLimit-Limit` | 你配置的限制（每窗口请求数） |
+| `X-RateLimit-Remaining` | 当前窗口剩余请求数 |
+| `X-RateLimit-Reset` | 距窗口重置的秒数 |
+| `Retry-After` | 重试前应等待的秒数 |
+
+`429` 响应体：
+
+```json
+{
+  "detail": "Rate limit exceeded",
+  "limit": "100",
+  "retry_after": 1
+}
+```
+
+由于窗口每秒重置，遵循 `retry_after` 的短暂退避即可。针对速率限制使用指数退避并无额外收益；等待窗口过去即可。
+
+```python
+import time
+import requests
+
+def call_with_backoff(method, url, **kwargs):
+    while True:
+        resp = requests.request(method, url, **kwargs)
+        if resp.status_code != 429:
+            return resp
+        time.sleep(float(resp.headers.get("Retry-After", 1)))
+```
+
+要保持在限额内：**批量下单**（`POST /place-orders` 可在一个请求中接受多个订单）、**优先使用 WebSocket 而非轮询**，并在工作负载需要更大余量时通过[支持](mailto:contact@55-tech.com)**申请更高的 `rps`**。WebSocket 连接上限见 [WebSocket → 连接限制](/zh/abp-api/websocket#连接限制)。
+
+## 熔断器
+
+ABP 运行**按博彩商的熔断器**。若某博彩商开始失败，其熔断器会打开，指向它的订单将被拒绝（`Bookmaker not available`），而非挂起。
+
+- 在对某博彩商连续失败后**打开**。
+- 冷却后自动**半开**以测试恢复。
+- 一旦博彩商成功响应即**关闭**并恢复正常路由。
+
+由于熔断器按博彩商隔离，多博彩商订单会在某家不健康时继续路由到健康的博彩商。
+
+## 带退避的重试
+
+短暂的博彩商故障会以指数退避自动重试，且 ABP 在每次重试前都会拉取最新赔率。重试受订单 `expiresAt` 约束，因此慢速博彩商绝不会让订单超过其过期时间仍被阻塞。
+
+## 订单过期
+
+```
+默认 expiresAt = 当前时间 + 5 秒   （最长 24 小时）
+```
+
+若订单无法在窗口内成交，将转为 `EXPIRED`（若已部分成交则为 `PARTIALLY_FILLED`）。对时效要求较低的订单设置更长的 `expiresAt`，对价格纪律更严的订单设置更短的值。
+
+## 紧急模式（两级）
+
+在极少数情况下——维护或上游事件——ABP 可暂停订单处理。共分两级：
+
+| 级别 | 影响 | 恢复 |
+|------|------|------|
+| **软暂停（Soft pause）** | 阻止*新*订单；在途投注继续 | 经设定间隔后自动恢复 |
+| **紧急（Emergency）** | 阻止新订单并取消待处理订单 | 由操作员手动恢复 |
+
+状态变更通过 `emergency` WebSocket 频道广播。紧急模式生效时，`POST /place-orders` 会返回被拒而非排队。
+
+## WebSocket 可靠投递
+
+对于不能丢失的状态（订单成交、结算），在登录时启用 `reliableDelivery: true` 以获得带确认与重放的至少一次投递。`seq` 出现间隙即表示漏掉消息；通过 `replay` 恢复，或经 `GET /orders` / `GET /bets` 对账。参见 [WebSocket](/zh/abp-api/websocket#可靠投递与确认)。
+
+## 你的职责
+
+为在客户端保持韧性：
+
+- **把被拒视为正常流程**——处理 `declinedOrders` 与被拒原因，而非假设每个订单都会成交。
+- **重连后对账**——WebSocket 断开后，从最后的 `seq` 重放，或重新查询 REST 端点。
+- **遵守幂等**——重试时复用同一个 `requestUuid`，使重连风暴无法造成重复下注。参见[核心概念](/zh/abp-api/concepts#幂等性与请求去重)。
+- **429 时退避**——参见上文[速率限制](#速率限制)。
+
+## 支持与事件
+
+| 渠道 | 用于 |
+|------|------|
+| [contact@55-tech.com](mailto:contact@55-tech.com) | 集成帮助、账户/额度变更、更高的 `rps` |
+| `GET /status` + `emergency` 频道 | 实时系统状态 |
+| [GitHub](https://github.com/55-Tech-Limited) | 公开问题与参考 |
+
+上报事件时，请附上相关的 `orderId` / `requestUuid`、博彩商 slug 与 UTC 时间戳——这能大幅加快诊断。
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="WebSocket" icon="bolt" href="/zh/abp-api/websocket">
+    带可靠投递与重放的实时更新。
+  </Card>
+
+  <Card title="错误处理" icon="triangle-exclamation" href="/zh/abp-api/errors">
+    状态码与被拒原因。
+  </Card>
+</Columns>

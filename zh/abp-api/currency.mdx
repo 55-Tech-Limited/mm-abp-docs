@@ -1,0 +1,126 @@
+---
+title: "ABP 币种与额度 - 计价与换算"
+sidebarTitle: "币种与额度"
+description: "ABP 如何在多币种间对订单、投注、余额与额度计价，换算何时发生，currencyInfo 与 USD 字段的含义，以及下注额度级联。"
+keywords: "abp 币种, currencyValue, currencyInfo, orderCurrency, placedCurrency, 货币换算, 下注额度, 额度级联, usd 等值"
+---
+
+ABP 支持多币种。本页解释哪个值属于哪种币种、换算在何处发生（以及在何处刻意不发生），以及如何阅读 API 响应中的币种字段。
+
+## 始终只有两种币种
+
+对于任意一笔投注，参与的币种永远只有**两种**：
+
+1. **账户币种**——博彩商账户的币种（`accounts.currencyId`）。博彩商实际接触的一切都以此币种计价：下注金额、余额、结算赔付。
+2. **订单币种**——你表达订单所用的币种（`orderCurrency`，默认 `USD`）。订单上的一切都以此币种计价。
+
+换算只会在这两者之间发生。账户币种是唯一权威的交易币种——它从账户读取，绝不猜测。若某账户的币种无法解析，ABP 会**拒绝下单**，而不是以猜测的币种继续。
+
+## 哪个字段是哪种币种
+
+| 对象 | 字段 | 币种 |
+|------|------|------|
+| **订单** | `orderStake`、`filledStake`、`remainingStake` | 订单币种（`orderCurrency`） |
+| **投注** | `placedStake`、`settlementAmount` | 账户币种（`placedCurrency`） |
+| **账户** | `balance`、`credit` | 账户币种（`currencyId`） |
+
+在单个订单内，`orderStake`、`filledStake` 与 `remainingStake` 始终为同一币种且可直接比较。在投注上，`placedCurrency` 始终等于账户的 `currencyId`。
+
+## 汇率：`currencyValue`
+
+汇率位于 `currencies` 频道/表。约定为：
+
+```
+1 USD = currencyValue × <币种>
+```
+
+因此 `currencyValue` 是**每 1 USD 对应该币种的单位数**。USD 本身的 `currencyValue = 1`。在币种 A 与 B 之间换算：
+
+```
+amount_B = amount_A / currencyValue(A) × currencyValue(B)
+```
+
+要获得任意金额的 USD 等值，除以其 `currencyValue`：
+
+```
+usd = placedStake / currencyInfo.currencyValue
+```
+
+## 读取时的 `currencyInfo`
+
+`GET /orders`、`GET /bets` 与 `GET /accounts` 会为每行附加一个 `currencyInfo` 对象，使你无需二次查询即可计算 USD：
+
+```json
+{
+  "currency": "EUR",
+  "currencyValue": 0.84788876,
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+- 在**订单**上，`currencyInfo` 描述其 `orderCurrency`。
+- 在**投注**上，`currencyInfo` 描述其 `placedCurrency`。
+- 在**账户**上，`currencyInfo` 描述其 `currencyId`（便于将 `balance` / `credit` 换算为 USD）。
+
+`updatedAt` 是该汇率快照的 ISO 8601 时间戳。`currencyInfo` **可为 null**——当该币种没有可用汇率时为 `null`。存储的 `placedStake` / `placedCurrency` 绝不会被改写——`currencyInfo` 是附加的，仅用于显示/换算。
+
+## 实例
+
+订单 `orderStake = 100`、`orderCurrency = USD`，在一个 Betfair **EUR** 账户上成交，其中 `1 USD ≈ 0.92 EUR`：
+
+- `bets.placedStake = 92`、`placedCurrency = EUR`（发送给 Betfair 的内容）。
+- 换算回去：`92 EUR ÷ 0.92 = 100 USD`。
+- `orders.filledStake = 100`、`remainingStake = 0`，状态 `FILLED`。
+
+## 赔率单额度：原生 + USD
+
+`GET /betslip`（及赔率单 WebSocket 负载）会为每家博彩商返回原生额度与 USD 等值，便于你跨不同币种的账户比较：
+
+```json
+{
+  "price": 1.52,
+  "limit": 751.34,
+  "limitMin": 1,
+  "limitCurrency": "EUR",
+  "limitUsd": 886.13,
+  "limitMinUsd": 1.18,
+  "active": true,
+  "account": "sharpbet_user",
+  "currencyInfo": { "currency": "EUR", "currencyValue": 0.84788876, "updatedAt": "2026-02-07T17:29:32+00:00" }
+}
+```
+
+- `limit` / `limitMin` 以 `limitCurrency`（账户币种）计价。
+- `limitUsd` / `limitMinUsd` 是同样的值归一化为 USD。
+
+## 下注额度级联
+
+每次下注的有效最小/最大额度按优先顺序解析（取第一个非空值）：
+
+```
+有效最大 = account.maxStake  →  bookmaker.maxStake  →  odds.limit
+有效最小 = account.minStake  →  bookmaker.minStake  →  odds.limitMin  →  0
+```
+
+下注期间的额度比较以账户币种进行（你的订单金额会被换入，可下注金额会被换回订单币种用于报告）。额度如何与成交逻辑交互，参见[订单下注](/zh/abp-api/order-placement)。
+
+## 哪些地方不发生换算
+
+- **余额与信用额**（`accounts.balance`、`accounts.credit`）以账户原生币种原样报告——没有 USD 归一化余额。
+- **结算金额**（`bets.settlementAmount`）直接来自博彩商，以原生（账户）币种计价。
+
+<Warning>
+**跨币种聚合注意事项。**`GET /pnl` 与 `GET /positions` 在求和金额/结算时**不**换算为统一币种，且其响应不带币种字段。对于单一博彩商内的分组（同一币种）没有问题，但跨不同币种账户的分组（例如 `groupBy=userRef` 或顶层总计）会把混合币种加成一个数字。每订单的值始终正确——只有跨币种聚合是不安全的。如需混合币种总计，请自行按行换算为 USD。
+</Warning>
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="订单下注" icon="bullseye-arrow" href="/zh/abp-api/order-placement">
+    模式、定价与额度如何驱动成交。
+  </Card>
+
+  <Card title="错误处理" icon="triangle-exclamation" href="/zh/abp-api/errors">
+    处理被拒原因与错误响应。
+  </Card>
+</Columns>

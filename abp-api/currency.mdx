@@ -1,0 +1,126 @@
+---
+title: "ABP Currency & Limits - Denomination and Conversion"
+sidebarTitle: "Currency & Limits"
+description: "How ABP denominates orders, bets, balances, and limits across currencies, when conversion happens, what currencyInfo and the USD fields mean, and the stake-limit cascade."
+keywords: "abp currency, currencyValue, currencyInfo, orderCurrency, placedCurrency, currency conversion, stake limits, limit cascade, usd equivalent"
+---
+
+ABP is multi-currency. This page explains which value is in which currency, where conversion happens (and where it deliberately doesn't), and how to read the currency fields in API responses.
+
+## Two currencies, always
+
+For any bet there are only ever **two** currencies in play:
+
+1. **Account currency** — the currency of the bookmaker account (`accounts.currencyId`). Everything the bookmaker actually touches is in this currency: the placed stake, the balance, the settlement payout.
+2. **Order currency** — what you express the order in (`orderCurrency`, default `USD`). Everything on the order is in this currency.
+
+Conversion only ever happens between these two. The account currency is the single authoritative trading currency — it is read from the account, never guessed. If an account's currency can't be resolved, ABP **rejects the placement** rather than proceeding in a guessed currency.
+
+## Which field is in which currency
+
+| Object | Field | Currency |
+|--------|-------|----------|
+| **Order** | `orderStake`, `filledStake`, `remainingStake` | order currency (`orderCurrency`) |
+| **Bet** | `placedStake`, `settlementAmount` | account currency (`placedCurrency`) |
+| **Account** | `balance`, `credit` | account currency (`currencyId`) |
+
+Within a single order, `orderStake`, `filledStake`, and `remainingStake` are always in the same currency and directly comparable. On a bet, `placedCurrency` always equals the account's `currencyId`.
+
+## Exchange rates: `currencyValue`
+
+Rates live on the `currencies` channel/table. The convention is:
+
+```
+1 USD = currencyValue × <currency>
+```
+
+So `currencyValue` is **units of that currency per 1 USD**. USD itself has `currencyValue = 1`. To convert between currencies A and B:
+
+```
+amount_B = amount_A / currencyValue(A) × currencyValue(B)
+```
+
+To get the USD equivalent of any amount, divide by its `currencyValue`:
+
+```
+usd = placedStake / currencyInfo.currencyValue
+```
+
+## `currencyInfo` on reads
+
+`GET /orders`, `GET /bets`, and `GET /accounts` enrich each row with a `currencyInfo` object so you can compute USD without a second lookup:
+
+```json
+{
+  "currency": "EUR",
+  "currencyValue": 0.84788876,
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+- On an **order**, `currencyInfo` describes its `orderCurrency`.
+- On a **bet**, `currencyInfo` describes its `placedCurrency`.
+- On an **account**, `currencyInfo` describes its `currencyId` (so you can convert `balance` / `credit` to USD).
+
+`updatedAt` is the ISO 8601 timestamp of the rate snapshot. `currencyInfo` is **nullable** — it is `null` when no exchange rate is available for that currency. The stored `placedStake` / `placedCurrency` are never rewritten — `currencyInfo` is additive, for display/conversion only.
+
+## Worked example
+
+Order `orderStake = 100`, `orderCurrency = USD`, filled on a Betfair **EUR** account where `1 USD ≈ 0.92 EUR`:
+
+- `bets.placedStake = 92`, `placedCurrency = EUR` (what was sent to Betfair).
+- Converted back: `92 EUR ÷ 0.92 = 100 USD`.
+- `orders.filledStake = 100`, `remainingStake = 0`, status `FILLED`.
+
+## Betslip limits: native + USD
+
+`GET /betslip` (and the betslip WebSocket payload) returns both the native limit and a USD equivalent for every bookmaker, so you can compare across accounts in different currencies:
+
+```json
+{
+  "price": 1.52,
+  "limit": 751.34,
+  "limitMin": 1,
+  "limitCurrency": "EUR",
+  "limitUsd": 886.13,
+  "limitMinUsd": 1.18,
+  "active": true,
+  "account": "sharpbet_user",
+  "currencyInfo": { "currency": "EUR", "currencyValue": 0.84788876, "updatedAt": "2026-02-07T17:29:32+00:00" }
+}
+```
+
+- `limit` / `limitMin` are in `limitCurrency` (the account currency).
+- `limitUsd` / `limitMinUsd` are the same values normalized to USD.
+
+## Stake-limit cascade
+
+The effective min/max stake for a placement is resolved in priority order (first non-null wins):
+
+```
+effective max = account.maxStake  →  bookmaker.maxStake  →  odds.limit
+effective min = account.minStake  →  bookmaker.minStake  →  odds.limitMin  →  0
+```
+
+Limit comparisons during placement are performed in the account currency (your order stake is converted in, and the allowable stake is converted back to the order currency for reporting). See [Order Placement](/abp-api/order-placement) for how limits interact with the fill logic.
+
+## Where conversion does NOT happen
+
+- **Balances & credits** (`accounts.balance`, `accounts.credit`) are reported raw in the account's native currency — there is no USD-normalized balance.
+- **Settlement amounts** (`bets.settlementAmount`) come straight from the bookmaker in native (account) currency.
+
+<Warning>
+**Cross-currency aggregation caveat.** `GET /pnl` and `GET /positions` sum stakes/settlements **without** converting to a common currency, and their responses carry no currency field. For a group within a single bookmaker (one currency) this is fine, but a group spanning accounts in different currencies (e.g. `groupBy=userRef`, or top-level totals) sums mixed currencies into one number. Per-order values are always correct — only the cross-currency aggregate is unsafe. Convert per-row to USD yourself if you need a mixed-currency total.
+</Warning>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Order Placement" icon="bullseye-arrow" href="/abp-api/order-placement">
+    How modes, pricing, and limits drive fills.
+  </Card>
+
+  <Card title="Errors" icon="triangle-exclamation" href="/abp-api/errors">
+    Handle decline reasons and error responses.
+  </Card>
+</Columns>

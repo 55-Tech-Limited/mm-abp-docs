@@ -1,0 +1,139 @@
+---
+title: "ABP Limits & Reliability"
+sidebarTitle: "Reliability"
+description: "ABP production reliability and rate limits: per-client requests-per-second limits and 429 backoff, circuit breakers, retry with backoff, emergency mode, order expiry, system status, and incident escalation."
+keywords: "abp reliability, rate limits, requests per second, 429 too many requests, X-RateLimit headers, circuit breaker, emergency mode, order expiry, retry backoff, system status, incident escalation"
+---
+
+<Info>
+ABP is built for production trading. Per-bookmaker circuit breakers, automatic retries, and a two-tier emergency system keep a single failing bookmaker from cascading into a wider outage. This page explains the behaviours that can affect your integration and how to respond to them.
+</Info>
+
+## System status
+
+<Card title="Status & uptime" icon="signal" href="https://v2.55-tech.com/status">
+  Live system status is exposed at `GET /status` (unauthenticated). Poll it for health, or subscribe to the `status` and `emergency` WebSocket channels for push notifications.
+</Card>
+
+Unauthenticated infrastructure endpoints:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Liveness — is the process up |
+| `GET /ready` | Readiness — are dependencies (DB, cache, OddsPapi) connected |
+| `GET /status` | System status, including emergency state |
+| `GET /metrics` | Prometheus metrics |
+
+## Rate limits
+
+Rate limits are enforced **per client** (resolved from your `x-api-key`) using a sliding window. The default is **100 requests per second** and is configurable per client via the `rps` field.
+
+| Property | Value |
+|----------|-------|
+| Default limit | **100 requests / second** (configurable per client) |
+| Window | 1 second, sliding |
+| Scope | Per client (`clientName`) |
+| Exceeded response | `429 Too Many Requests` |
+
+Every throttled response includes standard headers so you can pace your client:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Your configured limit (requests per window) |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Seconds until the window resets |
+| `Retry-After` | Seconds to wait before retrying |
+
+A `429` response body:
+
+```json
+{
+  "detail": "Rate limit exceeded",
+  "limit": "100",
+  "retry_after": 1
+}
+```
+
+Because the window resets every second, a short backoff — honouring `retry_after` — is all that's needed. There's no benefit to exponential backoff for rate limiting; just wait out the window.
+
+```python
+import time
+import requests
+
+def call_with_backoff(method, url, **kwargs):
+    while True:
+        resp = requests.request(method, url, **kwargs)
+        if resp.status_code != 429:
+            return resp
+        time.sleep(float(resp.headers.get("Retry-After", 1)))
+```
+
+To stay under the limit: **batch placements** (`POST /place-orders` accepts many orders per request), **prefer the WebSocket over polling**, and **request a higher `rps`** via [support](mailto:contact@55-tech.com) if your workload needs more headroom. WebSocket connection caps are listed under [WebSocket → Connection limits](/abp-api/websocket#connection-limits).
+
+## Circuit breakers
+
+ABP runs a **per-bookmaker circuit breaker**. If a bookmaker starts failing, its breaker opens and orders targeting it are declined (`Bookmaker not available`) instead of hanging.
+
+- **Opens** after consecutive failures to a bookmaker.
+- **Half-opens** automatically after a cooldown to test recovery.
+- **Closes** and resumes normal routing once the bookmaker responds successfully.
+
+Because breakers are per-bookmaker, multi-bookmaker orders continue routing to healthy bookmakers while an unhealthy one is isolated.
+
+## Retry with backoff
+
+Transient bookmaker failures are retried automatically with exponential backoff, and ABP fetches fresh odds before each retry pass. Retries are bounded by your order's `expiresAt`, so a slow bookmaker can never block an order past its expiry.
+
+## Order expiry
+
+```
+Default expiresAt = now + 5 seconds   (maximum 24 hours)
+```
+
+If an order can't be filled within its window, it transitions to `EXPIRED` (or `PARTIALLY_FILLED` if some stake landed). Set a longer `expiresAt` for less time-sensitive orders, or a shorter one for tighter price discipline.
+
+## Emergency mode (two-tier)
+
+In rare cases — maintenance or an upstream incident — ABP can pause order processing. There are two tiers:
+
+| Tier | Effect | Recovery |
+|------|--------|----------|
+| **Soft pause** | Blocks *new* orders; in-flight bets continue | Auto-recovers after a set interval |
+| **Emergency** | Blocks new orders and cancels pending ones | Manual resume by an operator |
+
+Status changes are broadcast on the `emergency` WebSocket channel. When emergency mode is active, `POST /place-orders` returns a decline rather than queuing work.
+
+## Reliable WebSocket delivery
+
+For state you cannot afford to miss (order fills, settlements), enable `reliableDelivery: true` at login to get at-least-once delivery with acknowledgments and replay. A `seq` gap signals a missed message; recover via `replay` or reconcile through `GET /orders` / `GET /bets`. See [WebSocket](/abp-api/websocket#reliable-delivery-acknowledgments).
+
+## Your responsibilities
+
+To stay resilient on the client side:
+
+- **Treat declines as normal flow** — handle `declinedOrders` and decline reasons rather than assuming every order fills.
+- **Reconcile on reconnect** — after a WebSocket drop, replay from your last `seq` or re-query the REST endpoints.
+- **Honour idempotency** — reuse the same `requestUuid` on retries so reconnect storms can't double-stake. See [Core Concepts](/abp-api/concepts#idempotency-request-deduplication).
+- **Back off on 429** — see [Rate limits](#rate-limits) above.
+
+## Support & incidents
+
+| Channel | Use for |
+|---------|---------|
+| [contact@55-tech.com](mailto:contact@55-tech.com) | Integration help, account/limit changes, higher `rps` |
+| `GET /status` + `emergency` channel | Real-time system state |
+| [GitHub](https://github.com/55-Tech-Limited) | Public issues and references |
+
+When reporting an incident, include the affected `orderId` / `requestUuid`, the bookmaker slug, and a UTC timestamp — it dramatically speeds up diagnosis.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="WebSocket" icon="bolt" href="/abp-api/websocket">
+    Real-time updates with reliable delivery and replay.
+  </Card>
+
+  <Card title="Errors" icon="triangle-exclamation" href="/abp-api/errors">
+    Status codes and decline reasons.
+  </Card>
+</Columns>

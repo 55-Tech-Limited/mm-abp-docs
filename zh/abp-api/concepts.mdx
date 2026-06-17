@@ -1,0 +1,184 @@
+---
+title: "ABP 核心概念 - 标识符、生命周期与幂等性"
+sidebarTitle: "核心概念"
+description: "理解 ABP 的心智模型：标识符（fixtureId、outcomeId、playerId、participantId）、订单与投注的区别、请求幂等性、订单/投注/结算生命周期，以及关键术语表。"
+keywords: "abp 概念, fixtureId, outcomeId, playerId, participantId, 订单与投注, requestUuid 幂等, 订单生命周期, 投注生命周期, 结算状态, 投注 api 术语"
+---
+
+<Note>
+**速览** —**订单（order）**是你的指令；**投注（bet）**是在博彩商处实际成交的下注。标识符（`fixtureId`、`outcomeId`、`playerId`、`participantId`）与 [OddsPapi v5](https://docs.oddspapi.io/) 共享。每个订单都带有唯一的 `requestUuid` 用于幂等。三条独立的生命周期分别追踪订单、它的每个投注，以及每个投注的结算。
+</Note>
+
+## 标识符
+
+ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你通过 OddsPapi 发现的 `fixtureId` 和 `outcomeId` 就是发送给 ABP 的值，无需任何转换层。
+
+| 标识符 | 类型 | 说明 |
+|--------|------|------|
+| `fixtureId` | string | 单场赛事（例如 `id1000004461512432`），用于标准赛事盘口。 |
+| `futureId` | string | 期货/冠军盘（例如赛事总冠军），与 `fixtureId` 互斥。*（即将推出）* |
+| `outcomeId` | integer | 盘口中的具体选项（例如主胜、大于 2.5）。 |
+| `playerId` | integer | 球员玩法的球员；非球员盘口时使用 `0`。 |
+| `participantId` | integer | 期货盘中的选项（夺冠的球队/球员），仅期货使用。*（即将推出）* |
+
+### 盘口键（Market keys）
+
+在内部，每个定价选项都由一个复合键寻址：
+
+```
+赛事:  fixtureId:bookmaker:outcomeId:playerId
+期货:  futureId:bookmaker:outcomeId:playerId:participantId
+```
+
+你很少需要手动构造它们——`GET /betslip` 会返回已键入、可直接使用的结构——但理解其形态有助于阅读 WebSocket 的 `betslip` 负载。
+
+## 订单与投注
+
+这是最重要的一个区分。
+
+| | 订单（Order） | 投注（Bet） |
+|---|-------|-----|
+| 是什么 | 你下注的**指令** | 被博彩商**接受**的下注 |
+| 创建者 | 你，通过 `POST /place-orders` | ABP，在履行订单时 |
+| 数量关系 | 1 个订单 | 0..N 个投注 |
+| 币种 | `orderCurrency`（默认 USD） | 账户的原生币种 |
+| 标识 | `orderId`（+ 你的 `requestUuid`） | `betId` |
+
+当涉及部分成交或多博彩商路由时，一个订单可能产生**多个投注**。例如，一个 5,000 USD 的订单可能在两家博彩商处成交为三笔投注。详见[订单下注](/zh/abp-api/order-placement)。
+
+## 幂等性与请求去重
+
+网络重试不可避免，而重试的下单绝不能造成重复下注。ABP 通过**请求去重**来保证这一点。
+
+<Steps>
+  <Step title="为每个订单分配唯一的 requestUuid">
+    `POST /place-orders` 批次中的每个订单都带有自己的 `requestUuid`（标准 8-4-4-4-12 UUID）。在客户端生成一次，并在每次重试该订单时复用**同一个**值。
+  </Step>
+  <Step title="服务端进行指纹识别">
+    服务端会以 **30 分钟 TTL** 记录已见过的每个 `requestUuid`。在该窗口内，重复出现的相同 `requestUuid` 会被识别为重复。
+  </Step>
+  <Step title="重复项被静默跳过">
+    重复的订单**不会**再次下注，也**不会**作为被拒原因返回，只是被跳过，批次中的其余订单照常处理。
+  </Step>
+  <Step title="整批均为重复时返回 409">
+    如果请求中的*每个*订单都是重复项，则无事可做，请求返回 `409 Conflict` 并附上相关 UUID。
+  </Step>
+</Steps>
+
+```json
+{
+  "detail": {
+    "error": "All orders are duplicates",
+    "duplicateUuids": ["eb45b192-317b-42d5-9f65-af497b9fa8c1"],
+    "inProgressUuids": []
+  }
+}
+```
+
+<Warning>
+在 30 分钟内将某个 `requestUuid` 复用于*不同*的订单，会导致该订单被跳过。请始终为每次不同的下单生成新的 UUID，仅在重试同一次下单时原样复用它。
+</Warning>
+
+## 订单生命周期
+
+```
+PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANCELLED / FAILED
+```
+
+| 状态 | 含义 |
+|------|------|
+| `PENDING` | 订单已接收并排队 |
+| `PROCESSING` | 正在路由到博彩商 |
+| `FILLED` | 全部金额下注成功 |
+| `PARTIALLY_FILLED` | 部分金额已下注；其余已过期或无可用额度 |
+| `REJECTED` | 校验失败（赔率无效、赛事无效等） |
+| `EXPIRED` | 在成交前到达 `expiresAt`（默认 5 秒，最长 24 小时） |
+| `CANCELLED` | 被客户端显式取消 |
+| `FAILED` | 下注过程中发生内部错误 |
+
+## 投注生命周期
+
+```
+PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
+```
+
+| 状态 | 含义 |
+|------|------|
+| `PENDING` | 投注已创建，等待博彩商响应 |
+| `PLACED` | 已发送给博彩商，等待确认 |
+| `CONFIRMED` | 博彩商已接受投注 |
+| `REJECTED` | 博彩商拒绝投注 |
+| `CANCELLED` | 确认前取消的投注 |
+| `FAILED` | 下注过程中发生内部错误 |
+| `VOID` | 投注被博彩商作废 |
+
+## 结算生命周期
+
+投注 `CONFIRMED` 后，结算追踪资金结果：
+
+```
+UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
+```
+
+| 状态 | 含义 |
+|------|------|
+| `UNSETTLED` | 投注进行中，等待结果 |
+| `WON` | 全胜 |
+| `LOST` | 全负 |
+| `VOID` | 作废（退还本金） |
+| `HALF_WON` | 亚盘半赢 |
+| `HALF_LOST` | 亚盘半输 |
+| `PUSH` | 退还本金（走盘） |
+| `CASHOUT` | 以协商价格提前兑现 |
+
+结算变更通过 `settlements` WebSocket 频道推送。参见[订单下注](/zh/abp-api/order-placement)与 [WebSocket](/zh/abp-api/websocket)。
+
+## 账户优先级与额度级联
+
+每个博彩商账户都有 `priority`（越高越优先）。路由时，ABP 会为每家博彩商优先选择优先级最高的活跃账户。
+
+下注额度按优先顺序解析——**账户额度 > 博彩商额度 > 赔率额度**——取第一个非空值：
+
+```
+account.maxStake → bookmaker.maxStake → odds.limit
+account.minStake → bookmaker.minStake → odds.limitMin
+```
+
+完整细节与示例见[币种与额度](/zh/abp-api/currency)。
+
+## 术语表
+
+| 术语 | 定义 |
+|------|------|
+| **订单（Order）** | 客户端下注指令，由 `orderId` 和你的 `requestUuid` 标识。 |
+| **投注（Bet）** | 被博彩商接受的下注，由 `betId` 标识，归属于某个订单。 |
+| **成交（Fill）** | 下注的动作；*部分成交*仅下注请求金额的一部分。 |
+| **赔率单（Betslip）** | 某选项在你配置的各账户间聚合的实时赔率与额度视图。 |
+| **requestUuid** | 客户端生成的订单幂等键（UUID），去重保留 30 分钟。 |
+| **orderCurrency** | 订单金额所采用的币种（默认 USD）。 |
+| **原生币种（Native currency）** | 账户自身的交易币种；投注与余额以此计价。 |
+| **优先级（Priority）** | 每个账户的排序；优先级高的账户先被选中。 |
+| **额度级联（Limit cascade）** | 下注额度的解析顺序：账户 → 博彩商 → 赔率。 |
+| **扫单（Sweep）** | 多博彩商部分成交模式，先吃尽最优价再切换。 |
+| **Slug** | 博彩商的字符串标识（例如 `pinnacle`、`betfair-ex`）。 |
+| **结算（Settlement）** | 已确认投注的资金结果（WON/LOST/VOID/…）。 |
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="订单下注" icon="bullseye-arrow" href="/zh/abp-api/order-placement">
+    成交、定价与额度级联的运作方式。
+  </Card>
+
+  <Card title="币种与额度" icon="coins" href="/zh/abp-api/currency">
+    计价、换算与额度详解。
+  </Card>
+
+  <Card title="快速开始" icon="rocket" href="/zh/abp-api/quickstart">
+    5 步完成首次下注。
+  </Card>
+
+  <Card title="博彩商" icon="table-cells" href="/zh/abp-api/bookmakers">
+    全部 32 家博彩商的能力矩阵。
+  </Card>
+</Columns>

@@ -1,0 +1,276 @@
+---
+title: "ABP 订单下注 - 模式、定价与额度"
+sidebarTitle: "订单下注"
+description: "ABP 如何履行订单：四种下注模式、首注与加权平均价格规则、下注额度级联、重试、过期与取消。"
+keywords: "abp 订单下注, 下注模式, 加权平均价格, 额度级联, 首注规则, 交易所扫单, 订单过期, 取消订单"
+---
+
+本页准确解释 ABP 如何将一个**订单**（你的指令）转化为一笔或多笔**投注**（在博彩商处实际下注）：它如何挑选博彩商、如何尊重你的价格、如何解析下注额度，以及何时重试或放弃。
+
+## 决定行为的两个输入
+
+下注行为由订单上的两个因素决定：
+
+1. **你指定的博彩商数量**——一家（`bookmakers: ["pinnacle"]`）或多家（`bookmakers: ["pinnacle", "sharpbet"]`，或 `*` 表示全部允许）。
+2. **`acceptPartialStake`**（默认 `true`）——ABP 是否可将你的金额拆分到多笔投注以成交更多。
+
+二者组合为四种下注模式：
+
+| 模式 | 博彩商 | `acceptPartialStake` | 成交策略 |
+|------|--------|----------------------|----------|
+| **1** | 单家 | `false` | 单家全有或全无。若 `orderStake` 超过额度立即拒绝。 |
+| **2** | 单家 | `true` | 在单家多次下注直到金额成交完毕或额度/价格耗尽。 |
+| **3** | 多家 | `false` | 每家博彩商一笔投注，并行下注。 |
+| **4** | 多家 | `true` | 按最优价顺序——先吃尽一家再切换下一家。 |
+
+<Note>
+你无需显式选择模式——ABP 会根据你的 `bookmakers` 列表与 `acceptPartialStake` 推断。`bookmakers` 留空（或 `*`）会让 ABP 在你的 key 允许的所有博彩商间路由。
+</Note>
+
+## 价格规则
+
+### 首注规则（所有模式）
+
+订单的**第一**笔投注必须始终以 **`>= orderPrice`** 的价格下注。若当前没有博彩商提供足够好的价格，ABP 会等待并重试（它不会以更差的价格下首注），直到订单过期。
+
+### 加权平均规则（模式 2、3、4）
+
+至少成交一笔后，后续投注可以**低于** `orderPrice`，只要订单的运行**加权平均价**保持 `>= orderPrice`：
+
+```
+weighted_avg = Σ(stake × price) / Σ(stake)
+```
+
+ABP 在低于目标价时愿意下注的最大金额为：
+
+```
+max_stake = (weighted_sum − orderPrice × filled_stake) / (orderPrice − bookmaker_price)
+```
+
+若 `max_stake <= 0`，则该博彩商对本订单**已耗尽**。这让 ABP 能在略差的价格上捕获额外流动性，同时绝不突破你的平均目标。
+
+### 模式 1 例外
+
+在**模式 1**（单家、不允许部分）中，*每一*笔投注都必须达到 `orderPrice`——不适用加权平均的放宽。
+
+<Tip>
+设置 `acceptBetterOdds: true`（默认）以允许在**优于** `orderPrice` 的价格成交。这对你绝无坏处——只会改善平均价。
+</Tip>
+
+## 实例（模式 2）
+
+订单：`orderStake = 1000`、`orderPrice = 2.00`、`bookmakers = ["pinnacle"]`、`acceptPartialStake = true`。
+
+| 轮次 | 市场价 | 额度 | 动作 | 已成交 | 加权平均 |
+|------|--------|------|------|--------|----------|
+| 1 | 2.10 | 400 | 下注 400 @ 2.10（首注 ≥ 2.00 ✓） | 400 | 2.10 |
+| 2 | 1.95 | 300 | `max_stake` 使平均 ≥ 2.00 → 下注 300 @ 1.95 | 700 | 2.04 |
+| 3 | 1.90 | 500 | `max_stake = 280` → 下注 280 @ 1.90 | 980 | 2.00 |
+| 4 | 价格变动 | — | `max_stake ≤ 0` → 耗尽 | 980 | 2.00 |
+
+结果：订单为 `PARTIALLY_FILLED`，成交 **980**，平均价 **2.00**——绝不低于你的目标。
+
+## 交易所扫单模式
+
+对于启用部分成交的预测市场交易所（`betfair-ex`、`polymarket`、`polymarket.us`、`kalshi`、`predict.fun`、`sx.bet`、`novig.us`、`4casters`），ABP 会以 `orderPrice` 为下限，发送**一次**全额订单，让交易所一次性扫描自己的订单簿。这比 ABP 的多轮逻辑更快更准，且无逐轮重试——交易所会立即成交所有等于或高于你价格的可用部分。
+
+## 下注额度级联
+
+每次下注的有效最小/最大额度按优先顺序解析（取第一个非空值）：
+
+```
+有效最大 = account.maxStake  →  bookmaker.maxStake  →  odds.limit
+有效最小 = account.minStake  →  bookmaker.minStake  →  odds.limitMin  →  0
+```
+
+例如，若你的账户 `maxStake: 500`、博彩商默认为 `1000`、实时赔率额度为 `300`，则有效最大为 **500**（账户覆盖胜出，即便它低于博彩商默认）。
+
+你可以在下注前用 `GET /betslip` 预览任意选项的有效额度——它会按博彩商返回已解析的 `limit`/`limitMin`（及其 USD 等值）。参见[币种与额度](/zh/abp-api/currency)。
+
+## 账户优先级
+
+当你指定的博彩商有多个账户时，ABP 会优先选择 **`priority` 最高**的活跃账户。通过 `POST`/`PATCH /accounts` 按账户配置优先级。
+
+## 重试与过期
+
+- **重试节流：**ABP 对失败的 `(订单, 博彩商)` 对最多每 **2 秒**重试一次。
+- **最新赔率：**每次重试前，ABP 会重新拉取实时赔率，使下注始终使用当前市场价，而非陈旧数据。
+- **过期：**每个订单都有 `expiresAt`（默认从创建起 **5 秒**，最长 **24 小时**）。到达后 ABP 停止尝试，已成交的部分决定最终状态。
+
+## 最终订单状态
+
+| 状态 | 含义 |
+|------|------|
+| `FILLED` | 全部金额已下注。 |
+| `PARTIALLY_FILLED` | 部分金额已下注；其余已过期或价格/额度耗尽。 |
+| `REJECTED` | 校验失败（例如模式 1 中金额超额、赛事无效）。 |
+| `EXPIRED` | 在任何下注前到达 `expiresAt`。 |
+| `CANCELLED` | 你取消了它（见下）。 |
+| `FAILED` | 下注过程中发生内部错误。 |
+
+`POST /place-orders` 响应将批次概括为 `accepted`（全部下注）、`partial-success`（部分被拒）或 `declined`（全部被拒），并在 `acceptedOrders` / `declinedOrders` 中给出每订单详情。
+
+## 取消
+
+`POST /cancel-orders`（按 `orderIds`、`requestUuids` 或 `userRef`）或 `POST /cancel-all-orders` 可取消仍为 `PENDING` 或 `PARTIALLY_FILLED` 的订单。取消是**异步且协作式**的：
+
+1. 订单状态被设为 `CANCELLED`，其 `expiresAt` 被移到当前时间。
+2. 设置一个跨请求信号，使任何在途下注循环在下一轮停止。
+3. 已发送到博彩商的待处理投注在博彩商支持时被取消。
+
+已在博彩商处**确认**的投注无法取消——只有未成交的剩余部分会被停止。
+
+## 实战范例
+
+<Info>
+每个范例都使用同一个运行示例——赛事 `id1000004461512432`、选项 `103`、球员 `0`。请替换为你自己的 ID（通过 [OddsPapi v5](https://docs.oddspapi.io/) 发现）与你的 `x-api-key`。基础 URL：`https://v2.55-tech.com`。
+</Info>
+
+### 跨多家博彩商下注（最优价）
+
+列出多家博彩商，让 ABP 路由到最优价/额度。当 `acceptPartialStake: true` 时，ABP 先吃尽最便宜的，再继续，直到金额成交完毕（上文模式 4）。
+
+<Tabs>
+  <Tab title="cURL">
+```bash
+curl -X POST https://v2.55-tech.com/place-orders \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orders": [{
+      "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+      "fixtureId": "id1000004461512432",
+      "outcomeId": 103,
+      "playerId": 0,
+      "orderPrice": 1.95,
+      "orderStake": 5000.0,
+      "bookmakers": ["pinnacle", "betfair-ex", "polymarket"],
+      "acceptPartialStake": true,
+      "userRef": "user1"
+    }]
+  }'
+```
+  </Tab>
+  <Tab title="Python">
+```python
+import uuid, requests
+
+resp = requests.post(
+    "https://v2.55-tech.com/place-orders",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    json={"orders": [{
+        "requestUuid": str(uuid.uuid4()),
+        "fixtureId": "id1000004461512432",
+        "outcomeId": 103,
+        "playerId": 0,
+        "orderPrice": 1.95,
+        "orderStake": 5000.0,
+        "bookmakers": ["pinnacle", "betfair-ex", "polymarket"],
+        "acceptPartialStake": True,
+        "userRef": "user1",
+    }]},
+)
+data = resp.json()
+for order in data["acceptedOrders"]:
+    print(order["orderId"], "→", len(order["bets"]), "笔投注")
+```
+  </Tab>
+</Tabs>
+
+响应将订单分为 `acceptedOrders` 与 `declinedOrders`。被接受的订单可能携带多笔 `bets`（每家成交的博彩商一笔）。
+
+### 允许部分成交，拒绝其余
+
+要*仅*成交可用部分且绝不追价，在单一博彩商上设置 `acceptPartialStake: true`。若流动性耗尽，订单结束于 `PARTIALLY_FILLED`——在加权平均规则之外，不会以高于 `orderPrice` 下限的价格下注。
+
+<Accordion title="未成交的剩余部分会怎样？">
+订单的 `remainingStake` 保持未下注，到达 `expiresAt` 后订单结算为 `PARTIALLY_FILLED`。不会再尝试任何投注。若你想要全有或全无，设置 `acceptPartialStake: false`——若全部金额无法按 `orderPrice` 成交，整个订单会被拒。
+</Accordion>
+
+### 重连并重放漏掉的消息
+
+启用 `reliableDelivery`，即可恢复断连期间丢失的内容。按订阅记录你处理的最后一个 `seq`；重连时从该处 `replay`。
+
+```python
+import asyncio, json, websockets
+
+LAST_SEQ = 0  # 跨重连持久化
+
+async def run():
+    global LAST_SEQ
+    async with websockets.connect("wss://v2.55-tech.com/ws") as ws:
+        await ws.send(json.dumps({
+            "type": "login",
+            "apiKey": "YOUR_API_KEY",
+            "channels": ["orders", "bets", "settlements"],
+            "reliableDelivery": True,
+        }))
+        if LAST_SEQ:
+            await ws.send(json.dumps({"type": "replay", "fromSeq": LAST_SEQ}))
+
+        async for raw in ws:
+            msg = json.loads(raw)
+            if msg["type"] == "ping":
+                await ws.send(json.dumps({"type": "pong"}))
+            elif msg["type"] == "data":
+                LAST_SEQ = msg["seq"]
+                # ... 处理 msg["payload"] ...
+                await ws.send(json.dumps({"type": "ack_batch", "upToSeq": LAST_SEQ}))
+
+asyncio.run(run())
+```
+
+<Warning>
+`seq` 出现间隙意味着你漏掉了消息。若 `replay` 无法填补间隙（你落后于 100 条缓冲），请通过 `GET /orders` 与 `GET /bets` 对账。参见 [WebSocket → 可靠投递](/zh/abp-api/websocket#可靠投递与确认)。
+</Warning>
+
+### 结算对账
+
+订阅 `settlements` 获取推送更新，并定期扫描 `GET /bets` 作为兜底。结算状态为 `WON`、`LOST`、`VOID`、`HALF_WON`、`HALF_LOST`、`PUSH`、`CASHOUT`（参见[核心概念](/zh/abp-api/concepts#结算生命周期)）。
+
+```python
+import requests
+
+resp = requests.get(
+    "https://v2.55-tech.com/bets",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    params={"settlementStatus": "WON", "limit": 100},
+)
+for bet in resp.json().get("bets", []):
+    print(bet["betId"], bet["settlementStatus"], bet["settlementAmount"])
+```
+
+### 取消订单
+
+取消是异步的：ABP 标记该订单，取消博彩商处任何待处理的投注，下注循环在下一轮停止（参见上文[取消](#取消)）。已确认的投注无法撤回。
+
+<Tabs>
+  <Tab title="取消指定">
+```bash
+curl -X POST https://v2.55-tech.com/cancel-orders \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"orderIds": [123456]}'
+```
+  </Tab>
+  <Tab title="取消全部">
+```bash
+curl -X POST https://v2.55-tech.com/cancel-all-orders \
+  -H "x-api-key: YOUR_API_KEY"
+```
+  </Tab>
+</Tabs>
+
+在 `orders` 频道关注随之而来的 `CANCELLED`（或 `PARTIALLY_FILLED`）状态。
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="币种与额度" icon="coins" href="/zh/abp-api/currency">
+    金额、余额与额度如何计价与换算。
+  </Card>
+
+  <Card title="WebSocket" icon="bolt" href="/zh/abp-api/websocket">
+    实时追踪成交与结算。
+  </Card>
+</Columns>

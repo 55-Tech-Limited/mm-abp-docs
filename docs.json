@@ -20,7 +20,11 @@
       "og:site_name": "55-Tech API Documentation",
       "og:type": "website",
       "og:locale": "en_US",
-      "keywords": "market making api, automated bet placing, sports trading api, prediction markets api, polymarket api, kalshi api, bookmaker api, hedge betting, sports betting api, 55-tech, abp api, mm api"
+      "twitter:card": "summary_large_image",
+      "twitter:site": "@55tech",
+      "twitter:title": "55-Tech API Documentation - Market Making & Automated Bet Placing",
+      "twitter:description": "Official 55-Tech API documentation. Place bets across 32 bookmakers through one unified API, or run a market-making engine for sports and prediction markets.",
+      "keywords": "market making api, automated bet placing, abp api, sports trading api, prediction markets api, polymarket api, kalshi api, betfair api, pinnacle api, bookmaker api, smart order routing, partial fills, bet settlement api, sports betting api, betslip api, odds api, hedge betting, multi-bookmaker api, 55-tech, mm api, websocket betting api"
     }
   },
   "navigation": {
@@ -50,13 +54,29 @@
                   "abp-api/overview",
                   "abp-api/authentication",
                   "abp-api/quickstart",
-                  "abp-api/websocket",
-                  "abp-api/errors"
+                  "abp-api/concepts",
+                  "abp-api/errors",
+                  "abp-api/reliability"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "abp-api/order-placement",
+                  "abp-api/currency",
+                  "abp-api/bookmakers",
+                  "abp-api/websocket"
                 ]
               },
               {
                 "group": "Reference",
                 "openapi": "abp-api/openapi.json"
+              },
+              {
+                "group": "Changelog",
+                "pages": [
+                  "abp-api/changelog"
+                ]
               }
             ]
           },
@@ -135,13 +155,29 @@
                   "zh/abp-api/overview",
                   "zh/abp-api/authentication",
                   "zh/abp-api/quickstart",
-                  "zh/abp-api/websocket",
-                  "zh/abp-api/errors"
+                  "zh/abp-api/concepts",
+                  "zh/abp-api/errors",
+                  "zh/abp-api/reliability"
+                ]
+              },
+              {
+                "group": "指南",
+                "pages": [
+                  "zh/abp-api/order-placement",
+                  "zh/abp-api/currency",
+                  "zh/abp-api/bookmakers",
+                  "zh/abp-api/websocket"
                 ]
               },
               {
                 "group": "API 参考",
                 "openapi": "zh/abp-api/openapi.json"
+              },
+              {
+                "group": "更新日志",
+                "pages": [
+                  "zh/abp-api/changelog"
+                ]
               }
             ]
           },

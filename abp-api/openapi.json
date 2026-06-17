@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ABP v2 - Automated Bet Placing API",
-    "description": "\nPlace bets across 32 bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `X-API-Key` header.\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `betslip`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
+    "description": "\nPlace bets across 32 bookmakers through a single API.\n\n## Authentication\n\nAll endpoints require the `x-api-key` header (except `/health`, `/ready`, `/status`, `/metrics`).\n\n**Swagger UI**: Click the **Authorize** button (lock icon) at the top right, enter your API key, and click **Authorize**.\n\n## Quick Start\n\n1. **List your accounts**: `GET /accounts`\n2. **Get live odds**: `GET /betslip?fixtureId=...&outcomeId=...&playerId=0`\n3. **Place an order**: `POST /place-orders`\n4. **Track results**: `GET /orders` or subscribe to WebSocket updates\n\n## WebSocket\n\nConnect to `/ws` for real-time order, bet, and settlement updates.\n\n```json\n{\"type\": \"login\", \"apiKey\": \"your-api-key\", \"channels\": []}\n```\n\nSend an empty `channels` array to receive all updates. Available channels: `orders`, `bets`, `settlements`, `accounts`, `balance`, `betslip`, `fixtures`, `currencies`, `status`, `emergency`.\n\nSend `{\"type\": \"ping\"}` every 30 seconds to keep the connection alive.\n",
     "version": "2.0"
   },
   "servers": [
@@ -51,7 +51,9 @@
                     "verifyBetslip": false,
                     "meta": {},
                     "createdAt": "2026-01-01T00:00:00Z",
-                    "updatedAt": "2026-02-01T12:00:00Z"
+                    "updatedAt": "2026-02-01T12:00:00Z",
+                    "multiLimitAllowed": true,
+                    "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
                   },
                   {
                     "bookmaker": "betfair-ex",
@@ -67,7 +69,9 @@
                     "verifyBetslip": true,
                     "meta": { "appKey": "***" },
                     "createdAt": "2026-01-05T00:00:00Z",
-                    "updatedAt": "2026-02-05T12:00:00Z"
+                    "updatedAt": "2026-02-05T12:00:00Z",
+                    "multiLimitAllowed": false,
+                    "currencyInfo": { "currency": "GBP", "currencyValue": 0.73, "updatedAt": "2026-02-07T17:29:32+00:00" }
                   }
                 ]
               }
@@ -122,7 +126,9 @@
                   "verifyBetslip": false,
                   "meta": { "affiliate": "xyz" },
                   "createdAt": "2026-01-01T00:00:00Z",
-                  "updatedAt": "2026-01-15T12:00:00Z"
+                  "updatedAt": "2026-01-15T12:00:00Z",
+                  "multiLimitAllowed": true,
+                  "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
                 }
               }
             }
@@ -163,7 +169,9 @@
                   "verifyBetslip": false,
                   "meta": { "affiliate": "xyz" },
                   "createdAt": "2026-01-01T00:00:00Z",
-                  "updatedAt": "2026-01-15T12:00:00Z"
+                  "updatedAt": "2026-01-15T12:00:00Z",
+                  "multiLimitAllowed": true,
+                  "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
                 }
               }
             }
@@ -343,7 +351,7 @@
                         "limitMinUsd": 1,
                         "active": true,
                         "account": "0xAe58B89E84a625C8D0b7E630f40Cb163fcA73F01",
-                        "currencyInfo": { "currency": "USD", "currencyValue": 1 },
+                        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" },
                         "bookmakerFixtureId": null,
                         "bookmakerMarketId": "101",
                         "bookmakerOutcomeId": "47560474994564756084533131483151433692089461304045858881876576415056110461089",
@@ -363,7 +371,7 @@
                         "limitMinUsd": 5,
                         "active": true,
                         "account": "PWFSE02PP1",
-                        "currencyInfo": { "currency": "USD", "currencyValue": 1 },
+                        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" },
                         "bookmakerFixtureId": null,
                         "bookmakerMarketId": "101",
                         "bookmakerOutcomeId": "home",
@@ -380,7 +388,7 @@
                         "limitMinUsd": 1.18,
                         "active": true,
                         "account": "devsb01",
-                        "currencyInfo": { "currency": "EUR", "currencyValue": 0.84788876 },
+                        "currencyInfo": { "currency": "EUR", "currencyValue": 0.84788876, "updatedAt": "2026-02-07T17:29:32+00:00" },
                         "bookmakerFixtureId": null,
                         "bookmakerMarketId": "101",
                         "bookmakerOutcomeId": "7",
@@ -516,7 +524,7 @@
                         "outcomeName": "2"
                       },
                       "playerInfo": null,
-                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0, "updatedAt": "2026-02-07T17:29:32+00:00" }
                     },
                     {
                       "orderId": 372,
@@ -584,7 +592,7 @@
                         "outcomeName": "2"
                       },
                       "playerInfo": null,
-                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0, "updatedAt": "2026-02-07T17:29:32+00:00" }
                     }
                   ],
                   "count": 2,
@@ -606,7 +614,7 @@
       "post": {
         "tags": ["Orders"],
         "summary": "Place betting orders",
-        "description": "Submit one or more betting orders for placement with bookmakers.\n\n**Required fields per order:** `requestUuid`, `outcomeId`, `playerId`, `orderPrice`, `orderStake`, `userRef`, `testOrder`, and either `fixtureId` (fixture markets) or `futureId` (futures/outright markets — coming soon)\n\n**Optional fields:** `bookmakers`, `participantId` (futures only), `orderCurrency`, `back`, `expiresAt`, `acceptBetterOdds`, `acceptPartialStake`, `meta`\n\n**Key behavior:**\n- `requestUuid` must be a valid UUID format (used for idempotency — duplicates within 30 minutes are rejected with 409)\n- `fixtureId` and `futureId` are mutually exclusive — provide one or the other\n- Orders with `futureId` currently return `501 Not Implemented` (coming soon)\n- Server automatically selects the best bookmaker by odds/limits unless `bookmakers` is specified\n- `clientName` is set automatically from your API key\n- Orders expire after `expiresAt` (default: 5 seconds from now, capped at 24 hours maximum)\n- Maximum 100 orders per request\n\n**Response:**\n- `status`: \"accepted\" (all accepted), \"partial-success\" (some declined), or \"declined\" (all declined)\n- `acceptedOrders`: Orders that passed validation with their current status and any placed bets\n- `declinedOrders`: Orders that failed validation with `declineReason`",
+        "description": "Submit one or more betting orders for placement with bookmakers.\n\n**Required fields per order:** `requestUuid`, `outcomeId`, `playerId`, `orderPrice`, `orderStake`, `userRef`, `testOrder`, and either `fixtureId` (fixture markets) or `futureId` (futures/outright markets — coming soon)\n\n**Optional fields:** `bookmakers`, `participantId` (futures only), `orderCurrency`, `back`, `expiresAt`, `acceptBetterOdds`, `acceptPartialStake`, `meta`\n\n**Key behavior:**\n- `requestUuid` must be a valid UUID format (used for idempotency — a duplicate within 30 minutes is skipped; if ALL orders in the request are duplicates the request returns 409)\n- `fixtureId` and `futureId` are mutually exclusive — provide one or the other\n- Orders with `futureId` currently return `501 Not Implemented` (coming soon)\n- Server automatically selects the best bookmaker by odds/limits unless `bookmakers` is specified\n- `clientName` is set automatically from your API key\n- Orders expire after `expiresAt` (default: 5 seconds from now, capped at 24 hours maximum)\n- Maximum 100 orders per request\n\n**Response:**\n- `status`: \"accepted\" (all accepted), \"partial-success\" (some declined), or \"declined\" (all declined)\n- `acceptedOrders`: Orders that passed validation with their current status and any placed bets\n- `declinedOrders`: Orders that failed validation with `declineReason`",
         "operationId": "place_orders",
         "requestBody": {
           "required": true,
@@ -722,7 +730,7 @@
                         "outcomeName": "2"
                       },
                       "playerInfo": null,
-                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0, "updatedAt": "2026-02-07T17:29:32+00:00" }
                     }
                   ],
                   "declinedOrders": [
@@ -770,13 +778,15 @@
           "401": { "description": "Unauthorized — missing or invalid API key" },
           "403": { "description": "Access denied — client not resolved from API key" },
           "409": {
-            "description": "All orders are duplicates (requestUuid already processed within 30 minutes)",
+            "description": "Returned only when EVERY order in the request is a duplicate (each requestUuid already processed or in progress within the last 30 minutes). If only some orders are duplicates, the duplicates are skipped and the rest are processed normally.",
             "content": {
               "application/json": {
                 "example": {
-                  "error": "All orders are duplicates",
-                  "duplicateUuids": ["eb45b192-317b-42d5-9f65-af497b9fa8c1"],
-                  "inProgressUuids": []
+                  "detail": {
+                    "error": "All orders are duplicates",
+                    "duplicateUuids": ["eb45b192-317b-42d5-9f65-af497b9fa8c1"],
+                    "inProgressUuids": []
+                  }
                 }
               }
             }
@@ -968,7 +978,7 @@
                       "account": "pinnacle_main",
                       "sentData": { "stake": 10.0, "price": 1.95 },
                       "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.97 },
-                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                      "currencyInfo": { "currency": "USD", "currencyValue": 1.0, "updatedAt": "2026-02-07T17:29:32+00:00" }
                     },
                     {
                       "betId": 67889,
@@ -987,7 +997,7 @@
                       "settledAt": "2026-02-07T18:30:00+00:00",
                       "userRef": "bettor1234",
                       "account": "betfair_user",
-                      "currencyInfo": { "currency": "GBP", "currencyValue": 0.73 }
+                      "currencyInfo": { "currency": "GBP", "currencyValue": 0.73, "updatedAt": "2026-02-07T17:29:32+00:00" }
                     }
                   ],
                   "count": 2,
@@ -1042,7 +1052,7 @@
                   "account": "pinnacle_main",
                   "sentData": { "stake": 10.0, "price": 1.95 },
                   "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.97 },
-                  "currencyInfo": { "currency": "USD", "currencyValue": 1.0 }
+                  "currencyInfo": { "currency": "USD", "currencyValue": 1.0, "updatedAt": "2026-02-07T17:29:32+00:00" }
                 }
               }
             }
@@ -1199,7 +1209,7 @@
       "apiKey": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-API-Key",
+        "name": "x-api-key",
         "description": "API key for authentication. Contact contact@55-tech.com to obtain a key."
       }
     },
@@ -1249,7 +1259,9 @@
           "verifyBetslip": { "type": "boolean", "description": "Force live odds fetch from bookmaker API" },
           "meta": { "type": "object", "description": "Additional metadata" },
           "createdAt": { "type": "string", "nullable": true, "description": "Creation timestamp (ISO 8601)" },
-          "updatedAt": { "type": "string", "nullable": true, "description": "Last update timestamp (ISO 8601)" }
+          "updatedAt": { "type": "string", "nullable": true, "description": "Last update timestamp (ISO 8601)" },
+          "multiLimitAllowed": { "type": "boolean", "description": "Whether the account permits splitting a stake across multiple bets" },
+          "currencyInfo": { "type": "object", "nullable": true, "description": "Exchange rate snapshot for currencyId: { currency, currencyValue, updatedAt }. Null when no rate is available.", "properties": { "currency": { "type": "string" }, "currencyValue": { "type": "number" }, "updatedAt": { "type": "string" } } }
         }
       },
       "PlaceOrderRequest": {
@@ -1257,7 +1269,7 @@
         "required": ["requestUuid", "outcomeId", "orderPrice", "orderStake", "userRef", "testOrder"],
         "description": "Either `fixtureId` or `futureId` must be provided (mutually exclusive). For fixture orders, `playerId` is required. For futures orders, `participantId` is used instead.",
         "properties": {
-          "requestUuid": { "type": "string", "description": "Unique idempotency key (UUID format). Duplicates within 30 minutes are rejected with 409.", "example": "eb45b192-317b-42d5-9f65-af497b9fa8c1" },
+          "requestUuid": { "type": "string", "description": "Unique idempotency key (UUID format). A duplicate within 30 minutes is skipped; the request returns 409 only if every order is a duplicate.", "example": "eb45b192-317b-42d5-9f65-af497b9fa8c1" },
           "fixtureId": { "type": "string", "nullable": true, "description": "OddsPAPI fixture identifier (e.g., 'id1000004461512432'). Required for fixture orders. Mutually exclusive with futureId.", "example": "id1000004461512432" },
           "futureId": { "type": "string", "nullable": true, "description": "[Coming soon] Future/outright market identifier. Mutually exclusive with fixtureId. Orders with futureId currently return 501.", "example": "fut_123456" },
           "participantId": { "type": "integer", "nullable": true, "default": 0, "description": "[Coming soon] Participant identifier for futures markets (e.g., team or player selection). Only used with futureId.", "example": 0 },
@@ -1346,7 +1358,7 @@
           "account": { "type": "string", "nullable": true, "description": "Account username used for this bet" },
           "sentData": { "type": "object", "nullable": true, "description": "Full request payload sent to the bookmaker" },
           "receivedData": { "type": "object", "nullable": true, "description": "Full response received from the bookmaker" },
-          "currencyInfo": { "type": "object", "nullable": true, "description": "Currency exchange rate details" },
+          "currencyInfo": { "type": "object", "nullable": true, "description": "Exchange rate snapshot for placedCurrency: { currency, currencyValue, updatedAt }. Null when no rate is available.", "properties": { "currency": { "type": "string" }, "currencyValue": { "type": "number" }, "updatedAt": { "type": "string" } } },
           "settledAt": { "type": "string", "nullable": true, "description": "ISO 8601 settlement timestamp" },
           "settlementAmount": { "type": "number", "nullable": true, "description": "Settlement payout amount" },
           "settlementReason": { "type": "string", "nullable": true, "description": "Reason for settlement" },

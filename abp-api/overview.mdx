@@ -1,12 +1,13 @@
 ---
 title: "ABP API Overview - Automated Bet Placing"
 sidebarTitle: "Overview"
-description: "ABP v2 API overview. Place bets across 30 bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
+description: "ABP v2 API overview. Place bets across 32 bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
+keywords: "abp api, automated bet placing, bet placement api, 32 bookmakers, smart order routing, partial fills, bet settlement, betslip, pinnacle, betfair, polymarket, kalshi"
 ---
 
 ## What is ABP?
 
-The **Automated Bet Placing (ABP)** API by [55 Tech](https://55-tech.com/) lets you place bets across 30 bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
+The **Automated Bet Placing (ABP)** API by [55-Tech](https://55-tech.com/) lets you place bets across 32 bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
 
 **Core capabilities:**
 
@@ -51,7 +52,7 @@ An **order** is your instruction to place a bet. A **bet** is the actual wager p
 
 ### Request deduplication
 
-Each order requires a unique `requestUuid` (UUID format). ABP uses server-side deduplication (30-minute TTL) to prevent duplicate placements. Duplicate requests return `409 Conflict`.
+Each order requires a unique `requestUuid` (UUID format). ABP uses server-side deduplication (30-minute TTL) to prevent duplicate placements. A duplicate order is silently skipped; if **every** order in a request is a duplicate, the request returns `409 Conflict`.
 
 ### Order lifecycle
 
@@ -124,7 +125,7 @@ ABP supports **futures** (outright) markets alongside standard fixture-based mar
 
 ### Bookmaker slugs
 
-Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `polymarket`). Use `GET /bookmakers` to list all 30 supported bookmakers with their default stake limits.
+Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `polymarket`). Use `GET /bookmakers` to list all 32 supported bookmakers with their default stake limits.
 
 ## Endpoints at a glance
 
@@ -141,13 +142,13 @@ Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `poly
 
 ## Supported bookmakers
 
-**Traditional sportsbooks:** pinnacle, pinnacleb2b, betamapola, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, vertex
+**Traditional sportsbooks:** pinnacle, pinnacleb2b, betamapola, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, 3et++
 
-**Betting exchanges:** betfair-ex, limitless-ex, matchbook, smarkets
+**Betting exchanges:** betfair-ex, smarkets, limitless-ex
 
-**Prediction markets:** 4casters, kalshi, polymarket, polymarket.us, predict.fun, prophetx, sx.bet
+**Prediction markets:** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, vertex, 4casters
 
-**Punter platforms:** punter.io
+**Punter platforms:** punter.io, punter.io++
 
 ## Resilience
 
@@ -162,6 +163,43 @@ ABP includes production-grade reliability features:
 
 ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). Fixture IDs and outcome IDs in ABP correspond directly to OddsPapi identifiers. Your app should use OddsPapi to discover fixtures and markets, then use ABP to execute bets.
 
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Does ABP hedge or place bets directly?">
+    ABP places bets **directly** with bookmakers — it is not a hedging or market-making engine. You send an order, ABP routes it to the best account(s), places the wager, and tracks it through settlement. The data layer is [OddsPapi v5](https://docs.oddspapi.io/); ABP is the execution layer on top.
+  </Accordion>
+  <Accordion title="What's the difference between an order and a bet?">
+    An **order** is your instruction to place a wager. A **bet** is the actual wager placed at a bookmaker. One order can produce multiple bets when partial fills or multi-bookmaker routing apply. See [Concepts](/abp-api/concepts#orders-vs-bets).
+  </Accordion>
+  <Accordion title="How does idempotency / requestUuid work?">
+    Each order carries a unique `requestUuid` (UUID format). ABP deduplicates server-side for **30 minutes** — a duplicate is silently skipped, and if **every** order in a request is a duplicate the request returns `409 Conflict`. Deep dive in [Concepts](/abp-api/concepts#idempotency-request-deduplication).
+  </Accordion>
+  <Accordion title="Does ABP support partial fills and multi-bookmaker routing?">
+    Yes. Set `acceptPartialStake: true` to let a single order fill across multiple bets, and pass a `bookmakers` list (or omit it for auto-selection) to spread across venues. ABP enforces a weighted-average price constraint so your effective price stays at or above `orderPrice`. See [Order Placement](/abp-api/order-placement).
+  </Accordion>
+  <Accordion title="Which bookmakers are supported?">
+    32 bookmakers across traditional sportsbooks, betting exchanges, prediction markets, and punter platforms. Capabilities (sweep, settlement, betslip) vary per venue — see the [Bookmaker capability matrix](/abp-api/bookmakers).
+  </Accordion>
+  <Accordion title="Can I test without placing real bets?">
+    Yes. Set `testOrder: true` to run the full validation and routing path (limits, price checks, account selection) **without** sending a bet to the bookmaker — the fastest way to confirm your payload and IDs before going live. See [Quickstart](/abp-api/quickstart#step-3-place-an-order).
+  </Accordion>
+  <Accordion title="How reliable is ABP for production trading?">
+    ABP runs per-bookmaker circuit breakers, retry with backoff, a two-tier emergency control, and reliable WebSocket delivery with ack/replay. Recovery from disconnects is bounded — reconcile any `seq` gaps via REST. See [Reliability & Operations](/abp-api/reliability).
+  </Accordion>
+</AccordionGroup>
+
+## 💬 Ask an AI Assistant
+
+Want to explore or ask questions about this API using your favorite AI?
+
+Click one of the links below — each one opens the full docs bundle in the selected tool with a pre-filled prompt:
+
+- [Ask ChatGPT](https://chatgpt.com/?prompt=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+with+this+API.)
+- [Ask Claude](https://claude.ai/?prompt=Please+read+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+- [Ask Perplexity](https://www.perplexity.ai/search?q=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt)
+- [Ask Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+
 ## Next steps
 
 <Columns cols={2}>
@@ -171,5 +209,13 @@ ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). 
 
   <Card title="Quickstart" icon="rocket" href="/abp-api/quickstart">
     Place your first bet in 5 steps.
+  </Card>
+
+  <Card title="Order Placement" icon="bullseye-arrow" href="/abp-api/order-placement">
+    How fills, pricing, and limits work.
+  </Card>
+
+  <Card title="Currency & Limits" icon="coins" href="/abp-api/currency">
+    Denomination, conversion, and the limit cascade.
   </Card>
 </Columns>

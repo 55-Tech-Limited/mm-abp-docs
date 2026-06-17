@@ -1,12 +1,13 @@
 ---
 title: "ABP API 概述 - 自动投注"
 sidebarTitle: "概述"
-description: "ABP v2 API 概述。通过单一统一API在30家博彩公司进行投注，具备智能路由、部分成交、实时跟踪和自动结算功能。"
+description: "ABP v2 API 概述。通过单一统一API在32家博彩公司进行投注，具备智能路由、部分成交、实时跟踪和自动结算功能。"
+keywords: "abp api, 自动投注, 投注下单 api, 32 家博彩公司, 智能订单路由, 部分成交, 投注结算, 投注单, pinnacle, betfair, polymarket, kalshi"
 ---
 
 ## 什么是 ABP？
 
-**自动投注（ABP）** API 由 [55 Tech](https://55-tech.com/) 提供，让您通过单一集成在30家博彩公司进行投注。无需构建和维护各个博彩公司的连接器，ABP 处理从投注到结算的全部生命周期。
+**自动投注（ABP）** API 由 [55-Tech](https://55-tech.com/) 提供，让您通过单一集成在32家博彩公司进行投注。无需构建和维护各个博彩公司的连接器，ABP 处理从投注到结算的全部生命周期。
 
 **核心能力：**
 
@@ -51,7 +52,7 @@ https://v2.55-tech.com
 
 ### 请求去重
 
-每个订单需要唯一的 `requestUuid`（UUID格式）。ABP 使用服务端去重（30分钟TTL）防止重复下注。重复请求返回 `409 Conflict`。
+每个订单需要唯一的 `requestUuid`（UUID格式）。ABP 使用服务端去重（30分钟TTL）防止重复下注。重复的订单会被静默跳过；如果请求中的**每个**订单都是重复的，则请求返回 `409 Conflict`。
 
 ### 订单生命周期
 
@@ -124,7 +125,7 @@ ABP 支持**期货**（冠军）市场以及标准的赛事市场。期货使用
 
 ### 博彩公司标识
 
-博彩公司通过标识字符串识别（例如 `pinnacle`、`betfair-ex`、`polymarket`）。使用 `GET /bookmakers` 列出所有30家支持的博彩公司及其默认投注限额。
+博彩公司通过标识字符串识别（例如 `pinnacle`、`betfair-ex`、`polymarket`）。使用 `GET /bookmakers` 列出所有32家支持的博彩公司及其默认投注限额。
 
 ## 端点一览
 
@@ -141,13 +142,13 @@ ABP 支持**期货**（冠军）市场以及标准的赛事市场。期货使用
 
 ## 支持的博彩公司
 
-**传统体育博彩：** pinnacle, pinnacleb2b, betamapola, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, vertex
+**传统体育博彩：** pinnacle, pinnacleb2b, betamapola, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, 3et++
 
-**博彩交易所：** betfair-ex, limitless-ex, matchbook, smarkets
+**博彩交易所：** betfair-ex, smarkets, limitless-ex
 
-**预测市场：** 4casters, kalshi, polymarket, polymarket.us, predict.fun, prophetx, sx.bet
+**预测市场：** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, vertex, 4casters
 
-**Punter平台：** punter.io
+**Punter平台：** punter.io, punter.io++
 
 ## 可靠性
 
@@ -161,6 +162,43 @@ ABP 包含生产级可靠性功能：
 ## 数据源
 
 ABP 从 [OddsPapi v5](https://docs.oddspapi.io/) 获取实时赔率数据。ABP 中的赛事ID和结果ID直接对应 OddsPapi 标识符。您的应用应使用 OddsPapi 发现赛事和市场，然后使用 ABP 执行投注。
+
+## 常见问题
+
+<AccordionGroup>
+  <Accordion title="ABP 是对冲还是直接下注？">
+    ABP **直接**向博彩公司下注——它不是对冲或做市引擎。您发送订单，ABP 将其路由到最优账户、下注并跟踪至结算。数据层是 [OddsPapi v5](https://docs.oddspapi.io/)；ABP 是其上的执行层。
+  </Accordion>
+  <Accordion title="订单与投注有什么区别？">
+    **订单**是您下注的指令。**投注**是在博彩公司实际下达的赌注。当涉及部分成交或多博彩公司路由时，一个订单可产生多个投注。详见[核心概念](/zh/abp-api/concepts#订单与投注)。
+  </Accordion>
+  <Accordion title="幂等性 / requestUuid 如何工作？">
+    每个订单携带唯一的 `requestUuid`（UUID 格式）。ABP 在服务端去重 **30 分钟**——重复订单会被静默跳过；若请求中**每个**订单都是重复的，则返回 `409 Conflict`。详见[核心概念](/zh/abp-api/concepts#幂等性与请求去重)。
+  </Accordion>
+  <Accordion title="ABP 支持部分成交和多博彩公司路由吗？">
+    支持。设置 `acceptPartialStake: true` 让单个订单跨多个投注成交，并传入 `bookmakers` 列表（或省略以自动选择）以分散到多个场所。ABP 强制执行加权平均价格约束，使您的有效价格保持在 `orderPrice` 或以上。详见[订单下注](/zh/abp-api/order-placement)。
+  </Accordion>
+  <Accordion title="支持哪些博彩公司？">
+    涵盖传统体育博彩、博彩交易所、预测市场和 Punter 平台共 32 家博彩公司。各场所的能力（清扫、结算、投注单）有所不同——见[博彩公司能力矩阵](/zh/abp-api/bookmakers)。
+  </Accordion>
+  <Accordion title="我可以在不实际下注的情况下测试吗？">
+    可以。设置 `testOrder: true` 会走完整的校验与路由流程（额度、价格检查、账户选择），但**不会**向博彩公司发送投注——这是上线前确认请求体与 ID 正确的最快方式。见[快速入门](/zh/abp-api/quickstart#步骤3下单)。
+  </Accordion>
+  <Accordion title="ABP 用于生产交易的可靠性如何？">
+    ABP 运行每博彩公司熔断器、带退避的重试、两级紧急控制，以及带 ack/replay 的可靠 WebSocket 投递。断连后的恢复是有界的——通过 REST 对账任何 `seq` 间隙。见[可靠性与运维](/zh/abp-api/reliability)。
+  </Accordion>
+</AccordionGroup>
+
+## 💬 询问 AI 助手
+
+想用您喜欢的 AI 探索或询问关于此 API 的问题吗？
+
+点击下方任一链接——每个链接都会在所选工具中打开完整文档包并附带预填提示：
+
+- [询问 ChatGPT](https://chatgpt.com/?prompt=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+with+this+API.)
+- [询问 Claude](https://claude.ai/?prompt=Please+read+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
+- [询问 Perplexity](https://www.perplexity.ai/search?q=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt)
+- [询问 Gemini](https://gemini.google.com/app?query=Read+from+https%3A%2F%2Fdocs.55-tech.com%2Fllms-full.txt+and+help+me+use+this+API.)
 
 ## 下一步
 

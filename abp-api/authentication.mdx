@@ -1,36 +1,37 @@
 ---
 title: "ABP Authentication - API Key Setup"
 sidebarTitle: "Authentication"
-description: "Learn how to authenticate ABP API requests using the X-API-Key header. API key resolution, rate limiting, and WebSocket authentication."
+description: "Learn how to authenticate ABP API requests using the x-api-key header. API key resolution, rate limiting, and WebSocket authentication."
+keywords: "abp authentication, x-api-key, api key, websocket auth, rate limit, clientName, api key resolution"
 ---
 
-All ABP endpoints require authentication via the `X-API-Key` header.
+All ABP endpoints require authentication via the `x-api-key` header, except the unauthenticated infrastructure endpoints (`/health`, `/ready`, `/status`, `/metrics`).
 
 ## How to authenticate
 
-Pass your API key in the `X-API-Key` request header:
+Pass your API key in the `x-api-key` request header:
 
 ```bash
-curl -H "X-API-Key: your-api-key" \
+curl -H "x-api-key: your-api-key" \
   https://v2.55-tech.com/accounts
 ```
 
 ## API key metadata
 
-Each API key is associated with:
+Each API key resolves to a client and its access rules:
 
 | Field | Description |
 |-------|-------------|
-| `clientName` | Your client identifier (used for filtering data) |
-| `bookmakers` | Allowed bookmaker slugs (empty = all) |
-| `rateLimit` | Requests per minute (default: 60) |
-| `enabled` | Whether this key is active |
+| `clientName` | Your client identifier — all accounts, orders, and bets are filtered by it |
+| `bookmakers` | Allowed bookmaker slugs (empty = all bookmakers) |
+| `rps` | Requests per second allowed for this client (default: 100) |
+| `active` | Whether this key is active |
 
 Your API key determines which accounts, orders, and bets you can access. All data is filtered by your `clientName`.
 
 ## WebSocket authentication
 
-For WebSocket connections, authenticate via the login message after connecting:
+For WebSocket connections, authenticate via the login message after connecting (the `/ws` endpoint itself does not require the `x-api-key` header):
 
 ```json
 {
@@ -44,33 +45,29 @@ You must send the login message within **30 seconds** of connecting, or the conn
 
 ## Rate limiting
 
-Rate limits are enforced per API key using a sliding window.
-
-- **Default:** 60 requests per minute
-- **Exceeded:** Returns `429 Too Many Requests`
-- **WebSocket:** Maximum 5 concurrent connections per API key
-
-Implement exponential backoff when receiving `429` responses.
+Requests are rate-limited **per client** — by default 100 requests per second, with a maximum of 5 concurrent WebSocket connections per API key. Full detail, headers, and backoff guidance live in [Rate limits](/abp-api/reliability#rate-limits).
 
 ## Error responses
 
-| Status | Meaning |
-|--------|---------|
-| `401` | Missing or invalid API key |
-| `403` | API key inactive or expired; or resource belongs to a different client |
-| `429` | Rate limit exceeded |
+<Note>
+The auth middleware emits errors under an `error` key, while application-level errors (validation, not-found, etc.) use the FastAPI-standard `detail` key. Handle both shapes.
+</Note>
 
-**401 — missing key:**
-```json
-{"detail": {"message": "Missing X-API-Key header", "code": "UNAUTHORIZED"}}
-```
+| Situation | Status | Body |
+|-----------|--------|------|
+| Header missing | `403` | `{"detail": "Missing API key header: x-api-key"}` |
+| Key invalid / inactive / expired | `401` | `{"error": "Invalid or inactive API key"}` |
+| Key valid but not allowed for the endpoint / sport / bookmaker | `403` | `{"error": "Access denied to endpoint"}` |
+| Rate limit exceeded | `429` | `{"detail": "Rate limit exceeded", "limit": "100", "retry_after": 1}` |
 
-**401 — invalid key:**
-```json
-{"detail": {"message": "Invalid API key", "code": "UNAUTHORIZED"}}
-```
+## Next steps
 
-**403 — inactive/expired key:**
-```json
-{"detail": {"message": "API key is inactive", "code": "FORBIDDEN"}}
-```
+<Columns cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/abp-api/quickstart">
+    Place your first bet in 5 steps.
+  </Card>
+
+  <Card title="Limits & Reliability" icon="gauge-high" href="/abp-api/reliability">
+    Per-client rate limits, circuit breakers, and emergency mode.
+  </Card>
+</Columns>

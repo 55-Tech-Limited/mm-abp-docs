@@ -2,6 +2,7 @@
 title: "ABP 快速入门 - 下您的第一注"
 sidebarTitle: "快速入门"
 description: "通过 ABP API 下您第一注的分步指南。从账户设置到下单、跟踪和结算。"
+keywords: "abp 快速入门, 下第一注, place-orders, betslip, requestUuid, testOrder, 跟踪投注, 持仓, 盈亏"
 ---
 
 ## 步骤1：列出您的账户
@@ -9,7 +10,7 @@ description: "通过 ABP API 下您第一注的分步指南。从账户设置到
 检查为您的API密钥配置了哪些博彩公司账户：
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/accounts
 ```
 
@@ -31,7 +32,9 @@ curl -H "X-API-Key: YOUR_API_KEY" \
     "verifyBetslip": false,
     "meta": {},
     "createdAt": "2026-01-01T00:00:00Z",
-    "updatedAt": "2026-02-01T12:00:00Z"
+    "updatedAt": "2026-02-01T12:00:00Z",
+    "multiLimitAllowed": true,
+    "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
   }
 ]
 ```
@@ -40,17 +43,33 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 下注前，获取当前赔率和限额。需要 `fixtureId`、`outcomeId` 和 `playerId`：
 
+<Tabs>
+  <Tab title="cURL">
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/betslip?fixtureId=id1000002361061419&outcomeId=101&playerId=0"
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://v2.55-tech.com/betslip?fixtureId=id1000004461512432&outcomeId=103&playerId=0"
 ```
+  </Tab>
+  <Tab title="Python">
+```python
+import requests
+
+resp = requests.get(
+    "https://v2.55-tech.com/betslip",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    params={"fixtureId": "id1000004461512432", "outcomeId": 103, "playerId": 0},
+)
+print(resp.json()["odds"])
+```
+  </Tab>
+</Tabs>
 
 投注单返回每个有此市场的博彩公司的实时赔率，包含赛事和结果元数据：
 
 ```json
 {
-  "fixtureId": "id1000002361061419",
-  "outcomeId": 101,
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
   "playerId": 0,
   "client": "your-client",
   "fixtureInfo": {
@@ -63,28 +82,33 @@ curl -H "X-API-Key: YOUR_API_KEY" \
   },
   "outcomeInfo": {
     "marketName": "Full Time Result",
-    "outcomeName": "1"
+    "outcomeName": "2"
   },
   "odds": {
     "pinnacle": {
-      "id1000002361061419:pinnacle:101:0": {
-        "price": 1.5,
+      "id1000004461512432:pinnacle:103:0": {
+        "price": 1.98,
         "limit": 15000,
         "limitMin": 5,
         "limitCurrency": "USD",
+        "limitUsd": 15000,
+        "limitMinUsd": 5,
         "active": true,
-        "account": "pinnacle_main"
+        "account": "pinnacle_main",
+        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
       }
     },
     "sharpbet": {
-      "id1000002361061419:sharpbet:101:0": {
-        "price": 1.52,
+      "id1000004461512432:sharpbet:103:0": {
+        "price": 2.0,
         "limit": 751.34,
         "limitMin": 1,
         "limitCurrency": "EUR",
         "limitUsd": 886.13,
+        "limitMinUsd": 1.18,
         "active": true,
-        "account": "sharpbet_user"
+        "account": "sharpbet_user",
+        "currencyInfo": { "currency": "EUR", "currencyValue": 0.84788876, "updatedAt": "2026-02-07T17:29:32+00:00" }
       }
     }
   }
@@ -99,9 +123,11 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 
 下一个带最低价格保护的投注订单。每个订单需要唯一的 `requestUuid` 以确保幂等性：
 
+<Tabs>
+  <Tab title="cURL">
 ```bash
 curl -X POST \
-  -H "X-API-Key: YOUR_API_KEY" \
+  -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "orders": [
@@ -119,12 +145,61 @@ curl -X POST \
   }' \
   https://v2.55-tech.com/place-orders
 ```
+  </Tab>
+  <Tab title="Python">
+```python
+import uuid, requests
+
+resp = requests.post(
+    "https://v2.55-tech.com/place-orders",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    json={"orders": [{
+        "requestUuid": str(uuid.uuid4()),
+        "fixtureId": "id1000004461512432",
+        "outcomeId": 103,
+        "playerId": 0,
+        "orderStake": 10.0,
+        "orderPrice": 1.95,
+        "userRef": "my-strategy-1",
+        "testOrder": False,
+    }]},
+)
+print(resp.json())
+```
+  </Tab>
+  <Tab title="JavaScript">
+```javascript
+import { randomUUID } from "crypto";
+
+const resp = await fetch("https://v2.55-tech.com/place-orders", {
+  method: "POST",
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    orders: [{
+      requestUuid: randomUUID(),
+      fixtureId: "id1000004461512432",
+      outcomeId: 103,
+      playerId: 0,
+      orderStake: 10.0,
+      orderPrice: 1.95,
+      userRef: "my-strategy-1",
+      testOrder: false,
+    }],
+  }),
+});
+console.log(await resp.json());
+```
+  </Tab>
+</Tabs>
 
 **关键字段：**
 
 | 字段 | 必填 | 描述 |
 |------|------|------|
-| `requestUuid` | 是 | 用于幂等性的唯一UUID（5分钟内重复返回409） |
+| `requestUuid` | 是 | 用于幂等性的唯一UUID（30分钟内的重复项会被跳过；仅当每个订单都是重复时才返回409） |
 | `fixtureId` | 是 | OddsPapi 赛事ID |
 | `outcomeId` | 是 | 市场结果（例如 103 = 客胜） |
 | `playerId` | 是 | 非球员盘设为 `0` |
@@ -187,19 +262,23 @@ curl -X POST \
 }
 ```
 
+<Tip>
+**无需真实下注即可测试。**设置 `testOrder: true` 会走完整的校验与路由流程（额度、价格检查、账户选择），但**不会**向博彩公司发送投注。这是上线前确认你的请求体与 ID 正确的最快方式。
+</Tip>
+
 ## 步骤4：跟踪您的订单
 
 按 `userRef`、`orderIds` 或 `requestUuids` 查询订单（至少需要一个过滤条件）：
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   "https://v2.55-tech.com/orders?userRef=my-strategy-1"
 ```
 
 查看特定订单的单个投注：
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   "https://v2.55-tech.com/bets?orderIds=327"
 ```
 
@@ -234,7 +313,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 查看您的汇总敞口（默认按博彩公司分组）：
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/positions
 ```
 
@@ -254,7 +333,7 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 查看盈亏：
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://v2.55-tech.com/pnl
 ```
 
@@ -275,11 +354,19 @@ curl -H "X-API-Key: YOUR_API_KEY" \
 ## 下一步
 
 <Columns cols={2}>
-  <Card title="WebSocket 更新" icon="bolt" href="/zh/abp-api/websocket">
-    获取实时订单、投注和结算更新。
+  <Card title="核心概念" icon="lightbulb" href="/zh/abp-api/concepts">
+    订单与投注、标识符、幂等性与生命周期。
   </Card>
 
-  <Card title="API 参考" icon="terminal" href="/zh/abp-api/overview">
-    浏览所有可用端点。
+  <Card title="订单下注" icon="bullseye-arrow" href="/zh/abp-api/order-placement">
+    成交、定价与额度级联。
+  </Card>
+
+  <Card title="WebSocket 更新" icon="bolt" href="/zh/abp-api/websocket">
+    实时订单、投注与结算更新。
+  </Card>
+
+  <Card title="实战范例" icon="book-open" href="/zh/abp-api/order-placement#实战范例">
+    常见集成的可复制模式。
   </Card>
 </Columns>

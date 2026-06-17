@@ -1,0 +1,94 @@
+---
+title: "ABP 博彩商能力矩阵"
+sidebarTitle: "博彩商"
+description: "ABP 支持的全部 32 家博彩商，按类型分组，附 slug 与能力说明——传统体育博彩、博彩交易所、预测市场与 punter 平台。"
+keywords: "abp 博彩商, 支持的博彩商, 博彩商 slug, pinnacle, betfair, polymarket, kalshi, smarkets, 预测市场, 博彩交易所, 体育博彩 api, 扫单交易所"
+---
+
+<Info>
+ABP 在一套 API 后集成了 **32 家博彩商**。每家以其 **slug** 标识（例如 `pinnacle`、`betfair-ex`、`polymarket`）。调用 `GET /bookmakers` 获取实时列表及各博彩商的默认下注额度。你的 API key 可能被限定为一个子集——参见[鉴权](/zh/abp-api/authentication)。
+</Info>
+
+## 如何阅读本页
+
+- **Slug**——你在创建账户、`bookmakers` 过滤与订单路由中传入的字符串。
+- **类型**——体育博彩、交易所、预测市场或 punter 平台。类型会影响成交行为。
+- **扫单（Sweep）**——该场所是否通过一次性扫描其订单簿来履行部分成交订单（参见[订单下注 → 交易所扫单](/zh/abp-api/order-placement)）。非扫单场所则由 ABP 的多轮加权平均逻辑成交。
+
+## 传统体育博彩
+
+单一报价场所。ABP 按报盘下注一笔或多笔，并应用[额度级联](/zh/abp-api/currency#下注额度级联)。
+
+| 博彩商 | Slug | 扫单 |
+|--------|------|:----:|
+| Pinnacle | `pinnacle` | — |
+| Pinnacle B2B | `pinnacleb2b` | — |
+| Betamapola | `betamapola` | — |
+| Betcris | `betcris` | — |
+| Bookmaker.eu | `bookmaker.eu` | — |
+| Cloudbet | `cloudbet` | — |
+| Cloudbet B2B | `cloudbetb2b` | — |
+| Justbet | `justbet` | — |
+| Kaiyun | `kaiyun` | — |
+| Monkeyline | `monkeyline.vip` | — |
+| 198bet | `198bet` | — |
+| Paradise Wager | `paradisewager` | — |
+| Sharpbet | `sharpbet` | — |
+| Singbet | `singbet` | — |
+| Sports411.ag | `sports411.ag` | — |
+| 3et | `3et` | — |
+| 3et++ | `3et++` | — |
+
+## 博彩交易所
+
+订单簿场所。ABP 按可用流动性下注。
+
+| 博彩商 | Slug | 扫单 |
+|--------|------|:----:|
+| Betfair Exchange | `betfair-ex` | ✅ |
+| Smarkets | `smarkets` | — |
+| Limitless Exchange | `limitless-ex` | — |
+| Matchbook | `matchbook` | — |
+
+## 预测市场
+
+二元/结果市场，多数支持扫单——场所会按你的 `orderPrice` 下限在一次性内对其订单簿成交。
+
+| 博彩商 | Slug | 扫单 |
+|--------|------|:----:|
+| Polymarket | `polymarket` | ✅ |
+| Polymarket US | `polymarket.us` | ✅ |
+| Kalshi | `kalshi` | ✅ |
+| Predict.fun | `predict.fun` | ✅ |
+| ProphetX | `prophetx` | — |
+| SX Bet | `sx.bet` | ✅ |
+| Vertex | `vertex` | — |
+| 4casters | `4casters` | ✅ |
+| Novig | `novig.us` | ✅ |
+
+## Punter 平台
+
+| 博彩商 | Slug | 扫单 |
+|--------|------|:----:|
+| Punter.io | `punter.io` | — |
+| Punter.io++ | `punter.io++` | — |
+
+## 实时赔率单拉取
+
+多数博彩商的赔率与额度通过 [OddsPapi v5](https://docs.oddspapi.io/) 提供。少数场所（例如 `singbet`）不通过 OddsPapi 暴露额度，因此每当被订阅的价格变动时，ABP 会从博彩商 API 实时拉取——并按唯一账户去重。这对你是透明的：无论数据来源如何，`betslip` WebSocket 频道与 `GET /betslip` 的行为完全一致。
+
+## 下注额度
+
+每家博彩商都带有默认的 `minStake` / `maxStake`，由 `GET /bookmakers` 返回。这些是[额度级联](/zh/abp-api/currency#下注额度级联)中的*博彩商*层级——账户覆盖或更紧的赔率额度可将其取代。
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="订单下注" icon="bullseye-arrow" href="/zh/abp-api/order-placement">
+    扫单与多轮成交的区别。
+  </Card>
+
+  <Card title="币种与额度" icon="coins" href="/zh/abp-api/currency">
+    原生币种与额度级联。
+  </Card>
+</Columns>

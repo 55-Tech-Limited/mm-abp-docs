@@ -1,0 +1,184 @@
+---
+title: "ABP Core Concepts - IDs, Lifecycles & Idempotency"
+sidebarTitle: "Core Concepts"
+description: "The mental model behind ABP: identifiers (fixtureId, outcomeId, playerId, participantId), orders vs bets, request idempotency, the order/bet/settlement lifecycles, and a glossary of key terms."
+keywords: "abp concepts, fixtureId, outcomeId, playerId, participantId, order vs bet, requestUuid idempotency, order lifecycle, bet lifecycle, settlement status, betting api glossary"
+---
+
+<Note>
+**TL;DR** — An **order** is your instruction; a **bet** is the wager that lands at a bookmaker. Identifiers (`fixtureId`, `outcomeId`, `playerId`, `participantId`) are shared with [OddsPapi v5](https://docs.oddspapi.io/). Every order carries a unique `requestUuid` for idempotency. Three independent lifecycles track an order, each of its bets, and each bet's settlement.
+</Note>
+
+## Identifiers
+
+ABP shares its identifier space with [OddsPapi v5](https://docs.oddspapi.io/) — the same `fixtureId` and `outcomeId` you discover via OddsPapi are the ones you send to ABP. No translation layer is needed.
+
+| Identifier | Type | Description |
+|------------|------|-------------|
+| `fixtureId` | string | A single event/match (e.g. `id1000004461512432`). Used for standard fixture markets. |
+| `futureId` | string | An outright/futures market (e.g. tournament winner). Mutually exclusive with `fixtureId`. *(coming soon)* |
+| `outcomeId` | integer | The specific selection within a market (e.g. home win, over 2.5). |
+| `playerId` | integer | Player for player-prop markets. Use `0` when the market is not player-specific. |
+| `participantId` | integer | The selection within a futures market (team/player to win). Futures only. *(coming soon)* |
+
+### Market keys
+
+Internally, every priced selection is addressed by a composite market key:
+
+```
+Fixture:  fixtureId:bookmaker:outcomeId:playerId
+Future:   futureId:bookmaker:outcomeId:playerId:participantId
+```
+
+You rarely build these by hand — `GET /betslip` returns them keyed and ready — but understanding the shape helps when reading WebSocket `betslip` payloads.
+
+## Orders vs bets
+
+This distinction is the single most important thing to internalize.
+
+| | Order | Bet |
+|---|-------|-----|
+| What it is | Your **instruction** to place a stake | An **actual wager** accepted by a bookmaker |
+| Created by | You, via `POST /place-orders` | ABP, while fulfilling an order |
+| Cardinality | 1 order | 0..N bets |
+| Currency | `orderCurrency` (default USD) | the account's native currency |
+| Identified by | `orderId` (+ your `requestUuid`) | `betId` |
+
+One order can produce **multiple bets** when partial fills or multi-bookmaker routing apply. For example, a single order for 5,000 USD might fill as three bets across two bookmakers. See [Order Placement](/abp-api/order-placement) for how fills are distributed.
+
+## Idempotency & request deduplication
+
+Network retries are unavoidable, and a retried placement must never double-stake. ABP guarantees this through **request deduplication**.
+
+<Steps>
+  <Step title="Assign a unique requestUuid per order">
+    Each order in a `POST /place-orders` batch carries its own `requestUuid` (standard 8-4-4-4-12 UUID). Generate it client-side, once, and reuse the **same** value on every retry of that order.
+  </Step>
+  <Step title="ABP fingerprints it server-side">
+    The server records each `requestUuid` it has seen with a **30-minute TTL**. Within that window, a repeat of the same `requestUuid` is recognised as a duplicate.
+  </Step>
+  <Step title="Duplicates are silently skipped">
+    A duplicate order is **not** placed again and is **not** returned as a decline. It is simply skipped, so the rest of the batch processes normally.
+  </Step>
+  <Step title="All-duplicate batches return 409">
+    If *every* order in a request is a duplicate, there is nothing to do, so the request returns `409 Conflict` with the offending UUIDs.
+  </Step>
+</Steps>
+
+```json
+{
+  "detail": {
+    "error": "All orders are duplicates",
+    "duplicateUuids": ["eb45b192-317b-42d5-9f65-af497b9fa8c1"],
+    "inProgressUuids": []
+  }
+}
+```
+
+<Warning>
+Reusing a `requestUuid` for a *different* order within 30 minutes will cause that order to be skipped. Always generate a fresh UUID for each distinct placement, and only reuse it verbatim when retrying that exact placement.
+</Warning>
+
+## Order lifecycle
+
+```
+PENDING → PROCESSING → FILLED / PARTIALLY_FILLED / REJECTED / EXPIRED / CANCELLED / FAILED
+```
+
+| Status | Meaning |
+|--------|---------|
+| `PENDING` | Order received and queued |
+| `PROCESSING` | Routing to bookmakers |
+| `FILLED` | All stake placed successfully |
+| `PARTIALLY_FILLED` | Some stake placed; remainder expired or no capacity |
+| `REJECTED` | Failed validation (bad odds, invalid fixture, etc.) |
+| `EXPIRED` | `expiresAt` reached before filling (default 5s, max 24h) |
+| `CANCELLED` | Explicitly cancelled by the client |
+| `FAILED` | Internal error during placement |
+
+## Bet lifecycle
+
+```
+PENDING → PLACED → CONFIRMED / REJECTED / CANCELLED / FAILED / VOID
+```
+
+| Status | Meaning |
+|--------|---------|
+| `PENDING` | Bet created, awaiting bookmaker response |
+| `PLACED` | Sent to bookmaker, awaiting confirmation |
+| `CONFIRMED` | Bookmaker accepted the bet |
+| `REJECTED` | Bookmaker rejected the bet |
+| `CANCELLED` | Bet cancelled before confirmation |
+| `FAILED` | Internal error during placement |
+| `VOID` | Bet voided by the bookmaker |
+
+## Settlement lifecycle
+
+Once a bet is `CONFIRMED`, settlement tracks the financial result:
+
+```
+UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
+```
+
+| Status | Meaning |
+|--------|---------|
+| `UNSETTLED` | Bet is live, awaiting result |
+| `WON` | Full win |
+| `LOST` | Full loss |
+| `VOID` | Voided (stake returned) |
+| `HALF_WON` | Asian-handicap partial win |
+| `HALF_LOST` | Asian-handicap partial loss |
+| `PUSH` | Stake returned (tie on the line) |
+| `CASHOUT` | Early withdrawal at a negotiated price |
+
+Settlement changes are pushed over the `settlements` WebSocket channel. See [Order Placement](/abp-api/order-placement) and [WebSocket](/abp-api/websocket).
+
+## Account priority & the limit cascade
+
+Each bookmaker account has a `priority` (higher = preferred). When routing, ABP selects the highest-priority active account first for each bookmaker.
+
+Stake limits resolve in priority order — **account limits > bookmaker limits > odds limits** — with the first non-null value winning:
+
+```
+account.maxStake → bookmaker.maxStake → odds.limit
+account.minStake → bookmaker.minStake → odds.limitMin
+```
+
+Full detail and worked examples live in [Currency & Limits](/abp-api/currency).
+
+## Glossary
+
+| Term | Definition |
+|------|------------|
+| **Order** | A client instruction to place a stake, identified by `orderId` and your `requestUuid`. |
+| **Bet** | A wager accepted by a bookmaker, identified by `betId`, belonging to one order. |
+| **Fill** | The act of placing stake. A *partial fill* places only part of the requested stake. |
+| **Betslip** | The aggregated view of live odds and limits across your configured accounts for a selection. |
+| **requestUuid** | Client-generated idempotency key (UUID) for an order; deduplicated for 30 minutes. |
+| **orderCurrency** | The currency an order's stakes are denominated in (default USD). |
+| **Native currency** | An account's own trading currency; bets and balances are denominated in it. |
+| **Priority** | Per-account ranking; higher priority accounts are selected first. |
+| **Limit cascade** | Resolution order for stake limits: account → bookmaker → odds. |
+| **Sweep** | Multi-bookmaker partial-fill mode that exhausts the best price before moving on. |
+| **Slug** | A bookmaker's string identifier (e.g. `pinnacle`, `betfair-ex`). |
+| **Settlement** | The financial result of a confirmed bet (WON/LOST/VOID/…). |
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Order Placement" icon="bullseye-arrow" href="/abp-api/order-placement">
+    How fills, pricing, and the limit cascade work.
+  </Card>
+
+  <Card title="Currency & Limits" icon="coins" href="/abp-api/currency">
+    Denomination, conversion, and limits in depth.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/abp-api/quickstart">
+    Place your first bet in 5 steps.
+  </Card>
+
+  <Card title="Bookmakers" icon="table-cells" href="/abp-api/bookmakers">
+    Capability matrix across all 32 bookmakers.
+  </Card>
+</Columns>

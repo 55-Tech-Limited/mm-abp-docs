@@ -2,6 +2,7 @@
 title: "ABP WebSocket - 实时更新"
 sidebarTitle: "WebSocket"
 description: "连接 ABP WebSocket 获取实时订单、投注、结算、账户和系统更新。基于服务端的消息排序和可靠传递。"
+keywords: "abp websocket, 实时更新, orders bets settlements 频道, 可靠投递, ack replay, 余额, 投注单订阅"
 ---
 
 ## 端点
@@ -92,10 +93,12 @@ wss://v2.55-tech.com/ws
 | `type` | 数据消息始终为 `"data"` |
 | `channel` | 此消息所属频道 |
 | `event` | 事件类型：`INSERT`、`UPDATE`、`DELETE`、`SETTLED`、`STATUS` |
-| `payload` | 完整的更新对象（见下方各频道负载格式） |
+| `payload` | 完整的更新对象（见[负载结构](#负载结构)） |
 | `ts` | 服务器时间戳（自纪元以来的毫秒数） |
 | `seq` | 每订阅的单调递增序列号 |
 | `requireAck` | 仅在启用可靠传递时存在且为 `true` |
+
+各频道完整的负载结构见下文[负载结构](#负载结构)。
 
 ### 5. 保持活跃
 
@@ -139,175 +142,58 @@ wss://v2.55-tech.com/ws
 | `status` | STATUS | 系统状态变更 |
 | `emergency` | STATUS | 紧急模式激活/停用 |
 
-## 负载格式
+## 可靠投递与确认
 
-### 订单负载
-
-`orders` 表的完整数据行：
+默认情况下，消息是「发后即忘」的——快速，但断连期间丢失的消息就此消失。在登录时启用**可靠投递**，即可获得带确认与重放的至少一次投递：
 
 ```json
-{
-  "orderId": 327,
-  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-  "client": "demo",
-  "clientName": "demo",
-  "fixtureId": "id1000004461512432",
-  "outcomeId": 103,
-  "playerId": 0,
-  "orderPrice": 1.95,
-  "orderStake": 10.0,
-  "filledStake": 10.0,
-  "remainingStake": 0.0,
-  "orderStatus": "FILLED",
-  "statusReason": null,
-  "userRef": "bettor1234",
-  "testOrder": false,
-  "acceptBetterOdds": true,
-  "acceptPartialStake": true,
-  "orderCurrency": "USD",
-  "back": true,
-  "allowedBookmakers": "*",
-  "oddsInfo": null,
-  "meta": {},
-  "expiresAt": "2026-02-07T17:29:37+00:00",
-  "filledAt": "2026-02-07T17:29:32+00:00",
-  "createdAt": "2026-02-07T17:29:32+00:00",
-  "updatedAt": "2026-02-07T17:29:32+00:00"
-}
+{ "type": "login", "apiKey": "YOUR_API_KEY", "channels": ["orders", "bets"], "reliableDelivery": true }
 ```
 
-### 投注 / 结算负载
-
-`bets` 表的完整数据行：
+启用后，每条 `data` 消息都携带 `requireAck: true`，你必须确认它，服务端才能将其从缓冲区释放：
 
 ```json
-{
-  "betId": 73,
-  "orderId": 327,
-  "bookmaker": "pinnacle",
-  "bookmakerBetId": "3332684214",
-  "betStatus": "CONFIRMED",
-  "settlementStatus": "UNSETTLED",
-  "placedStake": 10.0,
-  "placedPrice": 1.98,
-  "placedCurrency": "USD",
-  "account": "pinnacle_main",
-  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
-  "userRef": "bettor1234",
-  "testBet": false,
-  "client": "demo",
-  "clientName": "demo",
-  "sentData": { "stake": 10.0, "price": 1.95 },
-  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
-  "settlementAmount": null,
-  "settlementReason": null,
-  "settledAt": null,
-  "declineReason": null,
-  "betRequestId": null,
-  "oddsInfo": null,
-  "meta": {},
-  "placedAt": "2026-02-07T17:29:32+00:00",
-  "createdAt": "2026-02-07T17:29:32+00:00",
-  "updatedAt": "2026-02-07T17:29:32+00:00"
-}
+{ "type": "ack", "seq": 42 }
 ```
 
-### 余额负载
+或在一条消息中确认一个范围（推荐，利于吞吐）：
 
 ```json
-{
-  "clientName": "demo",
-  "bookmaker": "pinnacle",
-  "username": "pinnacle_main",
-  "balance": 4990.0,
-  "currency": "USD",
-  "ts": 1771183910123
-}
+{ "type": "ack_batch", "upToSeq": 50 }
 ```
 
-### 紧急负载
+**工作原理：**
+
+- 服务端为每个订阅缓冲最多 **100 条未确认消息**，并重发任何 **30 秒**内未被确认的消息。
+- `seq` 按订阅且严格递增，因此 `seq` 出现间隙意味着你漏掉了消息。
+- 要在重连后恢复漏掉的消息，从你处理的最后一个 `seq` 请求重放：
 
 ```json
-{
-  "active": true,
-  "reason": "Upstream provider maintenance",
-  "ts": 1771183910123
-}
+{ "type": "replay", "fromSeq": 40 }
 ```
 
-### 投注单负载
+<Warning>
+若你落后超过 100 条消息的缓冲，最旧的未确认消息会被丢弃。请及时确认（或使用 `ack_batch`），并将任何 `replay` 无法填补的 `seq` 间隙视为通过 REST 端点（`GET /orders`、`GET /bets`）对账的信号。
+</Warning>
 
-当投注单订阅处于活跃状态时推送实时赔率更新。调用 `GET /betslip` 注册一个 **60 秒的滑动窗口** — 在此窗口内，价格变化以与投注单 REST 响应相同的格式进行广播。每次轮询重置计时器。
+## 变更订阅
 
-这适用于赛事和期货投注单订阅。对于期货，负载包含 `futureId` 和 `participantId` 而非 `fixtureId`。
-
-**赛事投注单示例：**
+无需重连即可变更频道：
 
 ```json
-{
-  "fixtureId": "id1000004461512432",
-  "outcomeId": 103,
-  "playerId": 0,
-  "client": "demo",
-  "userRef": null,
-  "odds": {
-    "pinnacle": {
-      "odds_12345": {
-        "price": 1.98,
-        "limit": 500.0,
-        "limitMin": 1.0,
-        "limitCurrency": "USD",
-        "limitUsd": 500.0,
-        "limitMinUsd": 1.0,
-        "active": true,
-        "account": "pinnacle_main"
-      }
-    }
-  }
-}
+{ "type": "update_channels", "channels": ["orders", "bets", "settlements"] }
 ```
 
-**期货投注单示例（即将推出）：**
+服务端以 `channels_updated` 回复。
 
-```json
-{
-  "futureId": "fut_123456",
-  "outcomeId": 0,
-  "playerId": 0,
-  "participantId": 5,
-  "client": "demo",
-  "userRef": null,
-  "odds": {
-    "pinnacle": {
-      "fut_123456:pinnacle:0:0:5": {
-        "price": 3.50,
-        "limit": 1000.0,
-        "limitMin": 5.0,
-        "limitCurrency": "USD",
-        "limitUsd": 1000.0,
-        "limitMinUsd": 5.0,
-        "active": true,
-        "account": "pinnacle_main"
-      }
-    }
-  }
-}
-```
+## 赔率单订阅
 
-<Note>
-期货投注单 WebSocket 广播尚未启用。订阅基础设施已就绪，将在即将发布的版本中激活。
-</Note>
+`betslip` 频道为你关注的选项推送实时赔率。有两种订阅方式：
 
-## 连接限制
+1. **通过 REST**——调用 `GET /betslip` 会注册一个 **60 秒滑动窗口**；每次调用重置计时器并立即通过 WebSocket 广播一份快照。
+2. **通过 WebSocket**——发送 `subscribe_betslip` 消息并附显式 `ttl`（10–3600 秒）与博彩商列表以获得更精细的控制，用 `unsubscribe_betslip` 提前取消。
 
-| 设置 | 值 |
-|------|-----|
-| 每API密钥最大连接数 | 5 |
-| 认证超时 | 30秒 |
-| 服务器 ping 间隔 | 30秒 |
-| Pong 超时（断开连接） | 120秒 |
-| 消息缓冲区（可靠传递） | 100条消息 |
-| 每客户端输出队列 | 2000条消息 |
+每客户端最多 **20** 个活跃赔率单订阅（REST + WS 合计）。消息结构与 `subscribed_betslip` 确认见下文[赔率单订阅消息](#赔率单订阅消息)。
 
 ## 示例：Python 客户端
 
@@ -372,3 +258,264 @@ ws.on('message', (raw) => {
   }
 });
 ```
+
+## 消息类型
+
+### 客户端 → 服务端
+
+| 类型 | 示例 | 用途 |
+|------|------|------|
+| `login` | `{"type": "login", "apiKey": "...", "channels": []}` | 鉴权并订阅。可选 `reliableDelivery: true`。 |
+| `update_channels` | `{"type": "update_channels", "channels": ["orders"]}` | 登录后变更频道订阅。 |
+| `pong` | `{"type": "pong"}` | 回复服务端的 `ping`。 |
+| `ping` | `{"type": "ping"}` | 存活检查；服务端以 `pong` 回复。 |
+| `ack` | `{"type": "ack", "seq": 42}` | 确认单条消息（可靠投递）。 |
+| `ack_batch` | `{"type": "ack_batch", "upToSeq": 50}` | 确认直到并包含 `upToSeq` 的所有消息。 |
+| `replay` | `{"type": "replay", "fromSeq": 40}` | 请求从 `fromSeq` 起重发缓冲消息。 |
+| `subscribe_betslip` | 见[下文](#赔率单订阅消息) | 以自定义 TTL 开启赔率单价格订阅。 |
+| `unsubscribe_betslip` | 见[下文](#赔率单订阅消息) | 提前取消赔率单订阅。 |
+
+### 服务端 → 客户端
+
+| 类型 | 用途 |
+|------|------|
+| `login_ok` | 登录成功；回显频道、访问范围与已启用功能。 |
+| `channels_updated` | 确认一次 `update_channels` 变更。 |
+| `data` | 一个频道事件（见[负载结构](#负载结构)）。 |
+| `ping` | 服务端保活；以 `pong` 回复。 |
+| `subscribed_betslip` | 确认一次 `subscribe_betslip`，附有效 `expiresAt`。 |
+| `error` | 客户端消息出错；含指向相关请求的 `ref`。 |
+
+## 赔率单订阅消息
+
+在订阅前，`betslip` 频道必须在你的订阅中（通过 `login` 或 `update_channels` 添加）。
+
+### `subscribe_betslip`
+
+```json
+{
+  "type": "subscribe_betslip",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "bookmakers": ["pinnacle", "sharpbet"],
+  "ttl": 300
+}
+```
+
+- `bookmakers` 必须为非空列表。
+- `ttl` 可选（秒），限制在 **10–3600 秒**；省略时默认 **60 秒**。
+- 对同一选项重新订阅会刷新 TTL 并更新博彩商集合（幂等）。
+
+服务端确认：
+
+```json
+{
+  "type": "subscribed_betslip",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "bookmakers": ["pinnacle", "sharpbet"],
+  "expiresAt": "2026-02-07T17:34:37+00:00"
+}
+```
+
+你没有账户的博彩商会从订阅中剔除，并在 `skipped` 数组中返回。每客户端最多 **20** 个活跃赔率单订阅（REST + WS 合计）。
+
+### `unsubscribe_betslip`
+
+```json
+{
+  "type": "unsubscribe_betslip",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0
+}
+```
+
+## 负载结构
+
+数据消息将频道负载包裹在信封 `{type, channel, event, payload, ts, seq}` 中。`orders`、`bets` 与 `settlements` 频道投递**完整数据库行**（`row_to_json`）；`balance`、`emergency` 与 `betslip` 使用自定义结构。
+
+### Orders
+
+`orders` 表的完整行：
+
+```json
+{
+  "orderId": 327,
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "client": "demo",
+  "clientName": "demo",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "orderPrice": 1.95,
+  "orderStake": 10.0,
+  "filledStake": 10.0,
+  "remainingStake": 0.0,
+  "orderStatus": "FILLED",
+  "statusReason": null,
+  "userRef": "bettor1234",
+  "testOrder": false,
+  "acceptBetterOdds": true,
+  "acceptPartialStake": true,
+  "orderCurrency": "USD",
+  "back": true,
+  "allowedBookmakers": "*",
+  "oddsInfo": null,
+  "meta": {},
+  "expiresAt": "2026-02-07T17:29:37+00:00",
+  "filledAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+### Bets / settlements
+
+`bets` 表的完整行（`settlements` 频道使用相同结构）：
+
+```json
+{
+  "betId": 73,
+  "orderId": 327,
+  "bookmaker": "pinnacle",
+  "bookmakerBetId": "3332684214",
+  "betStatus": "CONFIRMED",
+  "settlementStatus": "UNSETTLED",
+  "placedStake": 10.0,
+  "placedPrice": 1.98,
+  "placedCurrency": "USD",
+  "account": "pinnacle_main",
+  "requestUuid": "eb45b192-317b-42d5-9f65-af497b9fa8c1",
+  "userRef": "bettor1234",
+  "testBet": false,
+  "client": "demo",
+  "clientName": "demo",
+  "sentData": { "stake": 10.0, "price": 1.95 },
+  "receivedData": { "betId": "3332684214", "status": "accepted", "price": 1.98 },
+  "settlementAmount": null,
+  "settlementReason": null,
+  "settledAt": null,
+  "declineReason": null,
+  "betRequestId": null,
+  "oddsInfo": null,
+  "meta": {},
+  "placedAt": "2026-02-07T17:29:32+00:00",
+  "createdAt": "2026-02-07T17:29:32+00:00",
+  "updatedAt": "2026-02-07T17:29:32+00:00"
+}
+```
+
+<Note>
+同时订阅 `bets` 与 `settlements` 会使结算更新被投递**两次**——每个频道各一次。若想要专门的结算流，请单独使用 `settlements`。
+</Note>
+
+### Balance
+
+```json
+{
+  "clientName": "demo",
+  "bookmaker": "pinnacle",
+  "username": "pinnacle_main",
+  "balance": 4990.0,
+  "currency": "USD",
+  "ts": 1771183910123
+}
+```
+
+### Emergency
+
+```json
+{
+  "active": true,
+  "reason": "Upstream provider maintenance",
+  "ts": 1771183910123
+}
+```
+
+### Betslip
+
+在赔率单订阅活跃期间推送。对于期货，负载携带 `futureId` 与 `participantId` 而非 `fixtureId`。
+
+**赛事：**
+
+```json
+{
+  "clientName": "demo",
+  "fixtureId": "id1000004461512432",
+  "outcomeId": 103,
+  "playerId": 0,
+  "odds": {
+    "pinnacle": {
+      "id1000004461512432:pinnacle:103:0": {
+        "price": 1.98,
+        "limit": 500.0,
+        "limitMin": 1.0,
+        "limitCurrency": "USD",
+        "limitUsd": 500.0,
+        "limitMinUsd": 1.0,
+        "active": true,
+        "account": "pinnacle_main",
+        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
+      }
+    }
+  }
+}
+```
+
+**期货（即将推出）：**
+
+```json
+{
+  "clientName": "demo",
+  "futureId": "fut_123456",
+  "outcomeId": 0,
+  "playerId": 0,
+  "participantId": 5,
+  "odds": {
+    "pinnacle": {
+      "fut_123456:pinnacle:0:0:5": {
+        "price": 3.50,
+        "limit": 1000.0,
+        "limitMin": 5.0,
+        "limitCurrency": "USD",
+        "limitUsd": 1000.0,
+        "limitMinUsd": 5.0,
+        "active": true,
+        "account": "pinnacle_main",
+        "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
+      }
+    }
+  }
+}
+```
+
+<Note>
+期货赔率单的 WebSocket 广播尚未启用。订阅基础设施已就位，将在后续版本中激活。
+</Note>
+
+## 连接限制
+
+| 设置 | 取值 |
+|------|------|
+| 每个 API key 最大连接数 | 5 |
+| 鉴权超时 | 30 秒 |
+| 服务端 ping 间隔 | 30 秒 |
+| Pong 超时（断开） | 120 秒 |
+| 消息缓冲（可靠投递） | 100 条消息 |
+| 每客户端输出队列 | 2000 条消息 |
+| 每客户端最大赔率单订阅数 | 20 |
+
+## 后续步骤
+
+<Columns cols={2}>
+  <Card title="币种与额度" icon="coins" href="/zh/abp-api/currency">
+    各币种下数值如何计价与换算。
+  </Card>
+
+  <Card title="错误处理" icon="triangle-exclamation" href="/zh/abp-api/errors">
+    处理错误响应与被拒原因。
+  </Card>
+</Columns>
