@@ -15,11 +15,28 @@ ABP shares its identifier space with [OddsPapi v5](https://docs.oddspapi.io/) �
 
 | Identifier | Type | Description |
 |------------|------|-------------|
-| `fixtureId` | string | A single event/match (e.g. `id1000004461512432`). Used for standard fixture markets. |
-| `futureId` | string | An outright/futures market (e.g. tournament winner). Mutually exclusive with `fixtureId`. *(coming soon)* |
-| `outcomeId` | integer | The specific selection within a market (e.g. home win, over 2.5). |
+| `fixtureId` | string | A single event/match (e.g. `id1000004461512432`). Used on every `/fixtures/*` endpoint. |
+| `outcomeId` | integer | The specific selection within a fixture market (e.g. home win, over 2.5). |
 | `playerId` | integer | Player for player-prop markets. Use `0` when the market is not player-specific. |
-| `participantId` | integer | The selection within a futures market (team/player to win). Futures only. *(coming soon)* |
+| `futureId` | integer \| string | An outright/futures market (e.g. tournament winner). Used on every `/futures/*` endpoint. |
+| `futureOutcomeId` | integer | The selection within a futures market. `0` means "the selection is named by `participantId`". |
+| `participantId` | integer | The team or player a futures selection refers to. `0` when the market is not participant-keyed. |
+
+The two vocabularies never mix. A `/fixtures/*` endpoint rejects `futureId`, `futureOutcomeId` and
+`participantId`; a `/futures/*` endpoint rejects `fixtureId`, `outcomeId` and `playerId`. Both
+answer `422` with a message naming the other surface.
+
+### Futures market shapes
+
+A futures selection is the pair `(futureOutcomeId, participantId)`, and it comes in exactly two shapes:
+
+| Shape | `futureOutcomeId` | `participantId` | Examples |
+|-------|-------------------|-----------------|----------|
+| Participant-keyed | `0` (sentinel) | required, non-zero | Outright winner, top scorer, relegation, MVP |
+| Decomposed | a real outcome id | may be `0` | Yes/No predictions, season totals over/under |
+
+`futureOutcomeId=0` **and** `participantId=0` names nothing and is rejected. Note there is no
+`playerId` on futures — `participantId` names a team or a player alike — and no `period`.
 
 ### Market keys
 
@@ -27,10 +44,19 @@ Internally, every priced selection is addressed by a composite market key:
 
 ```
 Fixture:  fixtureId:bookmaker:outcomeId:playerId
-Future:   futureId:bookmaker:outcomeId:playerId:participantId
+Future:   futureId:bookmaker:futureOutcomeId:participantId
 ```
 
-You rarely build these by hand — `GET /betslip` returns them keyed and ready — but understanding the shape helps when reading WebSocket `betslip` payloads.
+<Warning>
+**Treat an `oddsId` as opaque.** Store the value a betslip response or WebSocket delta gives you
+and send it back verbatim — never split, concatenate or reconstruct it. OddsPapi is migrating its
+futures identifier scheme, and during the transition two key shapes are live at once. ABP always
+publishes the key that actually matched, so a client that stores the `oddsId` is unaffected by the
+change; one that parses it is not.
+</Warning>
+
+You rarely build these by hand — `GET /fixtures/betslip` and `GET /futures/betslip` return them
+keyed and ready — but understanding the shape helps when reading WebSocket `betslip` payloads.
 
 ## Orders vs bets
 
@@ -39,7 +65,7 @@ This distinction is the single most important thing to internalize.
 | | Order | Bet |
 |---|-------|-----|
 | What it is | Your **instruction** to place a stake | An **actual wager** accepted by a bookmaker |
-| Created by | You, via `POST /place-orders` | ABP, while fulfilling an order |
+| Created by | You, via `POST /fixtures/place-orders` | ABP, while fulfilling an order |
 | Cardinality | 1 order | 0..N bets |
 | Currency | `orderCurrency` (default USD) | the account's native currency |
 | Identified by | `orderId` (+ your `requestUuid`) | `betId` |
@@ -52,7 +78,7 @@ Network retries are unavoidable, and a retried placement must never double-stake
 
 <Steps>
   <Step title="Assign a unique requestUuid per order">
-    Each order in a `POST /place-orders` batch carries its own `requestUuid` (standard 8-4-4-4-12 UUID). Generate it client-side, once, and reuse the **same** value on every retry of that order.
+    Each order in a `POST /fixtures/place-orders` batch carries its own `requestUuid` (standard 8-4-4-4-12 UUID). Generate it client-side, once, and reuse the **same** value on every retry of that order.
   </Step>
   <Step title="ABP fingerprints it server-side">
     The server records each `requestUuid` it has seen with a **30-minute TTL**. Within that window, a repeat of the same `requestUuid` is recognised as a duplicate.
@@ -78,6 +104,15 @@ Network retries are unavoidable, and a retried placement must never double-stake
 <Warning>
 Reusing a `requestUuid` for a *different* order within 30 minutes will cause that order to be skipped. Always generate a fresh UUID for each distinct placement, and only reuse it verbatim when retrying that exact placement.
 </Warning>
+
+<Note>
+**`requestUuid` is normalised before it is stored.** ABP parses the value and rewrites it in the
+canonical lower-case hyphenated form, so the value echoed back on the order (and on the WebSocket
+`orders` payload) may differ in *spelling* from the one you sent. `{EB45B192-317B-42D5-9F65-AF497B9FA8C1}`,
+`EB45B192317B42D59F65AF497B9FA8C1` and `urn:uuid:eb45b192-…` all land on the same key — which is the
+point: a retry that changes case is still recognised as the same order instead of becoming a second
+real bet. Match orders on the canonical form, not on a byte comparison with what you sent.
+</Note>
 
 ## Order lifecycle
 
@@ -179,6 +214,6 @@ Full detail and worked examples live in [Currency & Limits](/abp-api/currency).
   </Card>
 
   <Card title="Bookmakers" icon="table-cells" href="/abp-api/bookmakers">
-    Capability matrix across all 32 bookmakers.
+    Capability matrix across all 36 bookmakers.
   </Card>
 </Columns>

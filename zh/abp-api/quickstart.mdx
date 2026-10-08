@@ -47,7 +47,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
   <Tab title="cURL">
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/betslip?fixtureId=id1000004461512432&outcomeId=103&playerId=0"
+  "https://v2.55-tech.com/fixtures/betslip?fixtureId=id1000004461512432&outcomeId=103&playerId=0"
 ```
   </Tab>
   <Tab title="Python">
@@ -55,7 +55,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
 import requests
 
 resp = requests.get(
-    "https://v2.55-tech.com/betslip",
+    "https://v2.55-tech.com/fixtures/betslip",
     headers={"x-api-key": "YOUR_API_KEY"},
     params={"fixtureId": "id1000004461512432", "outcomeId": 103, "playerId": 0},
 )
@@ -143,7 +143,7 @@ curl -X POST \
       }
     ]
   }' \
-  https://v2.55-tech.com/place-orders
+  https://v2.55-tech.com/fixtures/place-orders
 ```
   </Tab>
   <Tab title="Python">
@@ -151,7 +151,7 @@ curl -X POST \
 import uuid, requests
 
 resp = requests.post(
-    "https://v2.55-tech.com/place-orders",
+    "https://v2.55-tech.com/fixtures/place-orders",
     headers={"x-api-key": "YOUR_API_KEY"},
     json={"orders": [{
         "requestUuid": str(uuid.uuid4()),
@@ -171,7 +171,7 @@ print(resp.json())
 ```javascript
 import { randomUUID } from "crypto";
 
-const resp = await fetch("https://v2.55-tech.com/place-orders", {
+const resp = await fetch("https://v2.55-tech.com/fixtures/place-orders", {
   method: "POST",
   headers: {
     "x-api-key": "YOUR_API_KEY",
@@ -272,14 +272,14 @@ console.log(await resp.json());
 
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/orders?userRef=my-strategy-1"
+  "https://v2.55-tech.com/fixtures/orders?userRef=my-strategy-1"
 ```
 
 查看特定订单的单个投注：
 
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" \
-  "https://v2.55-tech.com/bets?orderIds=327"
+  "https://v2.55-tech.com/fixtures/bets?orderIds=327"
 ```
 
 每个投注包括博彩公司、下注价格、下注金额、投注状态和结算状态：

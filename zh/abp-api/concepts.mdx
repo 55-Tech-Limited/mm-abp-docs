@@ -15,11 +15,28 @@ ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你�
 
 | 标识符 | 类型 | 说明 |
 |--------|------|------|
-| `fixtureId` | string | 单场赛事（例如 `id1000004461512432`），用于标准赛事盘口。 |
-| `futureId` | string | 期货/冠军盘（例如赛事总冠军），与 `fixtureId` 互斥。*（即将推出）* |
-| `outcomeId` | integer | 盘口中的具体选项（例如主胜、大于 2.5）。 |
+| `fixtureId` | string | 单场赛事（例如 `id1000004461512432`），用于所有 `/fixtures/*` 端点。 |
+| `outcomeId` | integer | 赛事盘口中的具体选项（例如主胜、大于 2.5）。 |
 | `playerId` | integer | 球员玩法的球员；非球员盘口时使用 `0`。 |
-| `participantId` | integer | 期货盘中的选项（夺冠的球队/球员），仅期货使用。*（即将推出）* |
+| `futureId` | integer \| string | 期货/冠军盘（例如赛事总冠军），用于所有 `/futures/*` 端点。 |
+| `futureOutcomeId` | integer | 期货盘中的选项。取 `0` 表示"该选项由 `participantId` 指定"。 |
+| `participantId` | integer | 期货选项所指的球队或球员；盘口非按参与者索引时为 `0`。 |
+
+两套标识符词汇互不混用：`/fixtures/*` 端点会拒绝 `futureId`、`futureOutcomeId` 和
+`participantId`；`/futures/*` 端点会拒绝 `fixtureId`、`outcomeId` 和 `playerId`。两者都返回
+`422`，并在错误信息中指明应改用哪个端点。
+
+### 期货盘口的两种形态
+
+期货选项是 `(futureOutcomeId, participantId)` 这一对值，恰好有两种形态：
+
+| 形态 | `futureOutcomeId` | `participantId` | 示例 |
+|------|-------------------|-----------------|------|
+| 按参与者索引 | `0`（哨兵值） | 必填且非零 | 总冠军、最佳射手、降级、MVP |
+| 分解式 | 真实的 outcome id | 可以为 `0` | 是/否预测、赛季总进球大小 |
+
+`futureOutcomeId=0` **且** `participantId=0` 没有指向任何选项，会被拒绝。注意期货没有
+`playerId`——`participantId` 同时承担球队与球员的指代——也没有 `period`。
 
 ### 盘口键（Market keys）
 
@@ -27,10 +44,17 @@ ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你�
 
 ```
 赛事:  fixtureId:bookmaker:outcomeId:playerId
-期货:  futureId:bookmaker:outcomeId:playerId:participantId
+期货:  futureId:bookmaker:futureOutcomeId:participantId
 ```
 
-你很少需要手动构造它们——`GET /betslip` 会返回已键入、可直接使用的结构——但理解其形态有助于阅读 WebSocket 的 `betslip` 负载。
+<Warning>
+**请把 `oddsId` 当作不透明字符串。** 保存投注单响应或 WebSocket 增量推送给你的值，并原样回传——
+不要拆分、拼接或自行重建。OddsPapi 正在迁移其期货标识符方案，过渡期内两种键形态同时存在；ABP
+始终发布实际命中的那个键，因此保存 `oddsId` 的客户端完全不受影响，而解析它的客户端会受影响。
+</Warning>
+
+你很少需要手动构造它们——`GET /fixtures/betslip` 和 `GET /futures/betslip` 会返回已键入、可直接
+使用的结构——但理解其形态有助于阅读 WebSocket 的 `betslip` 负载。
 
 ## 订单与投注
 
@@ -39,7 +63,7 @@ ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你�
 | | 订单（Order） | 投注（Bet） |
 |---|-------|-----|
 | 是什么 | 你下注的**指令** | 被博彩商**接受**的下注 |
-| 创建者 | 你，通过 `POST /place-orders` | ABP，在履行订单时 |
+| 创建者 | 你，通过 `POST /fixtures/place-orders` | ABP，在履行订单时 |
 | 数量关系 | 1 个订单 | 0..N 个投注 |
 | 币种 | `orderCurrency`（默认 USD） | 账户的原生币种 |
 | 标识 | `orderId`（+ 你的 `requestUuid`） | `betId` |
@@ -52,7 +76,7 @@ ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你�
 
 <Steps>
   <Step title="为每个订单分配唯一的 requestUuid">
-    `POST /place-orders` 批次中的每个订单都带有自己的 `requestUuid`（标准 8-4-4-4-12 UUID）。在客户端生成一次，并在每次重试该订单时复用**同一个**值。
+    `POST /fixtures/place-orders` 批次中的每个订单都带有自己的 `requestUuid`（标准 8-4-4-4-12 UUID）。在客户端生成一次，并在每次重试该订单时复用**同一个**值。
   </Step>
   <Step title="服务端进行指纹识别">
     服务端会以 **30 分钟 TTL** 记录已见过的每个 `requestUuid`。在该窗口内，重复出现的相同 `requestUuid` 会被识别为重复。
@@ -78,6 +102,14 @@ ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你�
 <Warning>
 在 30 分钟内将某个 `requestUuid` 复用于*不同*的订单，会导致该订单被跳过。请始终为每次不同的下单生成新的 UUID，仅在重试同一次下单时原样复用它。
 </Warning>
+
+<Note>
+**`requestUuid` 在入库前会被规范化。** ABP 会解析该值并改写为标准的小写带连字符形式，因此订单上
+回传的值（以及 WebSocket `orders` 负载中的值）在*拼写*上可能与你发送的不同。
+`{EB45B192-317B-42D5-9F65-AF497B9FA8C1}`、`EB45B192317B42D59F65AF497B9FA8C1` 和
+`urn:uuid:eb45b192-…` 都会落到同一个键上——这正是目的所在：仅大小写不同的重试仍会被识别为同一个
+订单，而不会变成第二笔真实投注。请按规范化后的形式匹配订单，不要与你发送的原始字符串做逐字节比较。
+</Note>
 
 ## 订单生命周期
 
@@ -179,6 +211,6 @@ account.minStake → bookmaker.minStake → odds.limitMin
   </Card>
 
   <Card title="博彩商" icon="table-cells" href="/zh/abp-api/bookmakers">
-    全部 32 家博彩商的能力矩阵。
+    全部 36 家博彩商的能力矩阵。
   </Card>
 </Columns>

@@ -9,6 +9,50 @@ keywords: "abp changelog, api changelog, release notes, abp api updates, breakin
 All timestamps are **UTC**. Breaking changes are called out explicitly — subscribe to the `status` WebSocket channel and watch this page before upgrading.
 </Note>
 
+## 2026-10-09
+
+### ✨ Added
+
+- **Two surfaces: `/fixtures/*` and `/futures/*`.** Every selection endpoint now lives under an
+  explicit prefix: `GET /fixtures/betslip`, `POST /fixtures/place-orders`, `GET /fixtures/orders`,
+  `GET /fixtures/bets`, `GET /fixtures/markets`, and the `/fixtures/cancel-*` pair — plus the
+  mirrored `/futures/*` set. See [Overview → Two surfaces](/abp-api/overview#two-surfaces-fixtures-and-futures).
+- **Futures betslip and markets are live.** `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…`
+  returns outright odds and limits per bookmaker, registers the same 60-second sliding WebSocket
+  subscription as the fixture endpoint, and its price changes now arrive as `betslip` deltas.
+  `GET /futures/markets?sportId=…` lists the cached futures markets.
+
+### 🔁 Changed
+
+- **The pre-split paths keep working** as deprecated aliases (`/betslip`, `/place-orders`,
+  `/orders`, `/bets`, `/markets`, `/cancel-orders`, `/cancel-all-orders`) — same handlers, same
+  behaviour, no removal date. They are marked `deprecated` in the OpenAPI spec; migrate to
+  `/fixtures/*` at your own pace.
+- **`requestUuid` is normalised.** ABP now rewrites the key to the canonical lower-case hyphenated
+  form, so the value echoed back on an order may differ in *spelling* from the one you sent. This
+  closes a real hole: a retry that changed case used to be accepted as a second distinct order.
+  Match on the canonical form, not on a byte comparison. See
+  [Core Concepts → Idempotency](/abp-api/concepts#idempotency--request-deduplication).
+
+### ⚠️ Breaking (futures fields only)
+
+The fixture endpoints no longer accept futures identifiers. Both changes affect only fields that
+previously answered `501 Not Implemented`, so no working call changes behaviour:
+
+- `POST /fixtures/place-orders` (and its deprecated alias `POST /place-orders`) rejects
+  `futureId` / `futureOutcomeId` / `participantId` with `422` instead of `501`.
+- `GET /fixtures/betslip` (and its deprecated alias `GET /betslip`) no longer declares `futureId`
+  or `participantId`; a futures selection answers `400` instead of `501`, pointing at
+  `/futures/betslip`.
+
+### 🚧 Still to come
+
+- **Futures placement and futures order/bet reads** — `POST /futures/place-orders`,
+  `POST /futures/cancel-orders`, `POST /futures/cancel-all-orders`, `GET /futures/orders`,
+  `GET /futures/bets` and `GET /futures/bets/{betId}` answer `501`. They **validate first**
+  (`422` on a bad body, `400` on a bad filter), so an integration built against them today needs
+  no change the day placement lands.
+
 ## 2026-06-17
 
 ### 🔁 Changed
@@ -32,4 +76,4 @@ All timestamps are **UTC**. Breaking changes are called out explicitly — subsc
 
 ### 🚧 Coming soon
 
-- **Futures / outright markets** via `futureId` + `participantId`. The data model is in place; order placement and betslip retrieval currently return `501 Not Implemented`.
+- **Futures / outright markets** via `futureId` + `participantId`. The data model is in place; order placement and betslip retrieval currently return `501 Not Implemented`. *(Superseded — betslip and markets went live on 2026-10-09; see above.)*

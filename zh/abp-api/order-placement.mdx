@@ -85,7 +85,7 @@ max_stake = (weighted_sum − orderPrice × filled_stake) / (orderPrice − book
 
 例如，若你的账户 `maxStake: 500`、博彩商默认为 `1000`、实时赔率额度为 `300`，则有效最大为 **500**（账户覆盖胜出，即便它低于博彩商默认）。
 
-你可以在下注前用 `GET /betslip` 预览任意选项的有效额度——它会按博彩商返回已解析的 `limit`/`limitMin`（及其 USD 等值）。参见[币种与额度](/zh/abp-api/currency)。
+你可以在下注前用 `GET /fixtures/betslip` 预览任意选项的有效额度——它会按博彩商返回已解析的 `limit`/`limitMin`（及其 USD 等值）。参见[币种与额度](/zh/abp-api/currency)。
 
 ## 账户优先级
 
@@ -108,11 +108,11 @@ max_stake = (weighted_sum − orderPrice × filled_stake) / (orderPrice − book
 | `CANCELLED` | 你取消了它（见下）。 |
 | `FAILED` | 下注过程中发生内部错误。 |
 
-`POST /place-orders` 响应将批次概括为 `accepted`（全部下注）、`partial-success`（部分被拒）或 `declined`（全部被拒），并在 `acceptedOrders` / `declinedOrders` 中给出每订单详情。
+`POST /fixtures/place-orders` 响应将批次概括为 `accepted`（全部下注）、`partial-success`（部分被拒）或 `declined`（全部被拒），并在 `acceptedOrders` / `declinedOrders` 中给出每订单详情。
 
 ## 取消
 
-`POST /cancel-orders`（按 `orderIds`、`requestUuids` 或 `userRef`）或 `POST /cancel-all-orders` 可取消仍为 `PENDING` 或 `PARTIALLY_FILLED` 的订单。取消是**异步且协作式**的：
+`POST /fixtures/cancel-orders`（按 `orderIds`、`requestUuids` 或 `userRef`）或 `POST /fixtures/cancel-all-orders` 可取消仍为 `PENDING` 或 `PARTIALLY_FILLED` 的订单。取消是**异步且协作式**的：
 
 1. 订单状态被设为 `CANCELLED`，其 `expiresAt` 被移到当前时间。
 2. 设置一个跨请求信号，使任何在途下注循环在下一轮停止。
@@ -133,7 +133,7 @@ max_stake = (weighted_sum − orderPrice × filled_stake) / (orderPrice − book
 <Tabs>
   <Tab title="cURL">
 ```bash
-curl -X POST https://v2.55-tech.com/place-orders \
+curl -X POST https://v2.55-tech.com/fixtures/place-orders \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -156,7 +156,7 @@ curl -X POST https://v2.55-tech.com/place-orders \
 import uuid, requests
 
 resp = requests.post(
-    "https://v2.55-tech.com/place-orders",
+    "https://v2.55-tech.com/fixtures/place-orders",
     headers={"x-api-key": "YOUR_API_KEY"},
     json={"orders": [{
         "requestUuid": str(uuid.uuid4()),
@@ -221,18 +221,18 @@ asyncio.run(run())
 ```
 
 <Warning>
-`seq` 出现间隙意味着你漏掉了消息。若 `replay` 无法填补间隙（你落后于 100 条缓冲），请通过 `GET /orders` 与 `GET /bets` 对账。参见 [WebSocket → 可靠投递](/zh/abp-api/websocket#可靠投递与确认)。
+`seq` 出现间隙意味着你漏掉了消息。若 `replay` 无法填补间隙（你落后于 100 条缓冲），请通过 `GET /fixtures/orders` 与 `GET /fixtures/bets` 对账。参见 [WebSocket → 可靠投递](/zh/abp-api/websocket#可靠投递与确认)。
 </Warning>
 
 ### 结算对账
 
-订阅 `settlements` 获取推送更新，并定期扫描 `GET /bets` 作为兜底。结算状态为 `WON`、`LOST`、`VOID`、`HALF_WON`、`HALF_LOST`、`PUSH`、`CASHOUT`（参见[核心概念](/zh/abp-api/concepts#结算生命周期)）。
+订阅 `settlements` 获取推送更新，并定期扫描 `GET /fixtures/bets` 作为兜底。结算状态为 `WON`、`LOST`、`VOID`、`HALF_WON`、`HALF_LOST`、`PUSH`、`CASHOUT`（参见[核心概念](/zh/abp-api/concepts#结算生命周期)）。
 
 ```python
 import requests
 
 resp = requests.get(
-    "https://v2.55-tech.com/bets",
+    "https://v2.55-tech.com/fixtures/bets",
     headers={"x-api-key": "YOUR_API_KEY"},
     params={"settlementStatus": "WON", "limit": 100},
 )
@@ -247,7 +247,7 @@ for bet in resp.json().get("bets", []):
 <Tabs>
   <Tab title="取消指定">
 ```bash
-curl -X POST https://v2.55-tech.com/cancel-orders \
+curl -X POST https://v2.55-tech.com/fixtures/cancel-orders \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"orderIds": [123456]}'
@@ -255,7 +255,7 @@ curl -X POST https://v2.55-tech.com/cancel-orders \
   </Tab>
   <Tab title="取消全部">
 ```bash
-curl -X POST https://v2.55-tech.com/cancel-all-orders \
+curl -X POST https://v2.55-tech.com/fixtures/cancel-all-orders \
   -H "x-api-key: YOUR_API_KEY"
 ```
   </Tab>

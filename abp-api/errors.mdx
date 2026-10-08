@@ -52,12 +52,28 @@ Request-body validation errors (`422`) include field-level detail with a `loc` p
 | `422` | Validation error — request body failed validation |
 | `429` | Rate limited — exceeded requests per second |
 | `500` | Internal server error |
-| `501` | Not implemented — futures markets (`futureId`) are not yet supported |
+| `501` | Not implemented — futures **placement** and futures order/bet reads (`POST /futures/place-orders`, `GET /futures/orders`, …). Futures betslip and markets are live |
 | `503` | Service unavailable — database or dependency down |
+
+### Mixing the two surfaces
+
+`/fixtures/*` and `/futures/*` have separate identifier vocabularies and each rejects the other's
+fields rather than silently ignoring them:
+
+| What you sent | Where | Response |
+|---------------|-------|----------|
+| `futureId` / `futureOutcomeId` / `participantId` | `POST /fixtures/place-orders` (or its deprecated alias `POST /place-orders`) | `422` — "… is a futures field; use POST /futures/place-orders" |
+| `fixtureId` / `outcomeId` / `playerId` | `POST /futures/place-orders` | `422` — "… is a fixture field; use POST /fixtures/place-orders" |
+| A futures selection as query params | `GET /fixtures/betslip` (or its deprecated alias `GET /betslip`) | `400` — "fixtureId, outcomeId, and playerId are required. Futures selections go to /futures/betslip." |
+
+An explicit `null` is tolerated, so a client that always serialises the full field set does not need
+to strip keys. The `501` endpoints **validate first**: a malformed body still answers `422` and a
+bad filter still answers `400`, so an integration built against them today needs no change the day
+placement lands.
 
 ## Order decline reasons
 
-When placing orders via `POST /place-orders`, orders that fail business validation are returned in the `declinedOrders` array (not as HTTP errors). Each declined order includes a `declineReason`:
+When placing orders via `POST /fixtures/place-orders`, orders that fail business validation are returned in the `declinedOrders` array (not as HTTP errors). Each declined order includes a `declineReason`:
 
 | Decline reason | Description |
 |----------------|-------------|

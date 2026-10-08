@@ -129,7 +129,7 @@ wss://v2.55-tech.com/ws
 | `settlements` | SETTLED | 结算状态更新（负载与 bets 相同） |
 | `accounts` | INSERT, UPDATE, DELETE | 账户创建、更新和删除 |
 | `balance` | UPDATE | 余额变动通知 |
-| `betslip` | UPDATE | 活跃投注单订阅的实时赔率更新（每次 `GET /betslip` 调用后 60 秒窗口） |
+| `betslip` | UPDATE | 活跃投注单订阅的实时赔率更新（每次 `GET /fixtures/betslip` 调用后 60 秒窗口） |
 
 ### 全局频道
 
@@ -173,7 +173,7 @@ wss://v2.55-tech.com/ws
 ```
 
 <Warning>
-若你落后超过 100 条消息的缓冲，最旧的未确认消息会被丢弃。请及时确认（或使用 `ack_batch`），并将任何 `replay` 无法填补的 `seq` 间隙视为通过 REST 端点（`GET /orders`、`GET /bets`）对账的信号。
+若你落后超过 100 条消息的缓冲，最旧的未确认消息会被丢弃。请及时确认（或使用 `ack_batch`），并将任何 `replay` 无法填补的 `seq` 间隙视为通过 REST 端点（`GET /fixtures/orders`、`GET /fixtures/bets`）对账的信号。
 </Warning>
 
 ## 变更订阅
@@ -190,10 +190,17 @@ wss://v2.55-tech.com/ws
 
 `betslip` 频道为你关注的选项推送实时赔率。有两种订阅方式：
 
-1. **通过 REST**——调用 `GET /betslip` 会注册一个 **60 秒滑动窗口**；每次调用重置计时器并立即通过 WebSocket 广播一份快照。
+1. **通过 REST**——调用 `GET /fixtures/betslip` 会注册一个 **60 秒滑动窗口**；每次调用重置计时器并立即通过 WebSocket 广播一份快照。
 2. **通过 WebSocket**——发送 `subscribe_betslip` 消息并附显式 `ttl`（10–3600 秒）与博彩商列表以获得更精细的控制，用 `unsubscribe_betslip` 提前取消。
 
-每客户端最多 **20** 个活跃赔率单订阅（REST + WS 合计）。消息结构与 `subscribed_betslip` 确认见下文[赔率单订阅消息](#赔率单订阅消息)。
+<Note>
+**期货只能通过 REST 订阅。** `GET /futures/betslip` 会注册同样的 60 秒滑动窗口，其增量也推送到本
+频道，但 `subscribe_betslip` / `unsubscribe_betslip` 这两个 WebSocket 消息只接受 `fixtureId` +
+`outcomeId` + `playerId`，没有期货形态。若要保持期货订阅不中断，请在每个 60 秒窗口内重新调用
+`GET /futures/betslip`。
+</Note>
+
+每客户端最多 **20** 个活跃赔率单订阅（赛事与期货合计，REST + WS 合计）。消息结构与 `subscribed_betslip` 确认见下文[赔率单订阅消息](#赔率单订阅消息)。
 
 ## 示例：Python 客户端
 
@@ -437,7 +444,8 @@ ws.on('message', (raw) => {
 
 ### Betslip
 
-在赔率单订阅活跃期间推送。对于期货，负载携带 `futureId` 与 `participantId` 而非 `fixtureId`。
+在赔率单订阅活跃期间推送。赛事负载以 `fixtureId` + `outcomeId` + `playerId` 为键；期货负载以
+`futureId` + `futureOutcomeId` + `participantId` 为键，并且**完全不携带 `playerId`**。
 
 **赛事：**
 
@@ -465,26 +473,23 @@ ws.on('message', (raw) => {
 }
 ```
 
-**期货（即将推出）：**
+**期货：**
 
 ```json
 {
   "clientName": "demo",
-  "futureId": "fut_123456",
-  "outcomeId": 0,
-  "playerId": 0,
-  "participantId": 5,
+  "futureId": "id1012639310001",
+  "futureOutcomeId": 0,
+  "participantId": 7193,
   "odds": {
-    "pinnacle": {
-      "fut_123456:pinnacle:0:0:5": {
-        "price": 3.50,
+    "polymarket": {
+      "id1012639310001:polymarket:0:7193": {
+        "price": 4.2,
         "limit": 1000.0,
-        "limitMin": 5.0,
         "limitCurrency": "USD",
         "limitUsd": 1000.0,
-        "limitMinUsd": 5.0,
         "active": true,
-        "account": "pinnacle_main",
+        "account": "polymarket_main",
         "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
       }
     }
@@ -493,7 +498,12 @@ ws.on('message', (raw) => {
 ```
 
 <Note>
-期货赔率单的 WebSocket 广播尚未启用。订阅基础设施已就位，将在后续版本中激活。
+期货赔率单的 WebSocket 广播**已上线**：`GET /futures/betslip` 会注册与赛事端点相同的 60 秒滑动
+订阅，之后的价格变动即以增量形式推送到本频道。目前仍返回 `501` 的只有期货的**下单**以及期货订单/
+投注读取。
+
+`odds.{bookmaker}` 内的 `oddsId` 是**不透明**的——请原样保存并回传。OddsPapi 正在迁移其期货标识符
+方案，过渡期内两种键形态同时存在；ABP 始终发布实际命中的那个键。
 </Note>
 
 ## 连接限制

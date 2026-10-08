@@ -1,19 +1,19 @@
 ---
 title: "ABP API Overview - Automated Bet Placing"
 sidebarTitle: "Overview"
-description: "ABP v2 API overview. Place bets across 32 bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
-keywords: "abp api, automated bet placing, bet placement api, 32 bookmakers, smart order routing, partial fills, bet settlement, betslip, pinnacle, betfair, polymarket, kalshi"
+description: "ABP v2 API overview. Place bets across 36 bookmakers through a single unified API with smart routing, partial fills, real-time tracking, and automated settlement."
+keywords: "abp api, automated bet placing, bet placement api, 36 bookmakers, smart order routing, partial fills, bet settlement, betslip, pinnacle, betfair, polymarket, kalshi"
 ---
 
 ## What is ABP?
 
-The **Automated Bet Placing (ABP)** API by [55-Tech](https://55-tech.com/) lets you place bets across 32 bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
+The **Automated Bet Placing (ABP)** API by [55-Tech](https://55-tech.com/) lets you place bets across 36 bookmakers through a single integration. Instead of building and maintaining individual bookmaker connectors, ABP handles the entire lifecycle from bet placement through settlement.
 
 **Core capabilities:**
 
 - **Account management** — Full CRUD for bookmaker accounts with priority-based selection, per-account stake limits, and multi-currency support
 - **Betslip retrieval** — Get real-time odds and limits for any fixture/outcome across all configured bookmakers before placing
-- **Futures support** — Place bets on outright/futures markets using `futureId` and `participantId` (coming soon)
+- **Futures support** — A separate `/futures/*` surface for outright markets, keyed by `futureId` + `futureOutcomeId` + `participantId`. Betslip and markets are live; placement is coming
 - **Smart order routing** — Place single or bulk orders; ABP automatically selects the best bookmaker by odds and limits
 - **Bet tracking** — Monitor every bet from placement through confirmation and settlement with full audit trail
 - **Position & PnL analytics** — Aggregated views of exposure and profit/loss grouped by bookmaker, account, or user reference
@@ -25,16 +25,16 @@ The **Automated Bet Placing (ABP)** API by [55-Tech](https://55-tech.com/) lets 
     Your app consumes the [OddsPapi v5 API](https://docs.oddspapi.io/) to discover fixtures, markets, outcomes, and real-time odds across all supported bookmakers. OddsPapi is the data layer — ABP is the execution layer built on top of it. Fixture IDs and outcome IDs are shared between both APIs.
   </Step>
   <Step title="Fetch betslip from ABP">
-    Before placing, call `GET /betslip?fixtureId=...&outcomeId=...&playerId=...` to get aggregated odds and limits from all your configured bookmaker accounts. For futures markets, use `futureId` instead of `fixtureId` along with `participantId`. ABP resolves stake limits (account > bookmaker > odds) and returns the effective min/max per bookmaker.
+    Before placing, call `GET /fixtures/betslip?fixtureId=...&outcomeId=...&playerId=...` to get aggregated odds and limits from all your configured bookmaker accounts. Outright markets have their own path — `GET /futures/betslip?futureId=...&futureOutcomeId=...&participantId=...`. ABP resolves stake limits (account > bookmaker > odds) and returns the effective min/max per bookmaker.
   </Step>
   <Step title="Place orders through ABP">
-    Send `POST /place-orders` with one or more orders. Each order targets either a fixture (`fixtureId`) or a future (`futureId`). ABP routes each order to the best bookmaker(s) based on price, available limits, and account priority. Each bookmaker integration places the bet and reports back confirmation or decline.
+    Send `POST /fixtures/place-orders` with one or more orders. ABP routes each order to the best bookmaker(s) based on price, available limits, and account priority. Each bookmaker integration places the bet and reports back confirmation or decline.
   </Step>
   <Step title="Receive real-time updates via WebSocket">
     Connect to `WS /ws` to receive real-time pushes for order status changes, bet confirmations, settlements, balance updates, and system events. No polling needed.
   </Step>
   <Step title="Query history & analytics">
-    Use `GET /orders`, `GET /bets` for order/bet history with keyset pagination, and `GET /positions`, `GET /pnl` for aggregated exposure and profit/loss analytics.
+    Use `GET /fixtures/orders`, `GET /fixtures/bets` for order/bet history with keyset pagination, and `GET /positions`, `GET /pnl` for aggregated exposure and profit/loss analytics.
   </Step>
 </Steps>
 
@@ -43,6 +43,24 @@ The **Automated Bet Placing (ABP)** API by [55-Tech](https://55-tech.com/) lets 
 ```
 https://v2.55-tech.com
 ```
+
+## Two surfaces: fixtures and futures
+
+A selection is either a **fixture** (a match, with a kickoff) or a **future** (an outright, which resolves when its season does), and the two are identified differently. Each has its own path prefix, so no endpoint has to guess which kind of identifier it was handed:
+
+| | Fixtures | Futures (outrights) |
+|---|---|---|
+| Prefix | `/fixtures/*` | `/futures/*` |
+| Selection | `fixtureId` + `outcomeId` + `playerId` | `futureId` + `futureOutcomeId` + `participantId` |
+| Status | fully live | betslip and markets live; placement and order/bet reads answer `501` |
+
+Each surface **rejects the other's identifiers** with `422`, naming the path you wanted. The split applies to the four endpoint groups that carry a selection — betslip, orders, bets, markets. `/accounts`, `/bookmakers`, `/positions` and `/pnl` name no selection and stay unprefixed.
+
+<Note>
+  **The pre-split paths keep working.** `/betslip`, `/place-orders`, `/cancel-orders`, `/cancel-all-orders`, `/orders`, `/bets`, `/bets/{bet_id}` and `/markets` are unchanged aliases of their `/fixtures/*` equivalents — same handler, same request, same response — and are marked deprecated in the reference with no removal date. Nothing you have in production needs to change. New integrations should use `/fixtures/*`.
+
+  One exception worth knowing if you were experimenting with outrights: the unprefixed fixture endpoints no longer accept `futureId` or `participantId`. They used to answer `501`; they now answer `422` (placement) or `400` (betslip) and point you at `/futures/*`.
+</Note>
 
 ## Key concepts
 
@@ -108,37 +126,52 @@ Stake limits are resolved in priority order: **account limits > bookmaker limits
 
 For example, if an account has `minStake: 10`, the bookmaker default is `minStake: 1`, and the odds entry shows `limitMin: 5`, the effective minimum is `10` (from the account override).
 
-### Futures (coming soon)
+### Futures (outright markets)
 
-ABP supports **futures** (outright) markets alongside standard fixture-based markets. Instead of a `fixtureId`, futures use a `futureId` to identify the outright market and a `participantId` to specify the selection (e.g., a team or player to win a league/tournament).
+Futures live under `/futures/*`. A future is identified by a `futureId` and a selection is the pair `(futureOutcomeId, participantId)`. There is **no `playerId`** — on a future, `participantId` names a team or a player alike — and **no period**.
 
-**Key differences from fixture orders:**
+Two market shapes, told apart by `futureOutcomeId`:
 
-| | Fixture orders | Futures orders |
+| Shape | `futureOutcomeId` | `participantId` | Examples |
+|---|---|---|---|
+| **Participant-keyed** | `0` (a sentinel — the participant *is* the selection) | required, non-zero | Outright winner, topscorer, relegation, MVP |
+| **Decomposed** | a real id | may be `0` | Prediction Yes/No, season totals Over/Under |
+
+A pair that names nothing (`futureOutcomeId=0` with `participantId=0`) is rejected.
+
+| | Fixtures | Futures |
 |---|---|---|
-| Identifier | `fixtureId` | `futureId` |
-| Selection | `outcomeId` + `playerId` | `outcomeId` + `playerId` + `participantId` |
-| Betslip | `GET /betslip?fixtureId=...` | `GET /betslip?futureId=...` |
-| Market key format | `fixtureId:bookmaker:outcomeId:playerId` | `futureId:bookmaker:outcomeId:playerId:participantId` |
+| Betslip | `GET /fixtures/betslip?fixtureId=…&outcomeId=…&playerId=…` | `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…` |
+| Markets | `GET /fixtures/markets` | `GET /futures/markets` |
+| Place | `POST /fixtures/place-orders` | `POST /futures/place-orders` *(501)* |
 
-**Current status:** The data model and betslip infrastructure are in place. Order placement and betslip retrieval for futures currently return `501 Not Implemented`. This will be enabled in an upcoming release.
+**What is live today:** `GET /futures/betslip` and `GET /futures/markets`. Futures odds are feed-authoritative — they come from the OddsPapi cache only, so `verifyBetslip` on an account has no effect on this surface.
+
+**What is not:** placement, cancellation, `GET /futures/orders` and `GET /futures/bets` answer `501`. The reason is storage, not routing: the `orders` table has no futures identity columns, and writing a `futureId` into a fixture's column is exactly the conflation this split removes. The `501` endpoints **validate your payload first**, so a malformed `futureId` or an empty selection pair is a `422`/`400` even today — integrate against them now and only the `501` will change.
+
+<Note>
+  **Treat an `oddsId` as opaque.** Store it and send it back; do not parse it. OddsPapi is moving the futures identifier format, and ABP serves both shapes transparently — a client that stores the id it was given notices nothing, while a client that splits it on `:` will break.
+</Note>
 
 ### Bookmaker slugs
 
-Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `polymarket`). Use `GET /bookmakers` to list all 32 supported bookmakers with their default stake limits.
+Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `polymarket`). Use `GET /bookmakers` to list all 36 supported bookmakers with their default stake limits.
 
 ## Endpoints at a glance
 
 | Category | Endpoints | Description |
 |----------|-----------|-------------|
 | **Accounts** | `GET/POST/PATCH/DELETE /accounts` | Manage bookmaker accounts (credentials, balances, priority, limits) |
-| **Betslip** | `GET /betslip` | Get live odds & limits before placing (fixtures and futures) |
-| **Orders** | `POST /place-orders`, `POST /cancel-orders`, `POST /cancel-all-orders`, `GET /orders` | Place, cancel, and track orders |
-| **Bets** | `GET /bets`, `GET /bets/{bet_id}` | View individual bet results |
+| **Betslip** | `GET /fixtures/betslip` | Get live odds & limits before placing |
+| **Orders** | `POST /fixtures/place-orders`, `POST /fixtures/cancel-orders`, `POST /fixtures/cancel-all-orders`, `GET /fixtures/orders` | Place, cancel, and track orders |
+| **Bets** | `GET /fixtures/bets`, `GET /fixtures/bets/{bet_id}` | View individual bet results |
+| **Markets** | `GET /fixtures/markets` | Available markets and odds types |
+| **Futures** | `GET /futures/betslip`, `GET /futures/markets` | Outright odds and markets (placement `501` for now) |
 | **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
 | **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
-| **Markets** | `GET /markets` | Available markets and odds types |
 | **WebSocket** | `WS /ws` | Real-time updates |
+
+The same selection endpoints are also reachable without the `/fixtures` prefix (`/betslip`, `/place-orders`, …) — deprecated aliases, unchanged behaviour.
 
 ## Supported bookmakers
 
@@ -179,7 +212,7 @@ ABP consumes real-time odds data from [OddsPapi v5](https://docs.oddspapi.io/). 
     Yes. Set `acceptPartialStake: true` to let a single order fill across multiple bets, and pass a `bookmakers` list (or omit it for auto-selection) to spread across venues. ABP enforces a weighted-average price constraint so your effective price stays at or above `orderPrice`. See [Order Placement](/abp-api/order-placement).
   </Accordion>
   <Accordion title="Which bookmakers are supported?">
-    32 bookmakers across traditional sportsbooks, betting exchanges, prediction markets, and punter platforms. Capabilities (sweep, settlement, betslip) vary per venue — see the [Bookmaker capability matrix](/abp-api/bookmakers).
+    36 bookmakers across traditional sportsbooks, betting exchanges, prediction markets, and punter platforms. Capabilities (sweep, settlement, betslip) vary per venue — see the [Bookmaker capability matrix](/abp-api/bookmakers).
   </Accordion>
   <Accordion title="Can I test without placing real bets?">
     Yes. Set `testOrder: true` to run the full validation and routing path (limits, price checks, account selection) **without** sending a bet to the bookmaker — the fastest way to confirm your payload and IDs before going live. See [Quickstart](/abp-api/quickstart#step-3-place-an-order).

@@ -85,7 +85,7 @@ effective min = account.minStake  →  bookmaker.minStake  →  odds.limitMin  �
 
 For example, if your account has `maxStake: 500`, the bookmaker default is `1000`, and the live odds limit is `300`, the effective max is **500** (the account override wins, even though it is lower than the bookmaker default).
 
-You can preview the effective limits for any selection with `GET /betslip` before placing — it returns the resolved `limit`/`limitMin` (and their USD equivalents) per bookmaker. See [Currency & Limits](/abp-api/currency).
+You can preview the effective limits for any selection with `GET /fixtures/betslip` before placing — it returns the resolved `limit`/`limitMin` (and their USD equivalents) per bookmaker. See [Currency & Limits](/abp-api/currency).
 
 ## Account priority
 
@@ -108,11 +108,11 @@ When you target a bookmaker that has several accounts, ABP picks the **highest-`
 | `CANCELLED` | You cancelled it (see below). |
 | `FAILED` | Internal error during placement. |
 
-The `POST /place-orders` response summarizes a batch as `accepted` (all placed), `partial-success` (some declined), or `declined` (all declined), with per-order detail in `acceptedOrders` / `declinedOrders`.
+The `POST /fixtures/place-orders` response summarizes a batch as `accepted` (all placed), `partial-success` (some declined), or `declined` (all declined), with per-order detail in `acceptedOrders` / `declinedOrders`.
 
 ## Cancellation
 
-`POST /cancel-orders` (by `orderIds`, `requestUuids`, or `userRef`) or `POST /cancel-all-orders` cancels orders that are still `PENDING` or `PARTIALLY_FILLED`. Cancellation is **asynchronous and cooperative**:
+`POST /fixtures/cancel-orders` (by `orderIds`, `requestUuids`, or `userRef`) or `POST /fixtures/cancel-all-orders` cancels orders that are still `PENDING` or `PARTIALLY_FILLED`. Cancellation is **asynchronous and cooperative**:
 
 1. The order's status is set to `CANCELLED` and its `expiresAt` is moved to now.
 2. A cross-request signal is set so any in-flight placement loop stops at its next pass.
@@ -133,7 +133,7 @@ List several bookmakers and let ABP route to the best price/limits. With `accept
 <Tabs>
   <Tab title="cURL">
 ```bash
-curl -X POST https://v2.55-tech.com/place-orders \
+curl -X POST https://v2.55-tech.com/fixtures/place-orders \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -156,7 +156,7 @@ curl -X POST https://v2.55-tech.com/place-orders \
 import uuid, requests
 
 resp = requests.post(
-    "https://v2.55-tech.com/place-orders",
+    "https://v2.55-tech.com/fixtures/place-orders",
     headers={"x-api-key": "YOUR_API_KEY"},
     json={"orders": [{
         "requestUuid": str(uuid.uuid4()),
@@ -221,18 +221,18 @@ asyncio.run(run())
 ```
 
 <Warning>
-A gap in `seq` means you missed a message. If a `replay` can't fill the gap (you fell behind the 100-message buffer), reconcile via `GET /orders` and `GET /bets`. See [WebSocket → reliable delivery](/abp-api/websocket#reliable-delivery-acknowledgments).
+A gap in `seq` means you missed a message. If a `replay` can't fill the gap (you fell behind the 100-message buffer), reconcile via `GET /fixtures/orders` and `GET /fixtures/bets`. See [WebSocket → reliable delivery](/abp-api/websocket#reliable-delivery-acknowledgments).
 </Warning>
 
 ### Reconcile settlements
 
-Subscribe to `settlements` for push updates, and periodically sweep `GET /bets` as a backstop. Settlement statuses are `WON`, `LOST`, `VOID`, `HALF_WON`, `HALF_LOST`, `PUSH`, `CASHOUT` (see [Core Concepts](/abp-api/concepts#settlement-lifecycle)).
+Subscribe to `settlements` for push updates, and periodically sweep `GET /fixtures/bets` as a backstop. Settlement statuses are `WON`, `LOST`, `VOID`, `HALF_WON`, `HALF_LOST`, `PUSH`, `CASHOUT` (see [Core Concepts](/abp-api/concepts#settlement-lifecycle)).
 
 ```python
 import requests
 
 resp = requests.get(
-    "https://v2.55-tech.com/bets",
+    "https://v2.55-tech.com/fixtures/bets",
     headers={"x-api-key": "YOUR_API_KEY"},
     params={"settlementStatus": "WON", "limit": 100},
 )
@@ -247,7 +247,7 @@ Cancellation is asynchronous: ABP marks the order, cancels any pending bets at t
 <Tabs>
   <Tab title="Cancel specific">
 ```bash
-curl -X POST https://v2.55-tech.com/cancel-orders \
+curl -X POST https://v2.55-tech.com/fixtures/cancel-orders \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"orderIds": [123456]}'
@@ -255,7 +255,7 @@ curl -X POST https://v2.55-tech.com/cancel-orders \
   </Tab>
   <Tab title="Cancel all">
 ```bash
-curl -X POST https://v2.55-tech.com/cancel-all-orders \
+curl -X POST https://v2.55-tech.com/fixtures/cancel-all-orders \
   -H "x-api-key: YOUR_API_KEY"
 ```
   </Tab>

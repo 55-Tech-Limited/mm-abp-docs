@@ -48,7 +48,7 @@ usd = placedStake / currencyInfo.currencyValue
 
 ## `currencyInfo` on reads
 
-`GET /orders`, `GET /bets`, and `GET /accounts` enrich each row with a `currencyInfo` object so you can compute USD without a second lookup:
+`GET /fixtures/orders`, `GET /fixtures/bets`, and `GET /accounts` enrich each row with a `currencyInfo` object so you can compute USD without a second lookup:
 
 ```json
 {
@@ -74,7 +74,7 @@ Order `orderStake = 100`, `orderCurrency = USD`, filled on a Betfair **EUR** acc
 
 ## Betslip limits: native + USD
 
-`GET /betslip` (and the betslip WebSocket payload) returns both the native limit and a USD equivalent for every bookmaker, so you can compare across accounts in different currencies:
+`GET /fixtures/betslip` (and the betslip WebSocket payload) returns both the native limit and a USD equivalent for every bookmaker, so you can compare across accounts in different currencies:
 
 ```json
 {

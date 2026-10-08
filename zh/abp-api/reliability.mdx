@@ -68,7 +68,7 @@ def call_with_backoff(method, url, **kwargs):
         time.sleep(float(resp.headers.get("Retry-After", 1)))
 ```
 
-要保持在限额内：**批量下单**（`POST /place-orders` 可在一个请求中接受多个订单）、**优先使用 WebSocket 而非轮询**，并在工作负载需要更大余量时通过[支持](mailto:contact@55-tech.com)**申请更高的 `rps`**。WebSocket 连接上限见 [WebSocket → 连接限制](/zh/abp-api/websocket#连接限制)。
+要保持在限额内：**批量下单**（`POST /fixtures/place-orders` 可在一个请求中接受多个订单）、**优先使用 WebSocket 而非轮询**，并在工作负载需要更大余量时通过[支持](mailto:contact@55-tech.com)**申请更高的 `rps`**。WebSocket 连接上限见 [WebSocket → 连接限制](/zh/abp-api/websocket#连接限制)。
 
 ## 熔断器
 
@@ -106,11 +106,11 @@ ABP 在**两个层级**运行熔断器，以防止单个失败的账户或博彩
 | **软暂停（Soft pause）** | 阻止*新*订单；在途投注继续 | 经设定间隔后自动恢复 |
 | **紧急（Emergency）** | 阻止新订单并取消待处理订单 | 由操作员手动恢复 |
 
-状态变更通过 `emergency` WebSocket 频道广播。紧急模式生效时，`POST /place-orders` 会返回被拒而非排队。
+状态变更通过 `emergency` WebSocket 频道广播。紧急模式生效时，`POST /fixtures/place-orders` 会返回被拒而非排队。
 
 ## WebSocket 可靠投递
 
-对于不能丢失的状态（订单成交、结算），在登录时启用 `reliableDelivery: true` 以获得带确认与重放的至少一次投递。`seq` 出现间隙即表示漏掉消息；通过 `replay` 恢复，或经 `GET /orders` / `GET /bets` 对账。参见 [WebSocket](/zh/abp-api/websocket#可靠投递与确认)。
+对于不能丢失的状态（订单成交、结算），在登录时启用 `reliableDelivery: true` 以获得带确认与重放的至少一次投递。`seq` 出现间隙即表示漏掉消息；通过 `replay` 恢复，或经 `GET /fixtures/orders` / `GET /fixtures/bets` 对账。参见 [WebSocket](/zh/abp-api/websocket#可靠投递与确认)。
 
 ## 你的职责
 

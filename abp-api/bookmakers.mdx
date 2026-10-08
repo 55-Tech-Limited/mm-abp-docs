@@ -1,12 +1,12 @@
 ---
 title: "ABP Bookmaker Capability Matrix"
 sidebarTitle: "Bookmakers"
-description: "All 32 bookmakers supported by ABP, grouped by type, with slugs and capability notes — sportsbooks, betting exchanges, prediction markets, and punter platforms."
+description: "All 36 bookmakers supported by ABP, grouped by type, with slugs and capability notes — sportsbooks, betting exchanges, prediction markets, and punter platforms."
 keywords: "abp bookmakers, supported bookmakers, bookmaker slugs, pinnacle, betfair, polymarket, kalshi, smarkets, prediction markets, betting exchanges, sportsbook api, sweep exchange"
 ---
 
 <Info>
-ABP integrates **32 bookmakers** behind one API. Identify each by its **slug** (e.g. `pinnacle`, `betfair-ex`, `polymarket`). Call `GET /bookmakers` for the live list plus each bookmaker's default stake limits. Your API key may be scoped to a subset — see [Authentication](/abp-api/authentication).
+ABP integrates **36 bookmakers** behind one API. Identify each by its **slug** (e.g. `pinnacle`, `betfair-ex`, `polymarket`). Call `GET /bookmakers` for the live list plus each bookmaker's default stake limits. Your API key may be scoped to a subset — see [Authentication](/abp-api/authentication).
 </Info>
 
 ## How to read this page
@@ -25,6 +25,7 @@ Single-price venues. ABP places one or more bets against the quoted line and app
 | Pinnacle B2B | `pinnacleb2b` | — |
 | Betamapola | `betamapola` | — |
 | Betcris | `betcris` | — |
+| Betwar | `betwar` | — |
 | Bookmaker.eu | `bookmaker.eu` | — |
 | Cloudbet | `cloudbet` | — |
 | Cloudbet B2B | `cloudbetb2b` | — |
@@ -33,11 +34,12 @@ Single-price venues. ABP places one or more bets against the quoted line and app
 | Monkeyline | `monkeyline.vip` | — |
 | 198bet | `198bet` | — |
 | Paradise Wager | `paradisewager` | — |
+| Sharp.ag | `sharp.ag` | — |
 | Sharpbet | `sharpbet` | — |
 | Singbet | `singbet` | — |
 | Sports411.ag | `sports411.ag` | — |
 | 3et | `3et` | — |
-| 3et++ | `3et++` | — |
+| 3et++ | `3etpp` | — |
 
 ## Betting exchanges
 
@@ -46,6 +48,7 @@ Order-book venues. ABP places against available liquidity.
 | Bookmaker | Slug | Sweep |
 |-----------|------|:-----:|
 | Betfair Exchange | `betfair-ex` | ✅ |
+| BetDEX | `betdex` | ✅ |
 | Smarkets | `smarkets` | — |
 | Limitless Exchange | `limitless-ex` | — |
 | Matchbook | `matchbook` | — |
@@ -63,6 +66,7 @@ Binary/outcome markets, mostly sweep-capable — the venue fills against its boo
 | ProphetX | `prophetx` | — |
 | SX Bet | `sx.bet` | ✅ |
 | Vertex | `vertex` | — |
+| TopOdds | `topodds` | — |
 | 4casters | `4casters` | ✅ |
 | Novig | `novig.us` | ✅ |
 
@@ -71,11 +75,11 @@ Binary/outcome markets, mostly sweep-capable — the venue fills against its boo
 | Bookmaker | Slug | Sweep |
 |-----------|------|:-----:|
 | Punter.io | `punter.io` | — |
-| Punter.io++ | `punter.io++` | — |
+| Punter.io++ | `punter.iopp` | — |
 
 ## Live betslip fetching
 
-Most bookmakers' odds and limits arrive through [OddsPapi v5](https://docs.oddspapi.io/). A few venues (for example `singbet`) don't expose limits through OddsPapi, so ABP fetches them live from the bookmaker API whenever a subscribed price changes — deduplicated per unique account. This is transparent to you: the `betslip` WebSocket channel and `GET /betslip` behave identically regardless of the source.
+Most bookmakers' odds and limits arrive through [OddsPapi v5](https://docs.oddspapi.io/). A few venues (for example `singbet`) don't expose limits through OddsPapi, so ABP fetches them live from the bookmaker API whenever a subscribed price changes — deduplicated per unique account. This is transparent to you: the `betslip` WebSocket channel and `GET /fixtures/betslip` behave identically regardless of the source.
 
 ## Stake limits
 

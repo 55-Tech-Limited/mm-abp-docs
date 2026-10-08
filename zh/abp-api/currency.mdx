@@ -48,7 +48,7 @@ usd = placedStake / currencyInfo.currencyValue
 
 ## 读取时的 `currencyInfo`
 
-`GET /orders`、`GET /bets` 与 `GET /accounts` 会为每行附加一个 `currencyInfo` 对象，使你无需二次查询即可计算 USD：
+`GET /fixtures/orders`、`GET /fixtures/bets` 与 `GET /accounts` 会为每行附加一个 `currencyInfo` 对象，使你无需二次查询即可计算 USD：
 
 ```json
 {
@@ -74,7 +74,7 @@ usd = placedStake / currencyInfo.currencyValue
 
 ## 赔率单额度：原生 + USD
 
-`GET /betslip`（及赔率单 WebSocket 负载）会为每家博彩商返回原生额度与 USD 等值，便于你跨不同币种的账户比较：
+`GET /fixtures/betslip`（及赔率单 WebSocket 负载）会为每家博彩商返回原生额度与 USD 等值，便于你跨不同币种的账户比较：
 
 ```json
 {

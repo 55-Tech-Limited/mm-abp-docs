@@ -9,6 +9,45 @@ keywords: "abp 更新日志, api 更新日志, 发布说明, abp api 更新, 破
 所有时间戳均为 **UTC**。破坏性变更会被显式标注——升级前请订阅 `status` WebSocket 频道并关注本页。
 </Note>
 
+## 2026-10-09
+
+### ✨ 新增
+
+- **两套端点：`/fixtures/*` 与 `/futures/*`。** 每个带选项的端点现在都有明确前缀：
+  `GET /fixtures/betslip`、`POST /fixtures/place-orders`、`GET /fixtures/orders`、
+  `GET /fixtures/bets`、`GET /fixtures/markets`，以及 `/fixtures/cancel-*` 这一对——外加镜像的
+  `/futures/*` 一整套。参见[概览 → 两套端点](/zh/abp-api/overview#两套端点赛事与期货)。
+- **期货赔率单与盘口列表已上线。** `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…`
+  按博彩商返回冠军盘赔率与额度，并注册与赛事端点相同的 60 秒滑动 WebSocket 订阅，其后的价格变动以
+  `betslip` 增量推送。`GET /futures/markets?sportId=…` 列出已缓存的期货盘口。
+
+### 🔁 变更
+
+- **拆分前的路径继续可用**，作为已弃用的别名（`/betslip`、`/place-orders`、`/orders`、`/bets`、
+  `/markets`、`/cancel-orders`、`/cancel-all-orders`）——相同的处理逻辑、相同的行为，且没有下线
+  日期。它们在 OpenAPI 规范中标记为 `deprecated`；你可以按自己的节奏迁移到 `/fixtures/*`。
+- **`requestUuid` 会被规范化。** ABP 现在会将该键改写为标准的小写带连字符形式，因此订单上回传的值
+  在*拼写*上可能与你发送的不同。这修补了一个真实的漏洞：此前仅改变大小写的重试会被当作第二个不同
+  的订单接受。请按规范化后的形式匹配，不要做逐字节比较。参见
+  [核心概念 → 幂等性](/zh/abp-api/concepts#幂等性与请求去重)。
+
+### ⚠️ 破坏性变更（仅涉及期货字段）
+
+赛事端点不再接受期货标识符。以下两项变更只影响此前返回 `501 Not Implemented` 的字段，因此任何能
+正常工作的调用行为都不会改变：
+
+- `POST /fixtures/place-orders`（及其已弃用别名 `POST /place-orders`）对
+  `futureId` / `futureOutcomeId` / `participantId` 返回 `422`，而不再是 `501`。
+- `GET /fixtures/betslip`（及其已弃用别名 `GET /betslip`）不再声明 `futureId` 或 `participantId`；
+  期货选项会返回 `400` 而不再是 `501`，并指向 `/futures/betslip`。
+
+### 🚧 即将推出
+
+- **期货下单以及期货订单/投注读取**——`POST /futures/place-orders`、
+  `POST /futures/cancel-orders`、`POST /futures/cancel-all-orders`、`GET /futures/orders`、
+  `GET /futures/bets` 与 `GET /futures/bets/{betId}` 返回 `501`。它们会**先做校验**（请求体错误返回
+  `422`，过滤条件错误返回 `400`），因此今天就按这些端点做好集成，等下单功能上线时无需改动。
+
 ## 2026-06-17
 
 ### 🔁 变更
@@ -32,4 +71,4 @@ keywords: "abp 更新日志, api 更新日志, 发布说明, abp api 更新, 破
 
 ### 🚧 即将推出
 
-- **期货 / 冠军盘**，通过 `futureId` + `participantId`。数据模型已就位；订单下注与赔率单获取目前返回 `501 Not Implemented`。
+- **期货 / 冠军盘**，通过 `futureId` + `participantId`。数据模型已就位；订单下注与赔率单获取目前返回 `501 Not Implemented`。*（已被取代——赔率单与盘口列表已于 2026-10-09 上线，见上文。）*

@@ -1,12 +1,12 @@
 ---
 title: "ABP 博彩商能力矩阵"
 sidebarTitle: "博彩商"
-description: "ABP 支持的全部 32 家博彩商，按类型分组，附 slug 与能力说明——传统体育博彩、博彩交易所、预测市场与 punter 平台。"
+description: "ABP 支持的全部 36 家博彩商，按类型分组，附 slug 与能力说明——传统体育博彩、博彩交易所、预测市场与 punter 平台。"
 keywords: "abp 博彩商, 支持的博彩商, 博彩商 slug, pinnacle, betfair, polymarket, kalshi, smarkets, 预测市场, 博彩交易所, 体育博彩 api, 扫单交易所"
 ---
 
 <Info>
-ABP 在一套 API 后集成了 **32 家博彩商**。每家以其 **slug** 标识（例如 `pinnacle`、`betfair-ex`、`polymarket`）。调用 `GET /bookmakers` 获取实时列表及各博彩商的默认下注额度。你的 API key 可能被限定为一个子集——参见[鉴权](/zh/abp-api/authentication)。
+ABP 在一套 API 后集成了 **36 家博彩商**。每家以其 **slug** 标识（例如 `pinnacle`、`betfair-ex`、`polymarket`）。调用 `GET /bookmakers` 获取实时列表及各博彩商的默认下注额度。你的 API key 可能被限定为一个子集——参见[鉴权](/zh/abp-api/authentication)。
 </Info>
 
 ## 如何阅读本页
@@ -25,6 +25,7 @@ ABP 在一套 API 后集成了 **32 家博彩商**。每家以其 **slug** 标�
 | Pinnacle B2B | `pinnacleb2b` | — |
 | Betamapola | `betamapola` | — |
 | Betcris | `betcris` | — |
+| Betwar | `betwar` | — |
 | Bookmaker.eu | `bookmaker.eu` | — |
 | Cloudbet | `cloudbet` | — |
 | Cloudbet B2B | `cloudbetb2b` | — |
@@ -33,11 +34,12 @@ ABP 在一套 API 后集成了 **32 家博彩商**。每家以其 **slug** 标�
 | Monkeyline | `monkeyline.vip` | — |
 | 198bet | `198bet` | — |
 | Paradise Wager | `paradisewager` | — |
+| Sharp.ag | `sharp.ag` | — |
 | Sharpbet | `sharpbet` | — |
 | Singbet | `singbet` | — |
 | Sports411.ag | `sports411.ag` | — |
 | 3et | `3et` | — |
-| 3et++ | `3et++` | — |
+| 3et++ | `3etpp` | — |
 
 ## 博彩交易所
 
@@ -46,6 +48,7 @@ ABP 在一套 API 后集成了 **32 家博彩商**。每家以其 **slug** 标�
 | 博彩商 | Slug | 扫单 |
 |--------|------|:----:|
 | Betfair Exchange | `betfair-ex` | ✅ |
+| BetDEX | `betdex` | ✅ |
 | Smarkets | `smarkets` | — |
 | Limitless Exchange | `limitless-ex` | — |
 | Matchbook | `matchbook` | — |
@@ -63,6 +66,7 @@ ABP 在一套 API 后集成了 **32 家博彩商**。每家以其 **slug** 标�
 | ProphetX | `prophetx` | — |
 | SX Bet | `sx.bet` | ✅ |
 | Vertex | `vertex` | — |
+| TopOdds | `topodds` | — |
 | 4casters | `4casters` | ✅ |
 | Novig | `novig.us` | ✅ |
 
@@ -71,11 +75,11 @@ ABP 在一套 API 后集成了 **32 家博彩商**。每家以其 **slug** 标�
 | 博彩商 | Slug | 扫单 |
 |--------|------|:----:|
 | Punter.io | `punter.io` | — |
-| Punter.io++ | `punter.io++` | — |
+| Punter.io++ | `punter.iopp` | — |
 
 ## 实时赔率单拉取
 
-多数博彩商的赔率与额度通过 [OddsPapi v5](https://docs.oddspapi.io/) 提供。少数场所（例如 `singbet`）不通过 OddsPapi 暴露额度，因此每当被订阅的价格变动时，ABP 会从博彩商 API 实时拉取——并按唯一账户去重。这对你是透明的：无论数据来源如何，`betslip` WebSocket 频道与 `GET /betslip` 的行为完全一致。
+多数博彩商的赔率与额度通过 [OddsPapi v5](https://docs.oddspapi.io/) 提供。少数场所（例如 `singbet`）不通过 OddsPapi 暴露额度，因此每当被订阅的价格变动时，ABP 会从博彩商 API 实时拉取——并按唯一账户去重。这对你是透明的：无论数据来源如何，`betslip` WebSocket 频道与 `GET /fixtures/betslip` 的行为完全一致。
 
 ## 下注额度
 

@@ -1,19 +1,19 @@
 ---
 title: "ABP API 概述 - 自动投注"
 sidebarTitle: "概述"
-description: "ABP v2 API 概述。通过单一统一API在32家博彩公司进行投注，具备智能路由、部分成交、实时跟踪和自动结算功能。"
-keywords: "abp api, 自动投注, 投注下单 api, 32 家博彩公司, 智能订单路由, 部分成交, 投注结算, 投注单, pinnacle, betfair, polymarket, kalshi"
+description: "ABP v2 API 概述。通过单一统一API在36家博彩公司进行投注，具备智能路由、部分成交、实时跟踪和自动结算功能。"
+keywords: "abp api, 自动投注, 投注下单 api, 36 家博彩公司, 智能订单路由, 部分成交, 投注结算, 投注单, pinnacle, betfair, polymarket, kalshi"
 ---
 
 ## 什么是 ABP？
 
-**自动投注（ABP）** API 由 [55-Tech](https://55-tech.com/) 提供，让您通过单一集成在32家博彩公司进行投注。无需构建和维护各个博彩公司的连接器，ABP 处理从投注到结算的全部生命周期。
+**自动投注（ABP）** API 由 [55-Tech](https://55-tech.com/) 提供，让您通过单一集成在36家博彩公司进行投注。无需构建和维护各个博彩公司的连接器，ABP 处理从投注到结算的全部生命周期。
 
 **核心能力：**
 
 - **账户管理** — 博彩公司账户的完整CRUD操作，支持优先级选择、每账户投注限额和多币种
 - **投注单获取** — 在下注前获取所有已配置博彩公司的任何赛事/结果的实时赔率和限额
-- **期货支持** — 使用 `futureId` 和 `participantId` 在冠军/期货市场下注（即将推出）
+- **期货支持** — 独立的 `/futures/*` 端点用于冠军/期货盘，以 `futureId` + `futureOutcomeId` + `participantId` 作为键。投注单与盘口列表已上线，下单功能即将推出
 - **智能订单路由** — 下达单个或批量订单；ABP 自动按赔率和限额选择最佳博彩公司
 - **投注跟踪** — 从下注到确认和结算，完整审计追踪监控每一注
 - **持仓和盈亏分析** — 按博彩公司、账户或用户引用分组的汇总敞口和盈亏视图
@@ -25,16 +25,16 @@ keywords: "abp api, 自动投注, 投注下单 api, 32 家博彩公司, 智能�
     您的应用使用 [OddsPapi v5 API](https://docs.oddspapi.io/) 发现赛事、市场、结果和实时赔率。OddsPapi 是数据层 — ABP 是建立在其之上的执行层。两个 API 共享赛事ID和结果ID。
   </Step>
   <Step title="从 ABP 获取投注单">
-    下注前，调用 `GET /betslip?fixtureId=...&outcomeId=...&playerId=...` 获取所有已配置博彩公司账户的汇总赔率和限额。对于期货市场，使用 `futureId` 替代 `fixtureId`，并添加 `participantId`。ABP 解析投注限额（账户 > 博彩公司 > 赔率）并返回每个博彩公司的有效最小/最大值。
+    下注前，调用 `GET /fixtures/betslip?fixtureId=...&outcomeId=...&playerId=...` 获取所有已配置博彩公司账户的汇总赔率和限额。期货盘有自己的路径——`GET /futures/betslip?futureId=...&futureOutcomeId=...&participantId=...`。ABP 解析投注限额（账户 > 博彩公司 > 赔率）并返回每个博彩公司的有效最小/最大值。
   </Step>
   <Step title="通过 ABP 下单">
-    发送 `POST /place-orders` 包含一个或多个订单。每个订单针对赛事（`fixtureId`）或期货（`futureId`）。ABP 根据价格、可用限额和账户优先级将每个订单路由到最佳博彩公司。每个博彩公司集成下注并回报确认或拒绝。
+    发送 `POST /fixtures/place-orders` 包含一个或多个订单。每个订单针对一场赛事（`fixtureId` + `outcomeId` + `playerId`）；期货字段会被拒绝。ABP 根据价格、可用限额和账户优先级将每个订单路由到最佳博彩公司。每个博彩公司集成下注并回报确认或拒绝。
   </Step>
   <Step title="通过 WebSocket 接收实时更新">
     连接 `WS /ws` 接收订单状态变更、投注确认、结算、余额更新和系统事件的实时推送。无需轮询。
   </Step>
   <Step title="查询历史和分析">
-    使用 `GET /orders`、`GET /bets` 查询订单/投注历史（支持游标分页），使用 `GET /positions`、`GET /pnl` 查看汇总敞口和盈亏分析。
+    使用 `GET /fixtures/orders`、`GET /fixtures/bets` 查询订单/投注历史（支持游标分页），使用 `GET /positions`、`GET /pnl` 查看汇总敞口和盈亏分析。
   </Step>
 </Steps>
 
@@ -43,6 +43,31 @@ keywords: "abp api, 自动投注, 投注下单 api, 32 家博彩公司, 智能�
 ```
 https://v2.55-tech.com
 ```
+
+## 两套端点：赛事与期货
+
+一个选项要么是**赛事**（一场有开球时间的比赛），要么是**期货**（冠军盘，随赛季结束而结算），两者的标识
+方式不同。各自拥有独立的路径前缀，这样任何端点都不必去猜它收到的是哪一类标识符：
+
+| | 赛事 | 期货（冠军盘） |
+|---|---|---|
+| 前缀 | `/fixtures/*` | `/futures/*` |
+| 选项 | `fixtureId` + `outcomeId` + `playerId` | `futureId` + `futureOutcomeId` + `participantId` |
+| 状态 | 全部可用 | 投注单与盘口列表已上线；下单及订单/投注读取返回 `501` |
+
+两套端点都会以 `422` **拒绝对方的标识符**，并在信息中指明你想要的路径。拆分只影响携带选项的四组
+端点——投注单、订单、投注、盘口。`/accounts`、`/bookmakers`、`/positions` 和 `/pnl` 不涉及选项，
+保持无前缀。
+
+<Note>
+  **拆分前的路径仍然可用。** `/betslip`、`/place-orders`、`/cancel-orders`、`/cancel-all-orders`、
+  `/orders`、`/bets`、`/bets/{bet_id}` 和 `/markets` 是对应 `/fixtures/*` 端点的别名——同一处理
+  逻辑、同样的请求与响应——在参考文档中标记为已弃用，且没有下线日期。你生产环境中的现有调用无需
+  改动；新接入请使用 `/fixtures/*`。
+
+  如果你此前尝试过冠军盘，有一个例外需要知悉：无前缀的赛事端点不再接受 `futureId` 或
+  `participantId`。它们以前返回 `501`，现在返回 `422`（下单）或 `400`（投注单），并指向 `/futures/*`。
+</Note>
 
 ## 关键概念
 
@@ -108,47 +133,69 @@ UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
 
 例如，如果账户 `minStake: 10`，博彩公司默认 `minStake: 1`，赔率条目显示 `limitMin: 5`，有效最低值为 `10`（来自账户覆盖）。
 
-### 期货（即将推出）
+### 期货（冠军盘）
 
-ABP 支持**期货**（冠军）市场以及标准的赛事市场。期货使用 `futureId` 标识冠军市场，使用 `participantId` 指定选择（例如赢得联赛/锦标赛的球队或球员）。
+期货位于 `/futures/*` 之下。一个期货盘由 `futureId` 标识，选项则是
+`(futureOutcomeId, participantId)` 这一对值。期货**没有 `playerId`**——`participantId` 同时承担
+球队与球员的指代——也**没有 period**。
 
-**与赛事订单的主要区别：**
+通过 `futureOutcomeId` 区分的两种盘口形态：
 
-| | 赛事订单 | 期货订单 |
+| 形态 | `futureOutcomeId` | `participantId` | 示例 |
+|---|---|---|---|
+| **按参与者索引** | `0`（哨兵值——参与者本身*就是*选项） | 必填且非零 | 总冠军、最佳射手、降级、MVP |
+| **分解式** | 真实的 id | 可以为 `0` | 是/否预测、赛季总进球大小 |
+
+没有指向任何选项的组合（`futureOutcomeId=0` 且 `participantId=0`）会被拒绝。
+
+| | 赛事 | 期货 |
 |---|---|---|
-| 标识符 | `fixtureId` | `futureId` |
-| 选择 | `outcomeId` + `playerId` | `outcomeId` + `playerId` + `participantId` |
-| 投注单 | `GET /betslip?fixtureId=...` | `GET /betslip?futureId=...` |
-| 市场键格式 | `fixtureId:bookmaker:outcomeId:playerId` | `futureId:bookmaker:outcomeId:playerId:participantId` |
+| 投注单 | `GET /fixtures/betslip?fixtureId=…&outcomeId=…&playerId=…` | `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…` |
+| 盘口 | `GET /fixtures/markets` | `GET /futures/markets` |
+| 下单 | `POST /fixtures/place-orders` | `POST /futures/place-orders` *(501)* |
 
-**当前状态：** 数据模型和投注单基础设施已就绪。期货的订单下达和投注单获取目前返回 `501 Not Implemented`。将在即将发布的版本中启用。
+**目前已上线：** `GET /futures/betslip` 与 `GET /futures/markets`。期货赔率以数据源为准——仅来自
+OddsPapi 缓存，因此账户上的 `verifyBetslip` 对这套端点没有影响。
+
+**尚未上线：** 下单、撤单，以及 `GET /futures/orders` 和 `GET /futures/bets` 返回 `501`。原因在于
+存储而非路由：`orders` 表没有期货标识列，而把 `futureId` 写进赛事的列里，正是这次拆分要消除的混用。
+返回 `501` 的端点会**先校验你的请求体**，所以格式错误的 `futureId` 或空的选项组合今天同样会得到
+`422`/`400`——现在就可以按它们集成，日后只有 `501` 会变化。
+
+<Note>
+  **请把 `oddsId` 当作不透明字符串。** 保存并原样回传，不要解析它。OddsPapi 正在变更期货标识符格式，
+  ABP 对两种形态透明兼容——保存所收到 id 的客户端不会察觉任何变化，而按 `:` 拆分它的客户端会出错。
+</Note>
 
 ### 博彩公司标识
 
-博彩公司通过标识字符串识别（例如 `pinnacle`、`betfair-ex`、`polymarket`）。使用 `GET /bookmakers` 列出所有32家支持的博彩公司及其默认投注限额。
+博彩公司通过标识字符串识别（例如 `pinnacle`、`betfair-ex`、`polymarket`）。使用 `GET /bookmakers` 列出所有36家支持的博彩公司及其默认投注限额。
 
 ## 端点一览
 
 | 类别 | 端点 | 描述 |
 |------|------|------|
 | **账户** | `GET/POST/PATCH/DELETE /accounts` | 管理博彩公司账户（凭证、余额、优先级、限额） |
-| **投注单** | `GET /betslip` | 下注前获取实时赔率和限额（赛事和期货） |
-| **订单** | `POST /place-orders`, `POST /cancel-orders`, `POST /cancel-all-orders`, `GET /orders` | 下单、取消和跟踪订单 |
-| **投注** | `GET /bets`, `GET /bets/{bet_id}` | 查看单个投注结果 |
+| **投注单** | `GET /fixtures/betslip` | 下注前获取实时赔率和限额 |
+| **订单** | `POST /fixtures/place-orders`, `POST /fixtures/cancel-orders`, `POST /fixtures/cancel-all-orders`, `GET /fixtures/orders` | 下单、取消和跟踪订单 |
+| **投注** | `GET /fixtures/bets`, `GET /fixtures/bets/{bet_id}` | 查看单个投注结果 |
 | **分析** | `GET /positions`, `GET /pnl` | 汇总敞口和盈亏 |
 | **博彩公司** | `GET /bookmakers` | 列出所有支持的博彩公司 |
-| **市场** | `GET /markets` | 可用市场和赔率类型 |
+| **市场** | `GET /fixtures/markets` | 可用市场和赔率类型 |
+| **期货** | `GET /futures/betslip`, `GET /futures/markets` | 冠军盘赔率与盘口（下单暂返回 `501`） |
 | **WebSocket** | `WS /ws` | 实时更新 |
+
+上述携带选项的端点同样可以在不带 `/fixtures` 前缀的情况下访问（`/betslip`、`/place-orders` 等）——已弃用的别名，行为不变。
 
 ## 支持的博彩公司
 
-**传统体育博彩：** pinnacle, pinnacleb2b, betamapola, betcris, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline.vip, novig.us, 198bet, paradisewager, sharpbet, singbet, sports411.ag, 3et, 3et++
+**传统体育博彩：** pinnacle, pinnacleb2b, betamapola, betcris, betwar, bookmaker.eu, cloudbet, cloudbetb2b, justbet, kaiyun, matchbook, monkeyline.vip, novig.us, 198bet, paradisewager, sharp.ag, sharpbet, singbet, sports411.ag, 3et, 3etpp
 
-**博彩交易所：** betfair-ex, smarkets, limitless-ex
+**博彩交易所：** betfair-ex, betdex, smarkets, limitless-ex
 
-**预测市场：** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, vertex, 4casters
+**预测市场：** polymarket, polymarket.us, kalshi, predict.fun, prophetx, sx.bet, vertex, topodds, 4casters
 
-**Punter平台：** punter.io, punter.io++
+**Punter平台：** punter.io, punter.iopp
 
 ## 可靠性
 
@@ -179,7 +226,7 @@ ABP 从 [OddsPapi v5](https://docs.oddspapi.io/) 获取实时赔率数据。ABP 
     支持。设置 `acceptPartialStake: true` 让单个订单跨多个投注成交，并传入 `bookmakers` 列表（或省略以自动选择）以分散到多个场所。ABP 强制执行加权平均价格约束，使您的有效价格保持在 `orderPrice` 或以上。详见[订单下注](/zh/abp-api/order-placement)。
   </Accordion>
   <Accordion title="支持哪些博彩公司？">
-    涵盖传统体育博彩、博彩交易所、预测市场和 Punter 平台共 32 家博彩公司。各场所的能力（清扫、结算、投注单）有所不同——见[博彩公司能力矩阵](/zh/abp-api/bookmakers)。
+    涵盖传统体育博彩、博彩交易所、预测市场和 Punter 平台共 36 家博彩公司。各场所的能力（清扫、结算、投注单）有所不同——见[博彩公司能力矩阵](/zh/abp-api/bookmakers)。
   </Accordion>
   <Accordion title="我可以在不实际下注的情况下测试吗？">
     可以。设置 `testOrder: true` 会走完整的校验与路由流程（额度、价格检查、账户选择），但**不会**向博彩公司发送投注——这是上线前确认请求体与 ID 正确的最快方式。见[快速入门](/zh/abp-api/quickstart#步骤3下单)。

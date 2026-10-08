@@ -68,7 +68,7 @@ def call_with_backoff(method, url, **kwargs):
         time.sleep(float(resp.headers.get("Retry-After", 1)))
 ```
 
-To stay under the limit: **batch placements** (`POST /place-orders` accepts many orders per request), **prefer the WebSocket over polling**, and **request a higher `rps`** via [support](mailto:contact@55-tech.com) if your workload needs more headroom. WebSocket connection caps are listed under [WebSocket → Connection limits](/abp-api/websocket#connection-limits).
+To stay under the limit: **batch placements** (`POST /fixtures/place-orders` accepts many orders per request), **prefer the WebSocket over polling**, and **request a higher `rps`** via [support](mailto:contact@55-tech.com) if your workload needs more headroom. WebSocket connection caps are listed under [WebSocket → Connection limits](/abp-api/websocket#connection-limits).
 
 ## Circuit breakers
 
@@ -106,11 +106,11 @@ In rare cases — maintenance or an upstream incident — ABP can pause order pr
 | **Soft pause** | Blocks *new* orders; in-flight bets continue | Auto-recovers after a set interval |
 | **Emergency** | Blocks new orders and cancels pending ones | Manual resume by an operator |
 
-Status changes are broadcast on the `emergency` WebSocket channel. When emergency mode is active, `POST /place-orders` returns a decline rather than queuing work.
+Status changes are broadcast on the `emergency` WebSocket channel. When emergency mode is active, `POST /fixtures/place-orders` returns a decline rather than queuing work.
 
 ## Reliable WebSocket delivery
 
-For state you cannot afford to miss (order fills, settlements), enable `reliableDelivery: true` at login to get at-least-once delivery with acknowledgments and replay. A `seq` gap signals a missed message; recover via `replay` or reconcile through `GET /orders` / `GET /bets`. See [WebSocket](/abp-api/websocket#reliable-delivery-acknowledgments).
+For state you cannot afford to miss (order fills, settlements), enable `reliableDelivery: true` at login to get at-least-once delivery with acknowledgments and replay. A `seq` gap signals a missed message; recover via `replay` or reconcile through `GET /fixtures/orders` / `GET /fixtures/bets`. See [WebSocket](/abp-api/websocket#reliable-delivery-acknowledgments).
 
 ## Your responsibilities
 

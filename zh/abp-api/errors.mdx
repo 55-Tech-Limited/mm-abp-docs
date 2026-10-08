@@ -52,12 +52,26 @@ ABP 返回两种格式的错误，取决于错误来源：
 | `422` | 验证错误 — 请求体验证失败 |
 | `429` | 速率限制 — 超出每秒请求数 |
 | `500` | 内部服务器错误 |
-| `501` | 未实现 — 期货市场（`futureId`）尚不支持 |
+| `501` | 未实现 — 期货的**下单**与期货订单/投注读取（`POST /futures/place-orders`、`GET /futures/orders` 等）。期货投注单与盘口列表已上线 |
 | `503` | 服务不可用 — 数据库或依赖服务不可用 |
+
+### 混用两套端点
+
+`/fixtures/*` 与 `/futures/*` 使用各自独立的标识符词汇，并且会**拒绝**对方的字段，而不是静默忽略：
+
+| 你发送的字段 | 发往哪里 | 响应 |
+|--------------|----------|------|
+| `futureId` / `futureOutcomeId` / `participantId` | `POST /fixtures/place-orders`（或其已弃用别名 `POST /place-orders`） | `422` — "… is a futures field; use POST /futures/place-orders" |
+| `fixtureId` / `outcomeId` / `playerId` | `POST /futures/place-orders` | `422` — "… is a fixture field; use POST /fixtures/place-orders" |
+| 以查询参数形式传入期货选项 | `GET /fixtures/betslip`（或其已弃用别名 `GET /betslip`） | `400` — "fixtureId, outcomeId, and playerId are required. Futures selections go to /futures/betslip." |
+
+显式的 `null` 是被容许的，因此总是序列化完整字段集的客户端无需剔除键。返回 `501` 的端点会**先做
+校验**：请求体格式错误仍返回 `422`，过滤条件无效仍返回 `400`——所以今天就按这些端点做好集成，等
+下单功能上线时无需改动。
 
 ## 订单拒绝原因
 
-通过 `POST /place-orders` 下单时，未通过业务验证的订单会在 `declinedOrders` 数组中返回（不作为HTTP错误）。每个被拒绝的订单包含 `declineReason`：
+通过 `POST /fixtures/place-orders` 下单时，未通过业务验证的订单会在 `declinedOrders` 数组中返回（不作为HTTP错误）。每个被拒绝的订单包含 `declineReason`：
 
 | 拒绝原因 | 描述 |
 |----------|------|

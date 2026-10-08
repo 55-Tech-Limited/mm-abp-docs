@@ -129,7 +129,7 @@ These channels only deliver data belonging to your `clientName`:
 | `settlements` | SETTLED | Settlement status updates (same payload as bets) |
 | `accounts` | INSERT, UPDATE, DELETE | Account creation, updates, and deletion |
 | `balance` | UPDATE | Balance change notifications |
-| `betslip` | UPDATE | Real-time odds updates for active betslip subscriptions (60s window after each `GET /betslip` call) |
+| `betslip` | UPDATE | Real-time odds updates for active betslip subscriptions (60s window after each `GET /fixtures/betslip` call) |
 
 ### Global channels
 
@@ -173,7 +173,7 @@ Or acknowledge a range in one message (recommended for throughput):
 ```
 
 <Warning>
-If you fall further behind than the 100-message buffer, the oldest unacked messages are dropped. Ack promptly (or use `ack_batch`) and treat any `seq` gap that a `replay` can't fill as a signal to reconcile via the REST endpoints (`GET /orders`, `GET /bets`).
+If you fall further behind than the 100-message buffer, the oldest unacked messages are dropped. Ack promptly (or use `ack_batch`) and treat any `seq` gap that a `replay` can't fill as a signal to reconcile via the REST endpoints (`GET /fixtures/orders`, `GET /fixtures/bets`).
 </Warning>
 
 ## Changing subscriptions
@@ -190,10 +190,17 @@ The server replies with `channels_updated`.
 
 The `betslip` channel pushes real-time odds for selections you're watching. There are two ways to subscribe:
 
-1. **Via REST** — calling `GET /betslip` registers a **60-second sliding window**; each call resets the timer and immediately broadcasts a snapshot over the WebSocket.
+1. **Via REST** — calling `GET /fixtures/betslip` registers a **60-second sliding window**; each call resets the timer and immediately broadcasts a snapshot over the WebSocket.
 2. **Via WebSocket** — send a `subscribe_betslip` message with an explicit `ttl` (10–3600s) and bookmaker list for finer control, and `unsubscribe_betslip` to cancel early.
 
-A maximum of **20** active betslip subscriptions per client (REST + WS combined) is enforced. Message shapes and the `subscribed_betslip` confirmation are documented in [Betslip subscription messages](#betslip-subscription-messages) below.
+<Note>
+**Futures subscribe via REST only.** `GET /futures/betslip` registers the same 60-second sliding
+window and its deltas arrive on this channel, but the `subscribe_betslip` / `unsubscribe_betslip`
+WebSocket messages take `fixtureId` + `outcomeId` + `playerId` and have no futures form. To hold a
+futures subscription open, re-call `GET /futures/betslip` inside each 60-second window.
+</Note>
+
+A maximum of **20** active betslip subscriptions per client (REST + WS combined, fixtures and futures together) is enforced. Message shapes and the `subscribed_betslip` confirmation are documented in [Betslip subscription messages](#betslip-subscription-messages) below.
 
 ## Example: Python client
 
@@ -437,7 +444,9 @@ Subscribing to both `bets` and `settlements` delivers settlement updates **twice
 
 ### Betslip
 
-Pushed while a betslip subscription is active. For futures the payload carries `futureId` and `participantId` instead of `fixtureId`.
+Pushed while a betslip subscription is active. A fixture payload is keyed by `fixtureId` +
+`outcomeId` + `playerId`; a futures payload is keyed by `futureId` + `futureOutcomeId` +
+`participantId` and carries **no `playerId`** at all.
 
 **Fixture:**
 
@@ -465,26 +474,23 @@ Pushed while a betslip subscription is active. For futures the payload carries `
 }
 ```
 
-**Futures (coming soon):**
+**Futures:**
 
 ```json
 {
   "clientName": "demo",
-  "futureId": "fut_123456",
-  "outcomeId": 0,
-  "playerId": 0,
-  "participantId": 5,
+  "futureId": "id1012639310001",
+  "futureOutcomeId": 0,
+  "participantId": 7193,
   "odds": {
-    "pinnacle": {
-      "fut_123456:pinnacle:0:0:5": {
-        "price": 3.50,
+    "polymarket": {
+      "id1012639310001:polymarket:0:7193": {
+        "price": 4.2,
         "limit": 1000.0,
-        "limitMin": 5.0,
         "limitCurrency": "USD",
         "limitUsd": 1000.0,
-        "limitMinUsd": 5.0,
         "active": true,
-        "account": "pinnacle_main",
+        "account": "polymarket_main",
         "currencyInfo": { "currency": "USD", "currencyValue": 1, "updatedAt": "2026-02-07T17:29:32+00:00" }
       }
     }
@@ -493,7 +499,13 @@ Pushed while a betslip subscription is active. For futures the payload carries `
 ```
 
 <Note>
-Futures betslip WebSocket broadcasting is not yet enabled. The subscription infrastructure is in place and will be activated in an upcoming release.
+Futures betslip broadcasting is **live**: `GET /futures/betslip` registers the same 60-second
+sliding subscription as the fixture endpoint, and subsequent price changes arrive as deltas on this
+channel. Only futures *placement* and futures order/bet reads still answer `501`.
+
+The `oddsId` inside `odds.{bookmaker}` is **opaque** — store it and send it back verbatim. OddsPapi
+is migrating its futures identifier scheme, so two key shapes are live at once; ABP always publishes
+the key that actually matched.
 </Note>
 
 ## Connection limits
