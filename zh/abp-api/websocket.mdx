@@ -194,10 +194,11 @@ wss://v2.55-tech.com/ws
 2. **通过 WebSocket**——发送 `subscribe_betslip` 消息并附显式 `ttl`（10–3600 秒）与博彩商列表以获得更精细的控制，用 `unsubscribe_betslip` 提前取消。
 
 <Note>
-**期货只能通过 REST 订阅。** `GET /futures/betslip` 会注册同样的 60 秒滑动窗口，其增量也推送到本
-频道，但 `subscribe_betslip` / `unsubscribe_betslip` 这两个 WebSocket 消息只接受 `fixtureId` +
-`outcomeId` + `playerId`，没有期货形态。若要保持期货订阅不中断，请在每个 60 秒窗口内重新调用
-`GET /futures/betslip`。
+**期货只能通过 REST 订阅——而且期货目前是关闭的。** 在 OddsPapi 的 db-v2 标识符方案上线前，
+`GET /futures/betslip` 返回 `501`，因此无法注册期货订阅，也不会推送任何期货增量。开启之后，该端点会
+注册同样的 60 秒滑动窗口，其增量推送到本频道；而 `subscribe_betslip` / `unsubscribe_betslip` 这两个
+WebSocket 消息只接受 `fixtureId` + `outcomeId` + `playerId`，没有期货形态，所以保持期货订阅不中断的
+办法是在每个 60 秒窗口内重新调用 `GET /futures/betslip`。
 </Note>
 
 每客户端最多 **20** 个活跃赔率单订阅（赛事与期货合计，REST + WS 合计）。消息结构与 `subscribed_betslip` 确认见下文[赔率单订阅消息](#赔率单订阅消息)。
@@ -498,12 +499,12 @@ ws.on('message', (raw) => {
 ```
 
 <Note>
-期货赔率单的 WebSocket 广播**已上线**：`GET /futures/betslip` 会注册与赛事端点相同的 60 秒滑动
-订阅，之后的价格变动即以增量形式推送到本频道。目前仍返回 `501` 的只有期货的**下单**以及期货订单/
-投注读取。
+**目前不会推送任何期货增量。** 上面的负载是期货增量将来的结构，管道也已就位——`GET /futures/betslip`
+日后会注册与赛事端点相同的 60 秒滑动订阅——但在 OddsPapi 的 db-v2 标识符方案上线前，整套
+`/futures/*` 端点都返回 `501`，因此不可能存在期货订阅，本频道也不会推送任何期货内容。赛事赔率单的
+增量不受影响。
 
-`odds.{bookmaker}` 内的 `oddsId` 是**不透明**的——请原样保存并回传。OddsPapi 正在迁移其期货标识符
-方案，过渡期内两种键形态同时存在；ABP 始终发布实际命中的那个键。
+`odds.{bookmaker}` 内的 `oddsId` 是**不透明**的——请原样保存并回传。ABP 始终发布实际命中的那个键。
 </Note>
 
 ## 连接限制

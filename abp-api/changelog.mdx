@@ -17,10 +17,12 @@ All timestamps are **UTC**. Breaking changes are called out explicitly — subsc
   explicit prefix: `GET /fixtures/betslip`, `POST /fixtures/place-orders`, `GET /fixtures/orders`,
   `GET /fixtures/bets`, `GET /fixtures/markets`, and the `/fixtures/cancel-*` pair — plus the
   mirrored `/futures/*` set. See [Overview → Two surfaces](/abp-api/overview#two-surfaces-fixtures-and-futures).
-- **Futures betslip and markets are live.** `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…`
-  returns outright odds and limits per bookmaker, registers the same 60-second sliding WebSocket
-  subscription as the fixture endpoint, and its price changes now arrive as `betslip` deltas.
-  `GET /futures/markets?sportId=…` lists the cached futures markets.
+- **The `/futures/*` surface exists, and every endpoint on it answers `501`** — including
+  `GET /futures/betslip` and `GET /futures/markets`. Futures are switched off at the feed until
+  OddsPapi's db-v2 identifier scheme is live (expected late 2026-10): ABP speaks db-v2 futures
+  identifiers only, so there is nothing to serve yet. The routes, the parameters and the request
+  validation are final, so an integration written against them today needs no change on the day
+  futures turn on. A bare-integer `futureId` from the current feed is **refused** (`400`).
 
 ### 🔁 Changed
 
@@ -76,4 +78,4 @@ previously answered `501 Not Implemented`, so no working call changes behaviour:
 
 ### 🚧 Coming soon
 
-- **Futures / outright markets** via `futureId` + `participantId`. The data model is in place; order placement and betslip retrieval currently return `501 Not Implemented`. *(Superseded — betslip and markets went live on 2026-10-09; see above.)*
+- **Futures / outright markets** via `futureId` + `futureOutcomeId` + `participantId`. The routes and the request model are in place under `/futures/*`; every futures endpoint returns `501 Not Implemented` until OddsPapi's db-v2 identifier scheme is live.

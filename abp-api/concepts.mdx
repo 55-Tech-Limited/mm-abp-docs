@@ -18,7 +18,7 @@ ABP shares its identifier space with [OddsPapi v5](https://docs.oddspapi.io/) �
 | `fixtureId` | string | A single event/match (e.g. `id1000004461512432`). Used on every `/fixtures/*` endpoint. |
 | `outcomeId` | integer | The specific selection within a fixture market (e.g. home win, over 2.5). |
 | `playerId` | integer | Player for player-prop markets. Use `0` when the market is not player-specific. |
-| `futureId` | integer \| string | An outright/futures market (e.g. tournament winner). Used on every `/futures/*` endpoint. |
+| `futureId` | string | An outright/futures market (e.g. tournament winner), in OddsPapi's db-v2 form — `id1012639310001`. Used on every `/futures/*` endpoint. A bare-integer id from the current feed is **refused** (`400`). |
 | `futureOutcomeId` | integer | The selection within a futures market. `0` means "the selection is named by `participantId`". |
 | `participantId` | integer | The team or player a futures selection refers to. `0` when the market is not participant-keyed. |
 
@@ -49,10 +49,11 @@ Future:   futureId:bookmaker:futureOutcomeId:participantId
 
 <Warning>
 **Treat an `oddsId` as opaque.** Store the value a betslip response or WebSocket delta gives you
-and send it back verbatim — never split, concatenate or reconstruct it. OddsPapi is migrating its
-futures identifier scheme, and during the transition two key shapes are live at once. ABP always
-publishes the key that actually matched, so a client that stores the `oddsId` is unaffected by the
-change; one that parses it is not.
+and send it back verbatim — never split, concatenate or reconstruct it. ABP always publishes the
+key that actually matched, so a client that stores the `oddsId` is unaffected by a change to the
+format; one that parses it is not. (OddsPapi is migrating its futures identifier scheme, which is
+why the whole `/futures/*` surface answers `501` today — see
+[Overview → Futures](/abp-api/overview#futures-outright-markets).)
 </Warning>
 
 You rarely build these by hand — `GET /fixtures/betslip` and `GET /futures/betslip` return them

@@ -194,10 +194,13 @@ The `betslip` channel pushes real-time odds for selections you're watching. Ther
 2. **Via WebSocket** — send a `subscribe_betslip` message with an explicit `ttl` (10–3600s) and bookmaker list for finer control, and `unsubscribe_betslip` to cancel early.
 
 <Note>
-**Futures subscribe via REST only.** `GET /futures/betslip` registers the same 60-second sliding
-window and its deltas arrive on this channel, but the `subscribe_betslip` / `unsubscribe_betslip`
-WebSocket messages take `fixtureId` + `outcomeId` + `playerId` and have no futures form. To hold a
-futures subscription open, re-call `GET /futures/betslip` inside each 60-second window.
+**Futures subscribe via REST only — and futures are off today.** `GET /futures/betslip` answers
+`501` until OddsPapi's db-v2 identifier scheme is live, so no futures subscription can be registered
+and no futures delta is published. When it turns on, that endpoint registers the same 60-second
+sliding window and its deltas arrive on this channel; the `subscribe_betslip` /
+`unsubscribe_betslip` WebSocket messages take `fixtureId` + `outcomeId` + `playerId` and have no
+futures form, so holding a futures subscription open means re-calling `GET /futures/betslip` inside
+each 60-second window.
 </Note>
 
 A maximum of **20** active betslip subscriptions per client (REST + WS combined, fixtures and futures together) is enforced. Message shapes and the `subscribed_betslip` confirmation are documented in [Betslip subscription messages](#betslip-subscription-messages) below.
@@ -499,13 +502,14 @@ Pushed while a betslip subscription is active. A fixture payload is keyed by `fi
 ```
 
 <Note>
-Futures betslip broadcasting is **live**: `GET /futures/betslip` registers the same 60-second
-sliding subscription as the fixture endpoint, and subsequent price changes arrive as deltas on this
-channel. Only futures *placement* and futures order/bet reads still answer `501`.
+**No futures delta is published today.** The payload above is the shape futures deltas will take,
+and the plumbing is in place — `GET /futures/betslip` will register the same 60-second sliding
+subscription as the fixture endpoint — but the whole `/futures/*` surface answers `501` until
+OddsPapi's db-v2 identifier scheme is live, so no futures subscription can exist and nothing is
+broadcast on this channel for a future. Fixture betslip deltas are unaffected.
 
-The `oddsId` inside `odds.{bookmaker}` is **opaque** — store it and send it back verbatim. OddsPapi
-is migrating its futures identifier scheme, so two key shapes are live at once; ABP always publishes
-the key that actually matched.
+The `oddsId` inside `odds.{bookmaker}` is **opaque** — store it and send it back verbatim. ABP
+always publishes the key that actually matched.
 </Note>
 
 ## Connection limits

@@ -1168,9 +1168,9 @@
         "tags": [
           "Futures"
         ],
-        "summary": "Get live odds and betslip metadata for a future",
+        "summary": "Get live odds and betslip metadata for a future (not yet available)",
         "operationId": "get_futures_betslip",
-        "description": "Get current odds and metadata for a **futures** (outright) selection.\n\nProvide `futureId` plus the selection:\n\n- **Participant-keyed** markets (outright winner, topscorer, relegation, mvp) carry the sentinel `futureOutcomeId=0` — the participant IS the selection, so `participantId` must be a real id.\n- **Decomposed** markets (prediction Yes/No, season totals Over/Under) carry a real `futureOutcomeId` (>= 100001) and may leave `participantId=0`.\n\nThere is **no `playerId`** on futures — `participantId` names a team or a player alike — and **no period**: a future resolves when its season does.\n\nFixtures live on **`GET /fixtures/betslip`**.\n\n**Feed-authoritative.** Futures odds come from the OddsPAPI cache only — no bookmaker integration implements a futures betslip fetch, so `verifyBetslip` on an account has no effect here.\n\n**Limit cascade:** account.minStake/maxStake > bookmaker.minStake/maxStake > odds.limitMin/limit — same as fixtures.\n\n**WebSocket integration:** each poll registers (or refreshes) a 60-second subscription on the `betslip` channel for this selection, the snapshot is broadcast immediately, and deltas follow as prices change. Futures payloads carry `futureId`/`futureOutcomeId`/`participantId` instead of `fixtureId`/`outcomeId`/`playerId`.",
+        "description": "Get current odds and metadata for a **futures** (outright) selection.\n\nProvide `futureId` plus the selection:\n\n- **Participant-keyed** markets (outright winner, topscorer, relegation, mvp) carry the sentinel `futureOutcomeId=0` — the participant IS the selection, so `participantId` must be a real id.\n- **Decomposed** markets (prediction Yes/No, season totals Over/Under) carry a real `futureOutcomeId` (>= 100001) and may leave `participantId=0`.\n\nThere is **no `playerId`** on futures — `participantId` names a team or a player alike — and **no period**: a future resolves when its season does.\n\nFixtures live on **`GET /fixtures/betslip`**.\n\n**Feed-authoritative.** Futures odds come from the OddsPAPI cache only — no bookmaker integration implements a futures betslip fetch, so `verifyBetslip` on an account has no effect here.\n\n**Limit cascade:** account.minStake/maxStake > bookmaker.minStake/maxStake > odds.limitMin/limit — same as fixtures.\n\n**WebSocket integration:** each poll registers (or refreshes) a 60-second subscription on the `betslip` channel for this selection, the snapshot is broadcast immediately, and deltas follow as prices change. Futures payloads carry `futureId`/`futureOutcomeId`/`participantId` instead of `fixtureId`/`outcomeId`/`playerId`.\n\n> **Returns HTTP 501 today.** ABP implements the OddsPAPI **db-v2** futures identifier scheme only, and the feed still publishes the current-state one, so futures ingest is switched off and nothing is cached. This endpoint answers `501` rather than an empty `200` that would read as \"no odds\" — and your request is **validated first**, so a malformed `futureId` (a bare integer from the current feed is refused) or a selection pair that names nothing is still a `400` even today. The response shape below is what it serves the day futures turn on (expected late 2026-10).",
         "parameters": [
           {
             "name": "futureId",
@@ -1179,7 +1179,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Future identifier (e.g., 'id1012639310001').",
+            "description": "Future identifier in OddsPAPI's db-v2 form (e.g., 'id1012639310001'). A bare-integer id from the current feed is refused with a 400.",
             "example": "id1012639310001"
           },
           {
@@ -1218,7 +1218,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Current odds and betslip metadata for a future",
+            "description": "Current odds and betslip metadata for a future — the shape served once futures are enabled; today this endpoint answers 501",
             "content": {
               "application/json": {
                 "schema": {
@@ -1302,6 +1302,16 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "501": {
+            "description": "Not implemented — futures ingest is off until OddsPAPI db-v2 is live",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Futures betslip is not yet available. ABP implements the OddsPAPI db-v2 futures identifier scheme only, and the feed still publishes the current-state one, so futures ingest is disabled (ODDSPAPI_FUTURES_ENABLED=false) and nothing is cached. This endpoint answers 501 rather than an empty 200 that would read as 'no odds'. Futures identifiers ARE validated here: a malformed request is a 400/422 even today."
+                }
+              }
+            }
           }
         }
       }
@@ -1311,9 +1321,9 @@
         "tags": [
           "Futures"
         ],
-        "summary": "Get all futures markets",
+        "summary": "Get all futures markets (not yet available)",
         "operationId": "get_futures_markets",
-        "description": "Returns the futures markets present in the OddsPAPI metadata cache, grouped by `(sportId, futureMarketId)`, each with the futures (season × market) that carry it. Sorted by `sportId`, then `futureMarketId`.\n\nThis is the futures counterpart of `GET /fixtures/markets`, but it is **derived from the cached futures themselves** — OddsPAPI publishes no separate futures-market catalogue. Consequences worth knowing:\n\n- It lists what is currently cached, not every market that has ever existed.\n- `marketName` / `marketType` are `null` unless OddsPAPI puts them on the future row. They are read, never inferred.\n- It does **not** list outcomes. A futures selection is `(futureOutcomeId, participantId)`, and the available pairs come from the odds on `GET /futures/betslip`, not from a market definition: on a participant-keyed market the outcome id is always the sentinel `0` and the *participants* are the selections.",
+        "description": "Returns the futures markets present in the OddsPAPI metadata cache, grouped by `(sportId, futureMarketId)`, each with the futures (season × market) that carry it. Sorted by `sportId`, then `futureMarketId`.\n\nThis is the futures counterpart of `GET /fixtures/markets`, but it is **derived from the cached futures themselves** — OddsPAPI publishes no separate futures-market catalogue. Consequences worth knowing:\n\n- It lists what is currently cached, not every market that has ever existed.\n- `marketName` / `marketType` are `null` unless OddsPAPI puts them on the future row. They are read, never inferred.\n- It does **not** list outcomes. A futures selection is `(futureOutcomeId, participantId)`, and the available pairs come from the odds on `GET /futures/betslip`, not from a market definition: on a participant-keyed market the outcome id is always the sentinel `0` and the *participants* are the selections.\n\n> **Returns HTTP 501 today.** ABP implements the OddsPAPI **db-v2** futures identifier scheme only, and the feed still publishes the current-state one, so futures ingest is switched off and nothing is cached. This endpoint answers `501` rather than an empty `200` that would read as \"no odds\" — and your request is **validated first**, so a malformed `futureId` (a bare integer from the current feed is refused) or a selection pair that names nothing is still a `400` even today. The response shape below is what it serves the day futures turn on (expected late 2026-10).",
         "parameters": [
           {
             "name": "sportId",
@@ -1340,7 +1350,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of futures markets",
+            "description": "List of futures markets — the shape served once futures are enabled; today this endpoint answers 501",
             "content": {
               "application/json": {
                 "schema": {
@@ -1377,6 +1387,16 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "501": {
+            "description": "Not implemented — futures ingest is off until OddsPAPI db-v2 is live",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Futures market listing is not yet available. ABP implements the OddsPAPI db-v2 futures identifier scheme only, and the feed still publishes the current-state one, so futures ingest is disabled (ODDSPAPI_FUTURES_ENABLED=false) and nothing is cached. This endpoint answers 501 rather than an empty 200 that would read as 'no odds'. Futures identifiers ARE validated here: a malformed request is a 400/422 even today."
+                }
+              }
+            }
           }
         }
       }

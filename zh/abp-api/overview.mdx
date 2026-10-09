@@ -13,7 +13,7 @@ keywords: "abp api, 自动投注, 投注下单 api, 36 家博彩公司, 智能�
 
 - **账户管理** — 博彩公司账户的完整CRUD操作，支持优先级选择、每账户投注限额和多币种
 - **投注单获取** — 在下注前获取所有已配置博彩公司的任何赛事/结果的实时赔率和限额
-- **期货支持** — 独立的 `/futures/*` 端点用于冠军/期货盘，以 `futureId` + `futureOutcomeId` + `participantId` 作为键。投注单与盘口列表已上线，下单功能即将推出
+- **期货支持** — 独立的 `/futures/*` 端点用于冠军/期货盘，以 `futureId` + `futureOutcomeId` + `participantId` 作为键。在 OddsPapi 的 db-v2 标识符方案上线之前，所有期货端点均返回 `501`
 - **智能订单路由** — 下达单个或批量订单；ABP 自动按赔率和限额选择最佳博彩公司
 - **投注跟踪** — 从下注到确认和结算，完整审计追踪监控每一注
 - **持仓和盈亏分析** — 按博彩公司、账户或用户引用分组的汇总敞口和盈亏视图
@@ -53,7 +53,7 @@ https://v2.55-tech.com
 |---|---|---|
 | 前缀 | `/fixtures/*` | `/futures/*` |
 | 选项 | `fixtureId` + `outcomeId` + `playerId` | `futureId` + `futureOutcomeId` + `participantId` |
-| 状态 | 全部可用 | 投注单与盘口列表已上线；下单及订单/投注读取返回 `501` |
+| 状态 | 全部可用 | 整套端点目前都返回 `501`（db-v2 上线前） |
 
 两套端点都会以 `422` **拒绝对方的标识符**，并在信息中指明你想要的路径。拆分只影响携带选项的四组
 端点——投注单、订单、投注、盘口。`/accounts`、`/bookmakers`、`/positions` 和 `/pnl` 不涉及选项，
@@ -150,21 +150,24 @@ UNSETTLED → WON / LOST / VOID / HALF_WON / HALF_LOST / PUSH / CASHOUT
 
 | | 赛事 | 期货 |
 |---|---|---|
-| 投注单 | `GET /fixtures/betslip?fixtureId=…&outcomeId=…&playerId=…` | `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…` |
-| 盘口 | `GET /fixtures/markets` | `GET /futures/markets` |
+| 投注单 | `GET /fixtures/betslip?fixtureId=…&outcomeId=…&playerId=…` | `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…` *(501)* |
+| 盘口 | `GET /fixtures/markets` | `GET /futures/markets` *(501)* |
 | 下单 | `POST /fixtures/place-orders` | `POST /futures/place-orders` *(501)* |
 
-**目前已上线：** `GET /futures/betslip` 与 `GET /futures/markets`。期货赔率以数据源为准——仅来自
-OddsPapi 缓存，因此账户上的 `verifyBetslip` 对这套端点没有影响。
+**整套期货端点目前都返回 `501`**，原因有两条，且会分别解除：
 
-**尚未上线：** 下单、撤单，以及 `GET /futures/orders` 和 `GET /futures/bets` 返回 `501`。原因在于
-存储而非路由：`orders` 表没有期货标识列，而把 `futureId` 写进赛事的列里，正是这次拆分要消除的混用。
-返回 `501` 的端点会**先校验你的请求体**，所以格式错误的 `futureId` 或空的选项组合今天同样会得到
-`422`/`400`——现在就可以按它们集成，日后只有 `501` 会变化。
+1. **标识符方案。** ABP 只识别 OddsPapi 的 **db-v2** 期货标识符，形如 `id1012639310001`。当前数据源仍发布纯整数 id，ABP 会**拒绝**（`400`）而不去猜测，因此期货数据接入是关闭的，也就没有任何缓存可供返回。db-v2 上线后（预计 2026 年 10 月下旬）这一条解除。
+2. **存储。** 下单、撤单、`GET /futures/orders` 与 `GET /futures/bets` 还额外需要 `orders` 表上的期货标识列——而把 `futureId` 写进赛事的列里，正是这次拆分要消除的混用。
+
+路由、参数与校验都已定稿，并且返回 `501` 的端点会**先校验你的请求体**：格式错误的 `futureId` 或空的
+选项组合今天同样得到 `422`/`400`。现在就可以按它们集成，日后只有 `501` 会变化。
+
+期货真正开启后，其赔率以数据源为准——仅来自 OddsPapi 缓存，因此账户上的 `verifyBetslip` 对这套端点
+没有影响。
 
 <Note>
-  **请把 `oddsId` 当作不透明字符串。** 保存并原样回传，不要解析它。OddsPapi 正在变更期货标识符格式，
-  ABP 对两种形态透明兼容——保存所收到 id 的客户端不会察觉任何变化，而按 `:` 拆分它的客户端会出错。
+  **请把 `oddsId` 当作不透明字符串。** 保存并原样回传，不要解析它。ABP 始终发布实际命中的那个键——
+  保存所收到 id 的客户端不受格式变更影响，而按 `:` 拆分它的客户端会出错。
 </Note>
 
 ### 博彩公司标识
@@ -182,7 +185,7 @@ OddsPapi 缓存，因此账户上的 `verifyBetslip` 对这套端点没有影响
 | **分析** | `GET /positions`, `GET /pnl` | 汇总敞口和盈亏 |
 | **博彩公司** | `GET /bookmakers` | 列出所有支持的博彩公司 |
 | **市场** | `GET /fixtures/markets` | 可用市场和赔率类型 |
-| **期货** | `GET /futures/betslip`, `GET /futures/markets` | 冠军盘赔率与盘口（下单暂返回 `501`） |
+| **期货** | `GET /futures/betslip`、`GET /futures/markets`、`POST /futures/place-orders` 等 | 冠军盘——db-v2 上线前整套端点均返回 `501` |
 | **WebSocket** | `WS /ws` | 实时更新 |
 
 上述携带选项的端点同样可以在不带 `/fixtures` 前缀的情况下访问（`/betslip`、`/place-orders` 等）——已弃用的别名，行为不变。

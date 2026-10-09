@@ -18,7 +18,7 @@ ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你�
 | `fixtureId` | string | 单场赛事（例如 `id1000004461512432`），用于所有 `/fixtures/*` 端点。 |
 | `outcomeId` | integer | 赛事盘口中的具体选项（例如主胜、大于 2.5）。 |
 | `playerId` | integer | 球员玩法的球员；非球员盘口时使用 `0`。 |
-| `futureId` | integer \| string | 期货/冠军盘（例如赛事总冠军），用于所有 `/futures/*` 端点。 |
+| `futureId` | string | 期货/冠军盘（例如赛事总冠军），采用 OddsPapi db-v2 形态——`id1012639310001`，用于所有 `/futures/*` 端点。当前数据源那种纯整数 id 会被**拒绝**（`400`）。 |
 | `futureOutcomeId` | integer | 期货盘中的选项。取 `0` 表示"该选项由 `participantId` 指定"。 |
 | `participantId` | integer | 期货选项所指的球队或球员；盘口非按参与者索引时为 `0`。 |
 
@@ -49,8 +49,9 @@ ABP 与 [OddsPapi v5](https://docs.oddspapi.io/) 共享标识符空间——你�
 
 <Warning>
 **请把 `oddsId` 当作不透明字符串。** 保存投注单响应或 WebSocket 增量推送给你的值，并原样回传——
-不要拆分、拼接或自行重建。OddsPapi 正在迁移其期货标识符方案，过渡期内两种键形态同时存在；ABP
-始终发布实际命中的那个键，因此保存 `oddsId` 的客户端完全不受影响，而解析它的客户端会受影响。
+不要拆分、拼接或自行重建。ABP 始终发布实际命中的那个键，因此保存 `oddsId` 的客户端完全不受格式
+变更影响，而解析它的客户端会受影响。（OddsPapi 正在迁移其期货标识符方案，这也正是整套
+`/futures/*` 端点目前返回 `501` 的原因——参见[概览 → 期货](/zh/abp-api/overview#期货冠军盘)。）
 </Warning>
 
 你很少需要手动构造它们——`GET /fixtures/betslip` 和 `GET /futures/betslip` 会返回已键入、可直接

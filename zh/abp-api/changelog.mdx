@@ -17,9 +17,11 @@ keywords: "abp 更新日志, api 更新日志, 发布说明, abp api 更新, 破
   `GET /fixtures/betslip`、`POST /fixtures/place-orders`、`GET /fixtures/orders`、
   `GET /fixtures/bets`、`GET /fixtures/markets`，以及 `/fixtures/cancel-*` 这一对——外加镜像的
   `/futures/*` 一整套。参见[概览 → 两套端点](/zh/abp-api/overview#两套端点赛事与期货)。
-- **期货赔率单与盘口列表已上线。** `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…`
-  按博彩商返回冠军盘赔率与额度，并注册与赛事端点相同的 60 秒滑动 WebSocket 订阅，其后的价格变动以
-  `betslip` 增量推送。`GET /futures/markets?sportId=…` 列出已缓存的期货盘口。
+- **`/futures/*` 这套端点已经存在，但其中每个端点目前都返回 `501`**——包括
+  `GET /futures/betslip` 与 `GET /futures/markets`。在 OddsPapi 的 db-v2 标识符方案上线之前
+  （预计 2026 年 10 月下旬），期货在数据源一侧是关闭的：ABP 只识别 db-v2 期货标识符，因此现在没有
+  任何可供返回的数据。路由、参数与请求校验都已定稿，所以今天按它们完成的集成在期货开启当天无需改动。
+  当前数据源那种纯整数 `futureId` 会被**拒绝**（`400`）。
 
 ### 🔁 变更
 
@@ -71,4 +73,4 @@ keywords: "abp 更新日志, api 更新日志, 发布说明, abp api 更新, 破
 
 ### 🚧 即将推出
 
-- **期货 / 冠军盘**，通过 `futureId` + `participantId`。数据模型已就位；订单下注与赔率单获取目前返回 `501 Not Implemented`。*（已被取代——赔率单与盘口列表已于 2026-10-09 上线，见上文。）*
+- **期货 / 冠军盘**，通过 `futureId` + `futureOutcomeId` + `participantId`。`/futures/*` 下的路由与请求模型已就位；在 OddsPapi 的 db-v2 标识符方案上线之前，所有期货端点都返回 `501 Not Implemented`。

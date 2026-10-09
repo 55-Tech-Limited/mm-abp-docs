@@ -52,7 +52,7 @@ Request-body validation errors (`422`) include field-level detail with a `loc` p
 | `422` | Validation error — request body failed validation |
 | `429` | Rate limited — exceeded requests per second |
 | `500` | Internal server error |
-| `501` | Not implemented — futures **placement** and futures order/bet reads (`POST /futures/place-orders`, `GET /futures/orders`, …). Futures betslip and markets are live |
+| `501` | Not implemented — **every** `/futures/*` endpoint, betslip and markets included, until OddsPapi's db-v2 identifier scheme is live. Your payload is validated first, so a bad request is still a `400`/`422` |
 | `503` | Service unavailable — database or dependency down |
 
 ### Mixing the two surfaces

@@ -13,7 +13,7 @@ The **Automated Bet Placing (ABP)** API by [55-Tech](https://55-tech.com/) lets 
 
 - **Account management** — Full CRUD for bookmaker accounts with priority-based selection, per-account stake limits, and multi-currency support
 - **Betslip retrieval** — Get real-time odds and limits for any fixture/outcome across all configured bookmakers before placing
-- **Futures support** — A separate `/futures/*` surface for outright markets, keyed by `futureId` + `futureOutcomeId` + `participantId`. Betslip and markets are live; placement is coming
+- **Futures support** — A separate `/futures/*` surface for outright markets, keyed by `futureId` + `futureOutcomeId` + `participantId`. Every futures endpoint answers `501` until OddsPapi's db-v2 identifier scheme is live
 - **Smart order routing** — Place single or bulk orders; ABP automatically selects the best bookmaker by odds and limits
 - **Bet tracking** — Monitor every bet from placement through confirmation and settlement with full audit trail
 - **Position & PnL analytics** — Aggregated views of exposure and profit/loss grouped by bookmaker, account, or user reference
@@ -52,7 +52,7 @@ A selection is either a **fixture** (a match, with a kickoff) or a **future** (a
 |---|---|---|
 | Prefix | `/fixtures/*` | `/futures/*` |
 | Selection | `fixtureId` + `outcomeId` + `playerId` | `futureId` + `futureOutcomeId` + `participantId` |
-| Status | fully live | betslip and markets live; placement and order/bet reads answer `501` |
+| Status | fully live | every endpoint answers `501` until db-v2 (see below) |
 
 Each surface **rejects the other's identifiers** with `422`, naming the path you wanted. The split applies to the four endpoint groups that carry a selection — betslip, orders, bets, markets. `/accounts`, `/bookmakers`, `/positions` and `/pnl` name no selection and stay unprefixed.
 
@@ -141,16 +141,21 @@ A pair that names nothing (`futureOutcomeId=0` with `participantId=0`) is reject
 
 | | Fixtures | Futures |
 |---|---|---|
-| Betslip | `GET /fixtures/betslip?fixtureId=…&outcomeId=…&playerId=…` | `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…` |
-| Markets | `GET /fixtures/markets` | `GET /futures/markets` |
+| Betslip | `GET /fixtures/betslip?fixtureId=…&outcomeId=…&playerId=…` | `GET /futures/betslip?futureId=…&futureOutcomeId=…&participantId=…` *(501)* |
+| Markets | `GET /fixtures/markets` | `GET /futures/markets` *(501)* |
 | Place | `POST /fixtures/place-orders` | `POST /futures/place-orders` *(501)* |
 
-**What is live today:** `GET /futures/betslip` and `GET /futures/markets`. Futures odds are feed-authoritative — they come from the OddsPapi cache only, so `verifyBetslip` on an account has no effect on this surface.
+**The whole futures surface answers `501` today**, for two reasons that retire separately:
 
-**What is not:** placement, cancellation, `GET /futures/orders` and `GET /futures/bets` answer `501`. The reason is storage, not routing: the `orders` table has no futures identity columns, and writing a `futureId` into a fixture's column is exactly the conflation this split removes. The `501` endpoints **validate your payload first**, so a malformed `futureId` or an empty selection pair is a `422`/`400` even today — integrate against them now and only the `501` will change.
+1. **The identifier scheme.** ABP speaks OddsPapi's **db-v2** futures identifiers only — a `futureId` like `id1012639310001`. The current feed still publishes bare integers, which ABP **refuses** (`400`) rather than guessing at, so futures ingest is switched off and there is nothing cached to serve. This clears when db-v2 goes live (expected late 2026-10).
+2. **Storage.** Placement, cancellation, `GET /futures/orders` and `GET /futures/bets` additionally need futures identity columns the `orders` table does not have — and writing a `futureId` into a fixture's column is exactly the conflation this split removes.
+
+The routes, parameters and validation are final, and the `501` endpoints **validate your payload first**: a malformed `futureId` or an empty selection pair is a `422`/`400` even today. Integrate against them now and only the `501` changes.
+
+When futures do turn on, their odds are feed-authoritative — they come from the OddsPapi cache only, so `verifyBetslip` on an account has no effect on this surface.
 
 <Note>
-  **Treat an `oddsId` as opaque.** Store it and send it back; do not parse it. OddsPapi is moving the futures identifier format, and ABP serves both shapes transparently — a client that stores the id it was given notices nothing, while a client that splits it on `:` will break.
+  **Treat an `oddsId` as opaque.** Store it and send it back; do not parse it. ABP always publishes the key that actually matched — a client that stores the id it was given is unaffected by any change to the format, while a client that splits it on `:` is not.
 </Note>
 
 ### Bookmaker slugs
@@ -166,7 +171,7 @@ Bookmakers are identified by slug strings (e.g., `pinnacle`, `betfair-ex`, `poly
 | **Orders** | `POST /fixtures/place-orders`, `POST /fixtures/cancel-orders`, `POST /fixtures/cancel-all-orders`, `GET /fixtures/orders` | Place, cancel, and track orders |
 | **Bets** | `GET /fixtures/bets`, `GET /fixtures/bets/{bet_id}` | View individual bet results |
 | **Markets** | `GET /fixtures/markets` | Available markets and odds types |
-| **Futures** | `GET /futures/betslip`, `GET /futures/markets` | Outright odds and markets (placement `501` for now) |
+| **Futures** | `GET /futures/betslip`, `GET /futures/markets`, `POST /futures/place-orders`, … | Outright markets — the whole surface answers `501` until db-v2 |
 | **Analytics** | `GET /positions`, `GET /pnl` | Aggregated exposure and P&L |
 | **Bookmakers** | `GET /bookmakers` | List all supported bookmakers |
 | **WebSocket** | `WS /ws` | Real-time updates |
